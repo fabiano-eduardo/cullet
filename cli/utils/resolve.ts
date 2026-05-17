@@ -94,7 +94,7 @@ export function parseBoilerplateArg(rawValue: string): ParsedBoilerplateArg {
   return { name: value };
 }
 
-export async function findBacuPackageRoot(
+export async function findCulletPackageRoot(
   fromMetaUrl: string,
 ): Promise<string> {
   let currentDir = dirname(fileURLToPath(fromMetaUrl));
@@ -107,7 +107,7 @@ export async function findBacuPackageRoot(
       const packageJsonRaw = await readFile(packageJsonPath, "utf8");
       const packageJson = JSON.parse(packageJsonRaw) as unknown;
 
-      if (isRecord(packageJson) && packageJson.name === "bacu") {
+      if (isRecord(packageJson) && packageJson.name === "cullet") {
         return currentDir;
       }
     } catch {
@@ -117,7 +117,7 @@ export async function findBacuPackageRoot(
     const parentDir = dirname(currentDir);
 
     if (parentDir === currentDir) {
-      throw new Error("Nao foi possivel localizar a raiz do pacote bacu.");
+      throw new Error("Nao foi possivel localizar a raiz do pacote cullet.");
     }
 
     currentDir = parentDir;
@@ -125,7 +125,7 @@ export async function findBacuPackageRoot(
 }
 
 export async function loadRegistry(fromMetaUrl: string): Promise<Registry> {
-  const packageRoot = await findBacuPackageRoot(fromMetaUrl);
+  const packageRoot = await findCulletPackageRoot(fromMetaUrl);
   const registryPath = join(packageRoot, "registry", "index.json");
 
   try {
@@ -135,7 +135,9 @@ export async function loadRegistry(fromMetaUrl: string): Promise<Registry> {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "falha ao ler o arquivo";
-    throw new Error(`Nao foi possivel carregar o registry do bacu: ${message}`);
+    throw new Error(
+      `Nao foi possivel carregar o registry do cullet: ${message}`,
+    );
   }
 }
 
@@ -173,7 +175,7 @@ export async function resolveBuiltBoilerplateDir(
   name: string,
   version: string,
 ): Promise<string> {
-  const packageRoot = await findBacuPackageRoot(fromMetaUrl);
+  const packageRoot = await findCulletPackageRoot(fromMetaUrl);
   const boilerplateDir = join(
     packageRoot,
     "dist",
@@ -188,7 +190,7 @@ export async function resolveBuiltBoilerplateDir(
     return boilerplateDir;
   } catch {
     throw new Error(
-      `O boilerplate buildado \"${name}@${version}\" nao foi encontrado em ${boilerplateDir}. Execute \"npm run build\" no pacote bacu antes de usar full-control.`,
+      `O boilerplate buildado \"${name}@${version}\" nao foi encontrado em ${boilerplateDir}. Execute \"npm run build\" no pacote cullet antes de usar full-control.`,
     );
   }
 }

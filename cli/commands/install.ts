@@ -19,10 +19,10 @@ function buildImportSpecifier(
   requestedExplicitVersion: boolean,
 ): string {
   if (!requestedExplicitVersion && isLatest) {
-    return `bacu/${name}`;
+    return `cullet/${name}`;
   }
 
-  return `bacu/${name}/${version}`;
+  return `cullet/${name}/${version}`;
 }
 
 export function createInstallCommand(): Command {
@@ -65,8 +65,8 @@ export function createInstallCommand(): Command {
 
       const aliasResult = await upsertPathAlias(
         process.cwd(),
-        `bacu/${parsed.name}`,
-        `./node_modules/bacu/dist/boilerplates/${parsed.name}/versions/${version}/index.js`,
+        `cullet/${parsed.name}`,
+        `./node_modules/cullet/dist/boilerplates/${parsed.name}/versions/${version}/index.js`,
       );
 
       if (aliasResult.status === "missing-tsconfig") {
@@ -87,7 +87,7 @@ export function createInstallCommand(): Command {
 
       console.log(
         pc.green(
-          `Alias ${actionLabel}: bacu/${parsed.name} -> ${aliasResult.target}`,
+          `Alias ${actionLabel}: cullet/${parsed.name} -> ${aliasResult.target}`,
         ),
       );
     });

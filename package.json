@@ -1,11 +1,11 @@
 {
-  "name": "bacu",
+  "name": "cullet",
   "version": "0.1.0",
   "description": "Coleção de boilerplates reutilizáveis",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "bacu": "./cli/index.js"
+    "cullet": "./cli/index.js"
   },
   "exports": {
     "./erp-core": {

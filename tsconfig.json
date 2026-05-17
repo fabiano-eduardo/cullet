@@ -9,7 +9,7 @@
     "rootDir": "./",
     "baseUrl": ".",
     "paths": {
-      "bacu/*": ["./boilerplates/*/versions/latest/index.ts"]
+      "cullet/*": ["./boilerplates/*/versions/latest/index.ts"]
     },
     "types": ["node"],
     "esModuleInterop": true,

@@ -50,7 +50,7 @@ export function createFullControlCommand(): Command {
       );
       const destinationDir = join(
         process.cwd(),
-        "bacu",
+        "cullet",
         `${parsed.name}@${version}`,
       );
 
@@ -67,13 +67,13 @@ export function createFullControlCommand(): Command {
         await fs.remove(destinationDir);
       }
 
-      await fs.ensureDir(join(process.cwd(), "bacu"));
+      await fs.ensureDir(join(process.cwd(), "cullet"));
       await fs.copy(sourceDir, destinationDir, { overwrite: true });
 
       const aliasResult = await upsertPathAlias(
         process.cwd(),
-        `bacu/${parsed.name}`,
-        `./bacu/${parsed.name}@${version}/index.ts`,
+        `cullet/${parsed.name}`,
+        `./cullet/${parsed.name}@${version}/index.ts`,
       );
 
       console.log(
@@ -98,16 +98,16 @@ export function createFullControlCommand(): Command {
 
         console.log(
           pc.green(
-            `Alias ${actionLabel}: bacu/${parsed.name} -> ${aliasResult.target}`,
+            `Alias ${actionLabel}: cullet/${parsed.name} -> ${aliasResult.target}`,
           ),
         );
       }
 
       console.log(pc.bold("Como usar agora:"));
-      console.log(pc.cyan(`import { ... } from \"bacu/${parsed.name}\";`));
+      console.log(pc.cyan(`import { ... } from \"cullet/${parsed.name}\";`));
       console.log(
         pc.dim(
-          "O alias local vai apontar para a copia em ./bacu/, permitindo editar o boilerplate dentro do projeto.",
+          "O alias local vai apontar para a copia em ./cullet/, permitindo editar o boilerplate dentro do projeto.",
         ),
       );
     });

@@ -9,7 +9,7 @@ import { createListCommand } from "./commands/list.js";
 const program = new Command();
 
 program
-  .name("bacu")
+  .name("cullet")
   .description("Colecao de boilerplates reutilizaveis")
   .version("0.1.0");
 
@@ -21,7 +21,7 @@ program.parseAsync(process.argv).catch((error: unknown) => {
   const message =
     error instanceof Error
       ? error.message
-      : "Erro inesperado ao executar o CLI do bacu.";
+      : "Erro inesperado ao executar o CLI do cullet.";
   console.error(pc.red(`Erro: ${message}`));
   process.exitCode = 1;
 });

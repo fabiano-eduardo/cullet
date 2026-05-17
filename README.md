@@ -1,13 +1,13 @@
-# bacu
+# cullet
 
-`bacu` e uma base acumulada de boilerplates reutilizaveis publicada como pacote npm. A ideia e simples: em vez de recriar a mesma fundacao em cada projeto, voce instala o pacote, importa o boilerplate que precisa ou copia a base para dentro da sua aplicacao quando quiser controle total.
+`cullet` e uma base acumulada de boilerplates reutilizaveis publicada como pacote npm. A ideia e simples: em vez de recriar a mesma fundacao em cada projeto, voce instala o pacote, importa o boilerplate que precisa ou copia a base para dentro da sua aplicacao quando quiser controle total.
 
 O nome vem de "bala de cobre", uma piada com a frase "nao existe bala de prata". Talvez nao exista bala de prata, mas pode existir uma bala de cobre: um codigo base bem estruturado que voce leva entre projetos.
 
 ## Instalacao
 
 ```bash
-npm install bacu
+npm install cullet
 ```
 
 ## Uso via import direto
@@ -23,7 +23,7 @@ import {
   allow,
   deny,
   type Policy,
-} from "bacu/erp-core";
+} from "cullet/erp-core";
 
 const customerCodeRules = new RuleSet<string>("CustomerCodeRules", [
   {
@@ -104,17 +104,17 @@ if (decision.allowed) {
 Se voce quiser travar a dependencia em uma versao especifica do boilerplate, importe pelo subpath versionado:
 
 ```ts
-import { Timeline } from "bacu/erp-core/1.0.0";
+import { Timeline } from "cullet/erp-core/1.0.0";
 ```
 
 ## CLI
 
-Depois de instalar `bacu`, o binario `bacu` fica disponivel no projeto. Em geral, o fluxo mais pratico e usar `npx`.
+Depois de instalar `cullet`, o binario `cullet` fica disponivel no projeto. Em geral, o fluxo mais pratico e usar `npx`.
 
 ### Listar boilerplates
 
 ```bash
-npx bacu list
+npx cullet list
 ```
 
 Mostra os boilerplates registrados, suas versoes e a descricao de cada um.
@@ -122,34 +122,34 @@ Mostra os boilerplates registrados, suas versoes e a descricao de cada um.
 ### Preparar uso por import
 
 ```bash
-npx bacu install erp-core
+npx cullet install erp-core
 ```
 
 Ou para travar em uma versao exata:
 
 ```bash
-npx bacu install erp-core@1.0.0
+npx cullet install erp-core@1.0.0
 ```
 
 O comando valida o registry e mostra como importar o boilerplate. Se voce quiser adicionar um alias local no `tsconfig.json`, use a flag `--alias`:
 
 ```bash
-npx bacu install erp-core@1.0.0 --alias
+npx cullet install erp-core@1.0.0 --alias
 ```
 
 ### Full-control
 
 ```bash
-npx bacu fc erp-core
+npx cullet fc erp-core
 ```
 
 Ou escolhendo uma versao explicita:
 
 ```bash
-npx bacu fc erp-core@1.0.0
+npx cullet fc erp-core@1.0.0
 ```
 
-O modo `full-control` copia o boilerplate buildado para dentro do seu projeto em `./bacu/nome@versao/`, atualiza o alias `bacu/nome` no `tsconfig.json` e deixa o codigo local para voce editar como quiser.
+O modo `full-control` copia o boilerplate buildado para dentro do seu projeto em `./cullet/nome@versao/`, atualiza o alias `cullet/nome` no `tsconfig.json` e deixa o codigo local para voce editar como quiser.
 
 Se o diretorio de destino ja existir, o CLI pergunta antes de sobrescrever.
 
@@ -169,9 +169,9 @@ Para consumo padrao, o import direto costuma ser suficiente. Para forks de verda
 Cada boilerplate fica organizado em `boilerplates/<nome>/versions/<versao>/`.
 
 - `registry/index.json` registra quais versoes existem e qual e a latest
-- `bacu/<nome>` sempre aponta para a versao latest exportada pelo pacote
-- `bacu/<nome>/<versao>` fixa o consumo em uma versao exata
-- `bacu fc <nome>@<versao>` copia exatamente aquela versao para dentro do projeto consumidor
+- `cullet/<nome>` sempre aponta para a versao latest exportada pelo pacote
+- `cullet/<nome>/<versao>` fixa o consumo em uma versao exata
+- `cullet fc <nome>@<versao>` copia exatamente aquela versao para dentro do projeto consumidor
 
 ## Boilerplates atuais
 
@@ -179,7 +179,7 @@ Cada boilerplate fica organizado em `boilerplates/<nome>/versions/<versao>/`.
 
 Descricao: core ERP com clean architecture, temporalidade, policies e rule sets.
 
-Nesta versao inicial do pacote, o `erp-core` existe como superficie versionada e tipada para integracao do `bacu`. O aprofundamento do boilerplate continua evoluindo separadamente.
+Nesta versao inicial do pacote, o `erp-core` existe como superficie versionada e tipada para integracao do `cullet`. O aprofundamento do boilerplate continua evoluindo separadamente.
 
 ## Como contribuir com novos boilerplates
 
