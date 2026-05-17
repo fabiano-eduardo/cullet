@@ -1,0 +1,8 @@
+node_modules
+dist/**/*.map
+*.log
+tsconfig.json
+tsup.config.ts
+cli/**/*.ts
+boilerplates/**/*.ts
+!cli/index.js

@@ -1,0 +1,44 @@
+{
+  "name": "bacu",
+  "version": "0.1.0",
+  "description": "Base acumulada — coleção de boilerplates reutilizáveis",
+  "type": "module",
+  "bin": {
+    "bacu": "./cli/index.js"
+  },
+  "exports": {
+    "./erp-core": {
+      "types": "./dist/boilerplates/erp-core/versions/1.0.0/index.d.ts",
+      "import": "./dist/boilerplates/erp-core/versions/1.0.0/index.js"
+    },
+    "./erp-core/1.0.0": {
+      "types": "./dist/boilerplates/erp-core/versions/1.0.0/index.d.ts",
+      "import": "./dist/boilerplates/erp-core/versions/1.0.0/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "cli/index.js",
+    "registry",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "cli": "npm run build && node ./cli/index.js"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

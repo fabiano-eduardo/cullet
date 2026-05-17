@@ -1,0 +1,7 @@
+{
+  "erp-core": {
+    "versions": ["1.0.0"],
+    "latest": "1.0.0",
+    "description": "Core ERP com clean architecture, temporalidade, policies e rule sets"
+  }
+}
