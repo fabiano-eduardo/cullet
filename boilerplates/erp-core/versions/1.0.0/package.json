@@ -1,0 +1,50 @@
+{
+	"name": "@bellium/erp-core",
+	"version": "1.0.0",
+	"description": "Core ERP with clean architecture, temporality, policies, and rule sets",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./errors": {
+			"types": "./dist/errors/index.d.ts",
+			"import": "./dist/errors/index.js"
+		},
+		"./policies": {
+			"types": "./dist/policies/index.d.ts",
+			"import": "./dist/policies/index.js"
+		},
+		"./policies/engines": {
+			"types": "./dist/policies/engines/index.d.ts",
+			"import": "./dist/policies/engines/index.js"
+		},
+		"./policies/engines/v1/gate": {
+			"types": "./dist/policies/engines/v1/gate/index.d.ts",
+			"import": "./dist/policies/engines/v1/gate/index.js"
+		},
+		"./application/ports/policy-error-mapper": {
+			"types": "./dist/application/ports/policy-error-mapper.d.ts",
+			"import": "./dist/application/ports/policy-error-mapper.js"
+		},
+		"./exceptions/validation-field": {
+			"types": "./dist/exceptions/validation-field.d.ts",
+			"import": "./dist/exceptions/validation-field.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=18.17"
+	},
+	"peerDependencies": {
+		"zod": "^3.22.0"
+	},
+	"license": "MIT"
+}

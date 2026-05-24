@@ -1,0 +1,27 @@
+import {
+	DomainException,
+	type ValueObjectRuleset,
+} from '../../value-object-ruleset.contracts';
+import { PersonNameRulesV1 } from './person-name-rules-v1';
+
+class PersonNameCharacterError extends DomainException {}
+
+class PersonNameRulesV2 implements ValueObjectRuleset<string> {
+	readonly id = 'person-name-rules@2.0' as const;
+	readonly description =
+		'Name validation with restriction on special characters';
+
+	private readonly v1 = new PersonNameRulesV1();
+
+	validate(value: string): void {
+		this.v1.validate(value);
+
+		if (/[^a-zA-ZÀ-ÿ\s'\-]/.test(value)) {
+			throw new PersonNameCharacterError(
+				`Name contains invalid characters: "${value}". Only letters, hyphens, and apostrophes are allowed.`
+			);
+		}
+	}
+}
+
+export { PersonNameRulesV2 };
