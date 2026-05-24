@@ -1,8 +1,8 @@
 # cullet
 
-`cullet` e uma base acumulada de boilerplates reutilizaveis publicada como pacote npm. A ideia e simples: em vez de recriar a mesma fundacao em cada projeto, voce instala o pacote, importa o boilerplate que precisa ou copia a base para dentro da sua aplicacao quando quiser controle total.
+`cullet` e uma colecao de kits arquiteturais opinativos para TypeScript, publicada como pacote npm. Cada kit entrega uma arquitetura completa e curada para um tipo especifico de problema, com decisoes ja tomadas sobre gestao de erros, observabilidade, testes, resiliencia, seguranca e manutenibilidade. Voce instala o pacote, importa o kit que precisa ou copia a arquitetura para dentro da sua aplicacao quando quiser controle total.
 
-O nome vem de "bala de cobre", uma piada com a frase "nao existe bala de prata". Talvez nao exista bala de prata, mas pode existir uma bala de cobre: um codigo base bem estruturado que voce leva entre projetos.
+O nome vem de "bala de cobre", uma piada com a frase "nao existe bala de prata". Talvez nao exista bala de prata, mas pode existir uma bala de cobre: nao a solucao perfeita universal, mas a arquitetura certa para o problema certo. Cullet nao e framework, nao e biblioteca, nao e gerador de codigo: e uma curadoria de arquiteturas prontas para quem nao quer comecar do zero, mas quer controle total desde o primeiro dia.
 
 ## Instalacao
 
@@ -12,7 +12,7 @@ npm install cullet
 
 ## Uso via import direto
 
-O modo mais simples e consumir o boilerplate como modulo versionado do proprio pacote.
+O modo mais simples e consumir o kit como modulo versionado do proprio pacote.
 
 ```ts
 import {
@@ -101,7 +101,7 @@ if (decision.allowed) {
 }
 ```
 
-Se voce quiser travar a dependencia em uma versao especifica do boilerplate, importe pelo subpath versionado:
+Se voce quiser travar a dependencia em uma versao especifica do kit, importe pelo subpath versionado:
 
 ```ts
 import { Timeline } from "cullet/erp-core/1.0.0";
@@ -111,13 +111,13 @@ import { Timeline } from "cullet/erp-core/1.0.0";
 
 Depois de instalar `cullet`, o binario `cullet` fica disponivel no projeto. Em geral, o fluxo mais pratico e usar `npx`.
 
-### Listar boilerplates
+### Listar kits
 
 ```bash
 npx cullet list
 ```
 
-Mostra os boilerplates registrados, suas versoes e a descricao de cada um.
+Mostra os kits registrados, suas versoes e a descricao de cada um.
 
 ### Preparar uso por import
 
@@ -131,7 +131,7 @@ Ou para travar em uma versao exata:
 npx cullet install erp-core@1.0.0
 ```
 
-O comando valida o registry e mostra como importar o boilerplate. Se voce quiser adicionar um alias local no `tsconfig.json`, use a flag `--alias`:
+O comando valida o registry e mostra como importar o kit. Se voce quiser adicionar um alias local no `tsconfig.json`, use a flag `--alias`:
 
 ```bash
 npx cullet install erp-core@1.0.0 --alias
@@ -149,7 +149,7 @@ Ou escolhendo uma versao explicita:
 npx cullet fc erp-core@1.0.0
 ```
 
-O modo `full-control` copia o boilerplate buildado para dentro do seu projeto em `./cullet/nome@versao/`, atualiza o alias `cullet/nome` no `tsconfig.json` e deixa o codigo local para voce editar como quiser.
+O modo `full-control` copia o kit compilado para dentro do seu projeto em `./cullet/nome@versao/`, atualiza o alias `cullet/nome` no `tsconfig.json` e deixa o codigo local para voce editar como quiser.
 
 Se o diretorio de destino ja existir, o CLI pergunta antes de sobrescrever.
 
@@ -157,37 +157,37 @@ Se o diretorio de destino ja existir, o CLI pergunta antes de sobrescrever.
 
 Use o modo `full-control` quando:
 
-- voce precisa customizar o boilerplate alem do que um import direto permite
+- voce precisa customizar o kit alem do que um import direto permite
 - voce quer versionar a copia junto com a sua aplicacao
-- voce pretende adaptar a arquitetura base a regras muito especificas do projeto
-- voce quer inspecionar, debugar ou evoluir o boilerplate localmente
+- voce pretende adaptar a arquitetura a regras muito especificas do projeto
+- voce quer inspecionar, debugar ou evoluir o kit localmente
 
 Para consumo padrao, o import direto costuma ser suficiente. Para forks de verdade, prefira `full-control`.
 
 ## Como as versoes funcionam
 
-Cada boilerplate fica organizado em `boilerplates/<nome>/versions/<versao>/`.
+Cada kit fica organizado em `kits/<nome>/versions/<versao>/`.
 
 - `registry/index.json` registra quais versoes existem e qual e a latest
 - `cullet/<nome>` sempre aponta para a versao latest exportada pelo pacote
 - `cullet/<nome>/<versao>` fixa o consumo em uma versao exata
 - `cullet fc <nome>@<versao>` copia exatamente aquela versao para dentro do projeto consumidor
 
-## Boilerplates atuais
+## Kits atuais
 
 ### erp-core
 
 Descricao: core ERP com clean architecture, temporalidade, policies e rule sets.
 
-Nesta versao inicial do pacote, o `erp-core` existe como superficie versionada e tipada para integracao do `cullet`. O aprofundamento do boilerplate continua evoluindo separadamente.
+Nesta versao inicial do pacote, o `erp-core` existe como superficie versionada e tipada para integracao do `cullet`. O aprofundamento do kit continua evoluindo separadamente.
 
-## Como contribuir com novos boilerplates
+## Como contribuir com novos kits
 
-Todo boilerplate novo deve seguir a mesma convencao estrutural:
+Todo kit novo deve seguir a mesma convencao estrutural:
 
 ```text
-boilerplates/
-  nome-do-boilerplate/
+kits/
+  nome-do-kit/
     versions/
       1.0.0/
         index.ts
@@ -200,10 +200,10 @@ boilerplates/
 
 Checklist esperado para uma contribuicao:
 
-- adicionar a nova pasta em `boilerplates/<nome>/versions/<versao>/`
+- adicionar a nova pasta em `kits/<nome>/versions/<versao>/`
 - criar `meta.json` com nome, versao, entrypoint, exports, changelog e deprecated
 - atualizar `registry/index.json` com a nova versao e o ponteiro `latest`
-- garantir que o `index.ts` exporta a superficie publica do boilerplate
+- garantir que o `index.ts` exporta a superficie publica do kit
 - validar o build do pacote e o funcionamento do CLI
 
 ## Desenvolvimento local
@@ -214,4 +214,4 @@ npm run build
 npm run cli -- list
 ```
 
-O build gera `dist/` com os bundles ESM, as declaracoes `.d.ts` e tambem replica os fontes dos boilerplates para suportar o modo `full-control`.
+O build gera `dist/` com os bundles ESM, as declaracoes `.d.ts` e tambem replica os fontes dos kits para suportar o modo `full-control`.

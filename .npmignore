@@ -4,5 +4,5 @@ dist/**/*.map
 tsconfig.json
 tsup.config.ts
 cli/**/*.ts
-boilerplates/**/*.ts
+kits/**/*.ts
 !cli/index.js
