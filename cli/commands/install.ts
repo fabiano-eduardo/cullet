@@ -2,7 +2,7 @@ import { Command } from "commander";
 import pc from "picocolors";
 import {
   loadRegistry,
-  parseBoilerplateArg,
+  parseKitArg,
   resolveRegistryEntry,
   resolveVersion,
 } from "../utils/resolve.js";
@@ -28,18 +28,18 @@ function buildImportSpecifier(
 export function createInstallCommand(): Command {
   return new Command("install")
     .description(
-      "Valida um boilerplate do registry e mostra como importa-lo no codigo",
+      "Valida um kit do registry e mostra como importa-lo no codigo",
     )
     .argument(
-      "<boilerplate>",
-      "Nome do boilerplate no formato nome ou nome@versao",
+      "<kit>",
+      "Nome do kit no formato nome ou nome@versao",
     )
     .option(
       "--alias",
       "Adiciona ou atualiza um path alias no tsconfig.json do projeto atual",
     )
-    .action(async (boilerplate: string, options: InstallCommandOptions) => {
-      const parsed = parseBoilerplateArg(boilerplate);
+    .action(async (kit: string, options: InstallCommandOptions) => {
+      const parsed = parseKitArg(kit);
       const registry = await loadRegistry(import.meta.url);
       const entry = resolveRegistryEntry(registry, parsed.name);
       const version = resolveVersion(parsed.name, entry, parsed.version);
@@ -50,7 +50,7 @@ export function createInstallCommand(): Command {
         parsed.version !== undefined,
       );
 
-      console.log(pc.green(`Boilerplate validado: ${parsed.name}@${version}`));
+      console.log(pc.green(`Kit validado: ${parsed.name}@${version}`));
       console.log(pc.bold("Importe direto no codigo:"));
       console.log(pc.cyan(`import { ... } from \"${importSpecifier}\";`));
 
@@ -66,7 +66,7 @@ export function createInstallCommand(): Command {
       const aliasResult = await upsertPathAlias(
         process.cwd(),
         `cullet/${parsed.name}`,
-        `./node_modules/cullet/dist/boilerplates/${parsed.name}/versions/${version}/index.js`,
+        `./node_modules/cullet/dist/kits/${parsed.name}/versions/${version}/index.js`,
       );
 
       if (aliasResult.status === "missing-tsconfig") {

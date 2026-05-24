@@ -4,7 +4,7 @@ import { loadRegistry } from "../utils/resolve.js";
 
 export function createListCommand(): Command {
   return new Command("list")
-    .description("Lista os boilerplates disponiveis no registry")
+    .description("Lista os kits disponiveis no registry")
     .action(async () => {
       const registry = await loadRegistry(import.meta.url);
       const names = Object.keys(registry).sort((left, right) =>
@@ -13,12 +13,12 @@ export function createListCommand(): Command {
 
       if (names.length === 0) {
         console.log(
-          pc.yellow("Nenhum boilerplate foi encontrado no registry."),
+          pc.yellow("Nenhum kit foi encontrado no registry."),
         );
         return;
       }
 
-      console.log(pc.bold(pc.cyan("Boilerplates disponiveis")));
+      console.log(pc.bold(pc.cyan("Kits disponiveis")));
 
       for (const name of names) {
         const entry = registry[name];

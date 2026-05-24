@@ -6,8 +6,8 @@ import { stdin as input, stdout as output } from "node:process";
 import pc from "picocolors";
 import {
   loadRegistry,
-  parseBoilerplateArg,
-  resolveBuiltBoilerplateDir,
+  parseKitArg,
+  resolveBuiltKitDir,
   resolveRegistryEntry,
   resolveVersion,
 } from "../utils/resolve.js";
@@ -32,18 +32,18 @@ async function confirmOverwrite(destinationDir: string): Promise<boolean> {
 export function createFullControlCommand(): Command {
   return new Command("fc")
     .description(
-      "Copia um boilerplate para dentro do projeto atual e atualiza o alias local",
+      "Copia um kit para dentro do projeto atual e atualiza o alias local",
     )
     .argument(
-      "<boilerplate>",
-      "Nome do boilerplate no formato nome ou nome@versao",
+      "<kit>",
+      "Nome do kit no formato nome ou nome@versao",
     )
-    .action(async (boilerplate: string) => {
-      const parsed = parseBoilerplateArg(boilerplate);
+    .action(async (kit: string) => {
+      const parsed = parseKitArg(kit);
       const registry = await loadRegistry(import.meta.url);
       const entry = resolveRegistryEntry(registry, parsed.name);
       const version = resolveVersion(parsed.name, entry, parsed.version);
-      const sourceDir = await resolveBuiltBoilerplateDir(
+      const sourceDir = await resolveBuiltKitDir(
         import.meta.url,
         parsed.name,
         version,
@@ -107,7 +107,7 @@ export function createFullControlCommand(): Command {
       console.log(pc.cyan(`import { ... } from \"cullet/${parsed.name}\";`));
       console.log(
         pc.dim(
-          "O alias local vai apontar para a copia em ./cullet/, permitindo editar o boilerplate dentro do projeto.",
+          "O alias local vai apontar para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
         ),
       );
     });

@@ -10,7 +10,7 @@ const program = new Command();
 
 program
   .name("cullet")
-  .description("Colecao de boilerplates reutilizaveis")
+  .description("Colecao de kits arquiteturais opinativos")
   .version("0.1.0");
 
 program.addCommand(createListCommand());

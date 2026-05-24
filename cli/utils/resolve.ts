@@ -11,7 +11,7 @@ export interface RegistryEntry {
 
 export type Registry = Record<string, RegistryEntry>;
 
-export interface ParsedBoilerplateArg {
+export interface ParsedKitArg {
   name: string;
   version?: string;
 }
@@ -32,9 +32,10 @@ function parseRegistry(data: unknown): Registry {
   for (const [name, entry] of Object.entries(data)) {
     if (!isRecord(entry)) {
       throw new Error(
-        `A entrada do boilerplate \"${name}\" no registry esta invalida.`,
+        `A entrada do kit \"${name}\" no registry esta invalida.`,
       );
     }
+
 
     const versions = entry.versions;
     const latest = entry.latest;
@@ -71,11 +72,11 @@ function parseRegistry(data: unknown): Registry {
   return registry;
 }
 
-export function parseBoilerplateArg(rawValue: string): ParsedBoilerplateArg {
+export function parseKitArg(rawValue: string): ParsedKitArg {
   const value = rawValue.trim();
 
   if (value.length === 0) {
-    throw new Error("Informe um boilerplate no formato nome ou nome@versao.");
+    throw new Error("Informe um kit no formato nome ou nome@versao.");
   }
 
   const separatorIndex = value.lastIndexOf("@");
@@ -148,7 +149,7 @@ export function resolveRegistryEntry(
   const entry = registry[name];
 
   if (entry === undefined) {
-    throw new Error(`O boilerplate \"${name}\" nao existe no registry.`);
+    throw new Error(`O kit \"${name}\" nao existe no registry.`);
   }
 
   return entry;
@@ -170,27 +171,27 @@ export function resolveVersion(
   return version;
 }
 
-export async function resolveBuiltBoilerplateDir(
+export async function resolveBuiltKitDir(
   fromMetaUrl: string,
   name: string,
   version: string,
 ): Promise<string> {
   const packageRoot = await findCulletPackageRoot(fromMetaUrl);
-  const boilerplateDir = join(
+  const kitDir = join(
     packageRoot,
     "dist",
-    "boilerplates",
+    "kits",
     name,
     "versions",
     version,
   );
 
   try {
-    await access(boilerplateDir, constants.F_OK);
-    return boilerplateDir;
+    await access(kitDir, constants.F_OK);
+    return kitDir;
   } catch {
     throw new Error(
-      `O boilerplate buildado \"${name}@${version}\" nao foi encontrado em ${boilerplateDir}. Execute \"npm run build\" no pacote cullet antes de usar full-control.`,
+      `O kit compilado \"${name}@${version}\" nao foi encontrado em ${kitDir}. Execute \"npm run build\" no pacote cullet antes de usar full-control.`,
     );
   }
 }
