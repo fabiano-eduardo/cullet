@@ -1,7 +1,7 @@
 {
   "name": "cullet",
   "version": "0.1.1",
-  "description": "Coleção de boilerplates reutilizáveis",
+  "description": "Coleção de kits arquiteturais opinativos para TypeScript",
   "type": "module",
   "license": "MIT",
   "bin": {
@@ -9,12 +9,12 @@
   },
   "exports": {
     "./erp-core": {
-      "types": "./dist/boilerplates/erp-core/versions/1.0.0/index.d.ts",
-      "import": "./dist/boilerplates/erp-core/versions/1.0.0/index.js"
+      "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
+      "import": "./dist/kits/erp-core/versions/1.0.0/index.js"
     },
     "./erp-core/1.0.0": {
-      "types": "./dist/boilerplates/erp-core/versions/1.0.0/index.d.ts",
-      "import": "./dist/boilerplates/erp-core/versions/1.0.0/index.js"
+      "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
+      "import": "./dist/kits/erp-core/versions/1.0.0/index.js"
     }
   },
   "files": [

@@ -9,12 +9,12 @@
     "rootDir": "./",
     "baseUrl": ".",
     "paths": {
-      "cullet/*": ["./boilerplates/*/versions/latest/index.ts"]
+      "cullet/*": ["./kits/*/versions/latest/index.ts"]
     },
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["cli/**/*.ts", "boilerplates/**/*.ts", "tsup.config.ts"],
+  "include": ["cli/**/*.ts", "kits/**/*.ts", "tsup.config.ts"],
   "exclude": ["dist", "node_modules"]
 }

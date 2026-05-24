@@ -1,8 +1,8 @@
 import { cp } from "node:fs/promises";
 import { defineConfig } from "tsup";
 
-async function syncBoilerplateSources(): Promise<void> {
-  await cp("boilerplates", "dist/boilerplates", { recursive: true });
+async function syncKitSources(): Promise<void> {
+  await cp("kits", "dist/kits", { recursive: true });
 }
 
 export default defineConfig({
@@ -10,7 +10,7 @@ export default defineConfig({
     "cli/index.ts",
     "cli/commands/*.ts",
     "cli/utils/*.ts",
-    "boilerplates/**/*.ts",
+    "kits/**/*.ts",
   ],
   dts: true,
   format: ["esm"],
@@ -21,6 +21,6 @@ export default defineConfig({
   outDir: "dist",
   sourcemap: true,
   onSuccess: async () => {
-    await syncBoilerplateSources();
+    await syncKitSources();
   },
 });
