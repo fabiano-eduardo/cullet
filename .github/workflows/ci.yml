@@ -55,22 +55,14 @@ jobs:
       - name: Build (required for e2e)
         run: npm run build
 
-      - name: Unit tests + coverage
-        run: npm run test:coverage
+      - name: Unit tests
+        run: npm run test
 
       - name: E2E smoke tests
         run: npm run test:e2e
 
-      - name: Upload coverage report
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 20
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage
-          if-no-files-found: ignore
-
   pack:
-    name: npm pack contents
+    name: Release dry run
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -83,11 +75,5 @@ jobs:
 
       - run: npm ci
 
-      - name: Build
-        run: npm run build
-
-      - name: npm pack --dry-run
-        run: npm pack --dry-run
-
-      - name: Verify expected files are in the tarball
-        run: node scripts/check-pack-contents.mjs
+      - name: Verify publishable tarball
+        run: npm run release:dry-run
