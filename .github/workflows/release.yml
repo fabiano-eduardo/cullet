@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # create GitHub Release
+  id-token: write   # OIDC token for npm provenance
+
+jobs:
+  release:
+    name: Publish to npm + GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Validate kits
+        run: npm run validate-kits
+
+      - name: Verify exports are in sync
+        run: npm run sync-exports:check
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate publishable tarball
+        run: npm run release:dry-run
+
+      - name: Publish to npm (with provenance)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: cullet v${{ steps.version.outputs.version }}
+          body: |
+            ## cullet v${{ steps.version.outputs.version }}
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full release notes.
+
+            ### Kits incluídos
+
+            | Kit | Versão | Descrição |
+            |-----|--------|-----------|
+            | `erp-core` | `1.0.0` | Clean-architecture core para domínios ERP |
+            | `dummy-api` | `1.0.0` | Kit de validação do pipeline de catalog |
+
+            ### Instalação
+
+            ```bash
+            npm install cullet
+            npx cullet doctor
+            npx cullet list
+            npx cullet fc erp-core@1.0.0
+            ```
+
+            ### Referências
+
+            - [Filosofia e critérios de curadoria](https://github.com/${{ github.repository }}/blob/main/PHILOSOPHY.md)
+            - [README — modos de consumo e exemplos](https://github.com/${{ github.repository }}#readme)
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

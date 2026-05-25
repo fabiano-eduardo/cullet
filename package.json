@@ -1,6 +1,6 @@
 {
   "name": "cullet",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Coleção de kits arquiteturais opinativos para TypeScript",
   "type": "module",
   "license": "MIT",
@@ -45,7 +45,8 @@
     "dist",
     "cli/index.js",
     "registry",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "sync-exports": "node ./scripts/sync-package-exports.mjs",
