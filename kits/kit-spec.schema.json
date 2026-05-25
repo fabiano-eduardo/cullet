@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cullet.dev/schemas/kit-spec.schema.json",
+  "title": "Cullet kit-spec",
+  "description": "Schema for a kit's meta.json. Versioned via schemaVersion.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "name",
+    "version",
+    "description",
+    "entryPoint",
+    "philosophy",
+    "docs"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["1"],
+      "description": "Version of this schema. Bump when breaking changes are made."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10
+    },
+    "entryPoint": {
+      "type": "string",
+      "pattern": "\\.ts$"
+    },
+    "philosophy": {
+      "type": "object",
+      "required": ["errorModel", "observability", "testStyle", "externalDeps"],
+      "additionalProperties": false,
+      "properties": {
+        "errorModel": {
+          "type": "string",
+          "enum": ["typed-result", "typed-exceptions", "mixed"]
+        },
+        "observability": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["log-port", "metric-port", "trace-port"]
+          },
+          "uniqueItems": true
+        },
+        "testStyle": {
+          "type": "string"
+        },
+        "externalDeps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "testDeps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    },
+    "docs": {
+      "type": "object",
+      "required": ["context", "readme"],
+      "additionalProperties": false,
+      "properties": {
+        "context": { "type": "string", "pattern": "\\.md$" },
+        "readme": { "type": "string", "pattern": "\\.md$" }
+      }
+    },
+    "lint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nodenextImports": { "enum": ["off", "warn", "error"] },
+        "noBareAny": { "enum": ["off", "warn", "error"] },
+        "noExternalImports": { "enum": ["off", "warn", "error"] },
+        "noUpwardImports": { "enum": ["off", "warn", "error"] }
+      }
+    },
+    "exports": { "type": "array", "items": { "type": "string" } },
+    "changelog": { "type": "array", "items": { "type": "string" } },
+    "deprecated": {
+      "description": "false when active. Object form announces deprecation: when, why, and which kit/version supersedes this one.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "required": ["since", "reason"],
+          "additionalProperties": false,
+          "properties": {
+            "since": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$",
+              "description": "Version of the kit at which this version became deprecated."
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "successor": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*\\/\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$",
+              "description": "Replacement kit reference in the form name/version (e.g., erp-core/2.0.0)."
+            }
+          }
+        }
+      ]
+    }
+  }
+}

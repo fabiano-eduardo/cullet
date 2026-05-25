@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint and registry drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Validate kits
+        run: npm run validate-kits
+
+      - name: Verify package.json exports are in sync with registry
+        run: npm run sync-exports:check
+
+  test:
+    name: Test (Node ${{ matrix.node }} on ${{ matrix.os }})
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build (required for e2e)
+        run: npm run build
+
+      - name: Unit tests + coverage
+        run: npm run test:coverage
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: ignore
+
+  pack:
+    name: npm pack contents
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: npm pack --dry-run
+        run: npm pack --dry-run
+
+      - name: Verify expected files are in the tarball
+        run: node scripts/check-pack-contents.mjs

@@ -1,8 +1,26 @@
 {
+  "schemaVersion": "1",
   "name": "erp-core",
   "version": "1.0.0",
-  "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
-  "entrypoint": "index.ts",
+  "description": "Core ERP com clean architecture, temporalidade, policies e rule sets.",
+  "entryPoint": "index.ts",
+  "philosophy": {
+    "errorModel": "mixed",
+    "observability": [],
+    "testStyle": "vitest-no-mocks-in-core",
+    "externalDeps": ["zod"],
+    "testDeps": ["vitest"]
+  },
+  "docs": {
+    "context": "KIT_CONTEXT.md",
+    "readme": "README.md"
+  },
+  "lint": {
+    "nodenextImports": "off",
+    "noBareAny": "warn",
+    "noExternalImports": "error",
+    "noUpwardImports": "error"
+  },
   "exports": [
     "Entity",
     "ValueObject",

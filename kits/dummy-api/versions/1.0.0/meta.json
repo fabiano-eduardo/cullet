@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1",
+  "name": "dummy-api",
+  "version": "1.0.0",
+  "description": "Kit dummy de API para validar o fluxo de criacao",
+  "entryPoint": "index.ts",
+  "philosophy": {
+    "errorModel": "mixed",
+    "observability": [],
+    "testStyle": "vitest-no-mocks-in-core",
+    "externalDeps": [],
+    "testDeps": ["vitest"]
+  },
+  "docs": {
+    "context": "KIT_CONTEXT.md",
+    "readme": "README.md"
+  },
+  "lint": {
+    "nodenextImports": "warn",
+    "noBareAny": "warn",
+    "noExternalImports": "error",
+    "noUpwardImports": "error"
+  },
+  "exports": [],
+  "changelog": [
+    "1.0.0 - Initial scaffold."
+  ],
+  "deprecated": false
+}

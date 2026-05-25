@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { ConditionNode } from './condition-types';
+import type { ConditionLeafNode, ConditionNode } from './condition-types';
 
 // ─── Shared v1 condition Zod schemas ─────────────────────────────────────────
 // Extracted from gate/v1 so both gate/v1 and compute/v1 can validate
@@ -19,14 +19,14 @@ const conditionOpSchema = z.enum([
 	'isNotNull',
 ]);
 
-export const conditionLeafNodeSchema = z
+export const conditionLeafNodeSchema: z.ZodType<ConditionLeafNode> = z
 	.object({
 		field: z.string().min(1),
 		op: conditionOpSchema,
 		value: z.unknown(),
 		allowNull: z.literal(true).optional(),
 	})
-	.strict();
+	.strict() as z.ZodType<ConditionLeafNode>;
 
 export const conditionNodeSchema: z.ZodType<ConditionNode> = z.lazy(() =>
 	z.union([

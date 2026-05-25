@@ -1,16 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
+    "experimentalDecorators": true,
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./",
-    "baseUrl": ".",
-    "paths": {
-      "cullet/*": ["./kits/*/versions/latest/index.ts"]
-    },
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true

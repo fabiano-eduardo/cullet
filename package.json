@@ -8,6 +8,14 @@
     "cullet": "./cli/index.js"
   },
   "exports": {
+    "./dummy-api": {
+      "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
+      "import": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+    },
+    "./dummy-api/1.0.0": {
+      "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
+      "import": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+    },
     "./erp-core": {
       "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
       "import": "./dist/kits/erp-core/versions/1.0.0/index.js"
@@ -25,21 +33,44 @@
   ],
   "scripts": {
     "sync-exports": "node ./scripts/sync-package-exports.mjs",
+    "sync-exports:check": "node ./scripts/sync-package-exports.mjs --check",
+    "validate-kits": "node ./scripts/validate-kit.mjs",
+    "new-kit": "node ./scripts/new-kit.mjs",
     "prebuild": "npm run sync-exports",
     "build": "tsup",
     "dev": "tsup --watch",
-    "cli": "npm run build && node ./cli/index.js"
+    "cli": "npm run build && node ./cli/index.js",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
     "commander": "^13.1.0",
     "fs-extra": "^11.3.0",
     "picocolors": "^1.1.1"
   },
+  "peerDependencies": {
+    "pino": ">=8.0.0",
+    "zod": "^3.22.0"
+  },
+  "peerDependenciesMeta": {
+    "pino": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^4.1.7",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.7",
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=18"

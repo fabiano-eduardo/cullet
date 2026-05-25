@@ -33,5 +33,9 @@ yarn-error.log*
 .temp/
 .cache/
 
+# Test artifacts
+coverage/
+*.tgz
+
 # Git
 .git/

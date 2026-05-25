@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1",
+  "name": "__KIT_NAME__",
+  "version": "1.0.0",
+  "description": "__KIT_DESCRIPTION__",
+  "entryPoint": "index.ts",
+  "philosophy": {
+    "errorModel": "mixed",
+    "observability": [],
+    "testStyle": "vitest-no-mocks-in-core",
+    "externalDeps": [],
+    "testDeps": ["vitest"]
+  },
+  "docs": {
+    "context": "KIT_CONTEXT.md",
+    "readme": "README.md"
+  },
+  "lint": {
+    "nodenextImports": "warn",
+    "noBareAny": "warn",
+    "noExternalImports": "error",
+    "noUpwardImports": "error"
+  },
+  "exports": [],
+  "changelog": [
+    "1.0.0 - Initial scaffold."
+  ],
+  "deprecated": false
+}
