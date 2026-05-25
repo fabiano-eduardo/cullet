@@ -1,8 +1,0 @@
-node_modules
-dist/**/*.map
-*.log
-tsconfig.json
-tsup.config.ts
-cli/**/*.ts
-kits/**/*.ts
-!cli/index.js
