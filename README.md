@@ -28,13 +28,13 @@ Ele aponta problemas comuns: `moduleResolution` incompatível, `"type": "module"
 
 O `cullet` tem dois modos de consumo. Eles **não são exclusivos**: você pode começar via import direto e migrar um kit específico para full-control quando precisar customizar.
 
-| Aspecto                    | **Import direto** (`cullet/<kit>`)                                          | **Full-control** (`npx cullet fc <kit>`)                                        |
-| -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Onde o código vive         | Em `node_modules/cullet/dist/kits/...`                                      | Copiado para `./cullet/<kit>@<versão>/` dentro do seu projeto                   |
-| Como atualiza              | `npm update cullet` traz versões novas                                      | Não atualiza sozinho — é seu fork local                                         |
-| Quando customizar          | Forks via composição em volta da API exportada                              | Você edita o kit livremente como código próprio                                 |
-| Como o TS resolve          | Subpath export `cullet/<kit>` no `package.json`                             | Alias `cullet/<kit>` em `tsconfig.json` apontando para `./cullet/<kit>@<v>/`    |
-| Dependências externas      | Declaradas como `peerDependencies` do `cullet`                              | **Você instala manualmente** — o `package.json` do `cullet` deixa de influenciar |
+| Aspecto               | **Import direto** (`cullet/<kit>`)              | **Full-control** (`npx cullet fc <kit>`)                                         |
+| --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------- |
+| Onde o código vive    | Em `node_modules/cullet/dist/kits/...`          | Copiado para `./cullet/<kit>@<versão>/` dentro do seu projeto                    |
+| Como atualiza         | `npm update cullet` traz versões novas          | Não atualiza sozinho — é seu fork local                                          |
+| Quando customizar     | Forks via composição em volta da API exportada  | Você edita o kit livremente como código próprio                                  |
+| Como o TS resolve     | Subpath export `cullet/<kit>` no `package.json` | Alias `cullet/<kit>` em `tsconfig.json` apontando para `./cullet/<kit>@<v>/`     |
+| Dependências externas | Declaradas como `peerDependencies` do `cullet`  | **Você instala manualmente** — o `package.json` do `cullet` deixa de influenciar |
 
 ### Exemplo lado a lado
 
@@ -143,6 +143,7 @@ if (decision.allowed) {
 ```
 
 > Quer pinar em uma versão exata? Use o subpath versionado:
+>
 > ```ts
 > import { Timeline } from "cullet/erp-core/1.0.0";
 > ```
@@ -284,3 +285,23 @@ npm run cli -- list
 ```
 
 O build gera `dist/` com bundles ESM, declarações `.d.ts` e os fontes dos kits replicados para suportar o modo `fc`.
+
+## Validação de release
+
+Antes de publicar, rode o dry-run completo do pacote:
+
+```bash
+npm run release:dry-run
+```
+
+Esse fluxo recompila o projeto, gera um tarball real com `npm pack` e valida o conteúdo publicado. A decisão de empacotamento é: `dist/kits/` vai para o npm, mas `*.spec.ts` e `*.test.ts` ficam fora do tarball.
+
+Para validar o pacote em um projeto sandbox real:
+
+```bash
+./scripts/smoke-test.sh
+# ou apontando para um tarball especifico:
+./scripts/smoke-test.sh ./cullet-<versao>.tgz
+```
+
+O script cria um diretório temporário, roda `npm init`, instala o tarball, compila um projeto TypeScript mínimo com `cullet/erp-core` e executa o resultado.
