@@ -1,7 +1,8 @@
 import { constants } from "node:fs";
 import { access, readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { kitDistDir, kitSrcDir } from "./paths.js";
 
 export interface RegistryEntry {
   versions: string[];
@@ -95,38 +96,15 @@ export function parseKitArg(rawValue: string): ParsedKitArg {
   return { name: value };
 }
 
-export async function findCulletPackageRoot(
-  fromMetaUrl: string,
-): Promise<string> {
-  let currentDir = dirname(fileURLToPath(fromMetaUrl));
-
-  while (true) {
-    const packageJsonPath = join(currentDir, "package.json");
-
-    try {
-      await access(packageJsonPath, constants.F_OK);
-      const packageJsonRaw = await readFile(packageJsonPath, "utf8");
-      const packageJson = JSON.parse(packageJsonRaw) as unknown;
-
-      if (isRecord(packageJson) && packageJson.name === "cullet") {
-        return currentDir;
-      }
-    } catch {
-      // Continue subindo a arvore de diretorios ate localizar o pacote.
-    }
-
-    const parentDir = dirname(currentDir);
-
-    if (parentDir === currentDir) {
-      throw new Error("Nao foi possivel localizar a raiz do pacote cullet.");
-    }
-
-    currentDir = parentDir;
-  }
+export function findCulletPackageRoot(fromMetaUrl: string): string {
+  // O CLI sempre roda a partir de dist/cli/index.js; a raiz do pacote
+  // esta dois niveis acima do diretorio do modulo atual.
+  const moduleDir = dirname(fileURLToPath(fromMetaUrl));
+  return resolve(moduleDir, "..", "..");
 }
 
 export async function loadRegistry(fromMetaUrl: string): Promise<Registry> {
-  const packageRoot = await findCulletPackageRoot(fromMetaUrl);
+  const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const registryPath = join(packageRoot, "registry", "index.json");
 
   try {
@@ -176,15 +154,7 @@ export async function resolveBuiltKitDir(
   name: string,
   version: string,
 ): Promise<string> {
-  const packageRoot = await findCulletPackageRoot(fromMetaUrl);
-  const kitDir = join(
-    packageRoot,
-    "dist",
-    "kits",
-    name,
-    "versions",
-    version,
-  );
+  const kitDir = kitDistDir(findCulletPackageRoot(fromMetaUrl), name, version);
 
   try {
     await access(kitDir, constants.F_OK);
@@ -193,5 +163,31 @@ export async function resolveBuiltKitDir(
     throw new Error(
       `O kit compilado \"${name}@${version}\" nao foi encontrado em ${kitDir}. Execute \"npm run build\" no pacote cullet antes de usar full-control.`,
     );
+  }
+}
+
+export async function resolveKitSourceDir(
+  fromMetaUrl: string,
+  name: string,
+  version: string,
+): Promise<string> {
+  const packageRoot = findCulletPackageRoot(fromMetaUrl);
+  const sourceDir = kitSrcDir(packageRoot, name, version);
+
+  try {
+    await access(sourceDir, constants.F_OK);
+    return sourceDir;
+  } catch {
+    // Fallback: pacotes publicados podem conter apenas dist/kits com o fonte copiado.
+    const distDir = kitDistDir(packageRoot, name, version);
+
+    try {
+      await access(distDir, constants.F_OK);
+      return distDir;
+    } catch {
+      throw new Error(
+        `O fonte do kit \"${name}@${version}\" nao foi encontrado em ${sourceDir} nem em ${distDir}.`,
+      );
+    }
   }
 }
