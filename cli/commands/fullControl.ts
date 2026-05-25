@@ -5,9 +5,13 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import pc from "picocolors";
 import {
+  kitFullControlAliasTarget,
+  kitFullControlDir,
+} from "../utils/paths.js";
+import {
   loadRegistry,
   parseKitArg,
-  resolveBuiltKitDir,
+  resolveKitSourceDir,
   resolveRegistryEntry,
   resolveVersion,
 } from "../utils/resolve.js";
@@ -43,15 +47,15 @@ export function createFullControlCommand(): Command {
       const registry = await loadRegistry(import.meta.url);
       const entry = resolveRegistryEntry(registry, parsed.name);
       const version = resolveVersion(parsed.name, entry, parsed.version);
-      const sourceDir = await resolveBuiltKitDir(
+      const sourceDir = await resolveKitSourceDir(
         import.meta.url,
         parsed.name,
         version,
       );
-      const destinationDir = join(
+      const destinationDir = kitFullControlDir(
         process.cwd(),
-        "cullet",
-        `${parsed.name}@${version}`,
+        parsed.name,
+        version,
       );
 
       if (await fs.pathExists(destinationDir)) {
@@ -73,7 +77,7 @@ export function createFullControlCommand(): Command {
       const aliasResult = await upsertPathAlias(
         process.cwd(),
         `cullet/${parsed.name}`,
-        `./cullet/${parsed.name}@${version}/index.ts`,
+        kitFullControlAliasTarget(parsed.name, version),
       );
 
       console.log(

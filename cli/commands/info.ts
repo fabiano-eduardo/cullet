@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import pc from "picocolors";
+import { kitImportSpecifier, kitNodeModulesEntry } from "../utils/paths.js";
 import {
   loadRegistry,
   parseKitArg,
@@ -8,46 +9,32 @@ import {
 } from "../utils/resolve.js";
 import { upsertPathAlias } from "../utils/tsconfig.js";
 
-interface InstallCommandOptions {
+interface InfoCommandOptions {
   alias?: boolean;
 }
 
-function buildImportSpecifier(
-  name: string,
-  version: string,
-  isLatest: boolean,
-  requestedExplicitVersion: boolean,
-): string {
-  if (!requestedExplicitVersion && isLatest) {
-    return `cullet/${name}`;
-  }
-
-  return `cullet/${name}/${version}`;
-}
-
-export function createInstallCommand(): Command {
-  return new Command("install")
+export function createInfoCommand(): Command {
+  return new Command("info")
+    .alias("install")
     .description(
       "Valida um kit do registry e mostra como importa-lo no codigo",
     )
-    .argument(
-      "<kit>",
-      "Nome do kit no formato nome ou nome@versao",
-    )
+    .argument("<kit>", "Nome do kit no formato nome ou nome@versao")
     .option(
       "--alias",
       "Adiciona ou atualiza um path alias no tsconfig.json do projeto atual",
     )
-    .action(async (kit: string, options: InstallCommandOptions) => {
+    .action(async (kit: string, options: InfoCommandOptions) => {
       const parsed = parseKitArg(kit);
       const registry = await loadRegistry(import.meta.url);
       const entry = resolveRegistryEntry(registry, parsed.name);
       const version = resolveVersion(parsed.name, entry, parsed.version);
-      const importSpecifier = buildImportSpecifier(
+      const isLatestImplicit =
+        parsed.version === undefined && version === entry.latest;
+      const importSpecifier = kitImportSpecifier(
         parsed.name,
         version,
-        version === entry.latest,
-        parsed.version !== undefined,
+        isLatestImplicit,
       );
 
       console.log(pc.green(`Kit validado: ${parsed.name}@${version}`));
@@ -66,7 +53,7 @@ export function createInstallCommand(): Command {
       const aliasResult = await upsertPathAlias(
         process.cwd(),
         `cullet/${parsed.name}`,
-        `./node_modules/cullet/dist/kits/${parsed.name}/versions/${version}/index.js`,
+        kitNodeModulesEntry(parsed.name, version),
       );
 
       if (aliasResult.status === "missing-tsconfig") {

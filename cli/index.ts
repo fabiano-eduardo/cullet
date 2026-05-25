@@ -1,23 +1,42 @@
 #!/usr/bin/env node
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { Command } from "commander";
 import pc from "picocolors";
 import { createFullControlCommand } from "./commands/fullControl.js";
-import { createInstallCommand } from "./commands/install.js";
+import { createInfoCommand } from "./commands/info.js";
 import { createListCommand } from "./commands/list.js";
+import { findCulletPackageRoot } from "./utils/resolve.js";
 
-const program = new Command();
+async function readPackageVersion(): Promise<string> {
+  const packageRoot = findCulletPackageRoot(import.meta.url);
+  const raw = await readFile(join(packageRoot, "package.json"), "utf8");
+  const parsed = JSON.parse(raw) as { version?: unknown };
 
-program
-  .name("cullet")
-  .description("Colecao de kits arquiteturais opinativos")
-  .version("0.1.0");
+  if (typeof parsed.version !== "string") {
+    throw new Error("package.json do cullet nao contem um campo version valido.");
+  }
 
-program.addCommand(createListCommand());
-program.addCommand(createInstallCommand());
-program.addCommand(createFullControlCommand());
+  return parsed.version;
+}
 
-program.parseAsync(process.argv).catch((error: unknown) => {
+async function main(): Promise<void> {
+  const program = new Command();
+
+  program
+    .name("cullet")
+    .description("Colecao de kits arquiteturais opinativos")
+    .version(await readPackageVersion());
+
+  program.addCommand(createListCommand());
+  program.addCommand(createInfoCommand());
+  program.addCommand(createFullControlCommand());
+
+  await program.parseAsync(process.argv);
+}
+
+main().catch((error: unknown) => {
   const message =
     error instanceof Error
       ? error.message
