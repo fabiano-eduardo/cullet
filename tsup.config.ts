@@ -1,6 +1,6 @@
 import { cp } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve, sep } from "node:path";
 import { defineConfig } from "tsup";
 
 interface RegistryEntry {
@@ -10,6 +10,8 @@ interface RegistryEntry {
 }
 
 type Registry = Record<string, RegistryEntry>;
+
+const kitsRoot = resolve("kits");
 
 function readRegistry(): Registry {
   const path = resolve("registry/index.json");
@@ -34,7 +36,21 @@ function discoverKitEntries(): string[] {
 }
 
 async function syncKitSources(): Promise<void> {
-  await cp("kits", "dist/kits", { recursive: true });
+  await cp(kitsRoot, "dist/kits", {
+    recursive: true,
+    filter: (source) => shouldCopyKitPath(source),
+  });
+}
+
+function shouldCopyKitPath(source: string): boolean {
+  const relativePath = relative(kitsRoot, resolve(source));
+
+  if (relativePath === "") return true;
+
+  const segments = relativePath.split(sep);
+  if (segments.includes("__tests__")) return false;
+
+  return !/\.(spec|test)\.ts$/.test(relativePath);
 }
 
 export default defineConfig({

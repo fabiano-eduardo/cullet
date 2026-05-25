@@ -4,6 +4,22 @@
   "description": "Coleção de kits arquiteturais opinativos para TypeScript",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabiano-eduardo/cullet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fabiano-eduardo/cullet/issues"
+  },
+  "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
+  "keywords": [
+    "typescript",
+    "architecture",
+    "clean-architecture",
+    "ddd",
+    "cli",
+    "starter-kit"
+  ],
   "bin": {
     "cullet": "./cli/index.js"
   },
@@ -44,7 +60,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "release:dry-run": "npm run build && npm pack && node ./scripts/check-pack-contents.mjs"
   },
   "dependencies": {
     "commander": "^13.1.0",
@@ -57,9 +74,6 @@
   },
   "peerDependenciesMeta": {
     "pino": {
-      "optional": true
-    },
-    "zod": {
       "optional": true
     }
   },
