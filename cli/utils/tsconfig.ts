@@ -20,11 +20,33 @@ export interface AliasUpdateResult {
   alias: string;
   target: string;
   tsconfigPath?: string;
+  /**
+   * baseUrl efetivo do tsconfig (depois do upsert).
+   * Quando o consumidor tem baseUrl !== "." os paths são resolvidos a partir
+   * desse diretório, então o alias para `./cullet/...` pode não apontar para
+   * o que o usuário espera. fc usa isso para alertar.
+   */
+  consumerBaseUrl?: string;
+  /** true quando o tsconfig do consumidor já tinha um baseUrl definido. */
+  baseUrlWasExplicit?: boolean;
 }
 
 interface LoadedTsConfig {
   path: string;
   config: TsConfigJson;
+}
+
+export interface TsconfigInspection {
+  tsconfigPath: string;
+  config: TsConfigJson;
+}
+
+export async function inspectTsconfig(
+  projectRoot: string,
+): Promise<TsconfigInspection | null> {
+  const loaded = await loadTsconfig(projectRoot);
+  if (loaded === null) return null;
+  return { tsconfigPath: loaded.path, config: loaded.config };
 }
 
 function isJsonObject(value: unknown): value is JsonObject {
@@ -211,10 +233,16 @@ function readStringArray(value: JsonValue | undefined): string[] | null {
   return [...value];
 }
 
+export interface UpsertPathAliasOptions {
+  /** Se true, calcula o resultado sem escrever no disco. */
+  dryRun?: boolean;
+}
+
 export async function upsertPathAlias(
   projectRoot: string,
   alias: string,
   target: string,
+  options: UpsertPathAliasOptions = {},
 ): Promise<AliasUpdateResult> {
   const loadedTsconfig = await loadTsconfig(projectRoot);
 
@@ -240,9 +268,13 @@ export async function upsertPathAlias(
     );
   }
 
+  const baseUrlWasExplicit = typeof compilerOptions.baseUrl === "string";
+
   if (compilerOptions.baseUrl === undefined) {
     compilerOptions.baseUrl = ".";
   }
+
+  const consumerBaseUrl = compilerOptions.baseUrl as string;
 
   const paths = ensureObject(compilerOptions, "paths");
   const hadAlias = Object.prototype.hasOwnProperty.call(paths, alias);
@@ -258,20 +290,27 @@ export async function upsertPathAlias(
       alias,
       target,
       tsconfigPath: loadedTsconfig.path,
+      consumerBaseUrl,
+      baseUrlWasExplicit,
     };
   }
 
   paths[alias] = [target];
-  await writeFile(
-    loadedTsconfig.path,
-    `${JSON.stringify(loadedTsconfig.config, null, 2)}\n`,
-    "utf8",
-  );
+
+  if (!options.dryRun) {
+    await writeFile(
+      loadedTsconfig.path,
+      `${JSON.stringify(loadedTsconfig.config, null, 2)}\n`,
+      "utf8",
+    );
+  }
 
   return {
     status: hadAlias ? "updated" : "created",
     alias,
     target,
     tsconfigPath: loadedTsconfig.path,
+    consumerBaseUrl,
+    baseUrlWasExplicit,
   };
 }

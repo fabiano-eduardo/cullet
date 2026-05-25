@@ -1,8 +1,8 @@
-import { constants } from "node:fs";
+import { constants, existsSync, readFileSync } from "node:fs";
 import { access, readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { fileURLToPath } from "node:url";
-import { kitDistDir, kitSrcDir } from "./paths.js";
+import { kitDistDir, kitSrcDir, KITS_DIR } from "./paths.js";
 
 export interface RegistryEntry {
   versions: string[];
@@ -97,10 +97,33 @@ export function parseKitArg(rawValue: string): ParsedKitArg {
 }
 
 export function findCulletPackageRoot(fromMetaUrl: string): string {
-  // O CLI sempre roda a partir de dist/cli/index.js; a raiz do pacote
-  // esta dois niveis acima do diretorio do modulo atual.
-  const moduleDir = dirname(fileURLToPath(fromMetaUrl));
-  return resolve(moduleDir, "..", "..");
+  // tsup com `splitting: true` move o corpo dos modulos para chunks na raiz de
+  // dist/, entao a profundidade do `import.meta.url` em runtime nao e fixa.
+  // Procura o package.json do proprio pacote `cullet` subindo a partir do modulo.
+  let dir = dirname(fileURLToPath(fromMetaUrl));
+  const filesystemRoot = parse(dir).root;
+
+  while (true) {
+    const candidate = join(dir, "package.json");
+
+    if (existsSync(candidate)) {
+      try {
+        const parsed = JSON.parse(readFileSync(candidate, "utf8")) as {
+          name?: unknown;
+        };
+        if (parsed.name === "cullet") return dir;
+      } catch {
+        // ignora e continua subindo
+      }
+    }
+
+    if (dir === filesystemRoot) break;
+    dir = dirname(dir);
+  }
+
+  throw new Error(
+    "Nao foi possivel localizar o package.json do cullet a partir do CLI.",
+  );
 }
 
 export async function loadRegistry(fromMetaUrl: string): Promise<Registry> {
@@ -164,6 +187,143 @@ export async function resolveBuiltKitDir(
       `O kit compilado \"${name}@${version}\" nao foi encontrado em ${kitDir}. Execute \"npm run build\" no pacote cullet antes de usar full-control.`,
     );
   }
+}
+
+export interface KitDeprecation {
+  since: string;
+  reason: string;
+  successor?: string;
+}
+
+function parseDeprecation(value: unknown): KitDeprecation | null {
+  if (!isRecord(value)) return null;
+  const since = value.since;
+  const reason = value.reason;
+  const successor = value.successor;
+  if (typeof since !== "string" || typeof reason !== "string") return null;
+  const result: KitDeprecation = { since, reason };
+  if (typeof successor === "string") result.successor = successor;
+  return result;
+}
+
+export async function loadKitDeprecation(
+  fromMetaUrl: string,
+  name: string,
+  version: string,
+): Promise<KitDeprecation | null> {
+  const packageRoot = findCulletPackageRoot(fromMetaUrl);
+  const metaCandidates = [
+    join(packageRoot, KITS_DIR, name, "versions", version, "meta.json"),
+    join(
+      packageRoot,
+      "dist",
+      "kits",
+      name,
+      "versions",
+      version,
+      "meta.json",
+    ),
+  ];
+
+  for (const candidate of metaCandidates) {
+    try {
+      const raw = await readFile(candidate, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (!isRecord(parsed)) continue;
+      return parseDeprecation(parsed.deprecated);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null;
+}
+
+export interface KitMeta {
+  schemaVersion?: string;
+  name?: string;
+  version?: string;
+  description?: string;
+  philosophy?: {
+    externalDeps?: string[];
+    testDeps?: string[];
+  };
+}
+
+async function readKitMeta(metaPath: string): Promise<KitMeta | null> {
+  try {
+    const raw = await readFile(metaPath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isRecord(parsed)) return null;
+    const philosophy = isRecord(parsed.philosophy) ? parsed.philosophy : {};
+    const externalDeps = Array.isArray(philosophy.externalDeps)
+      ? philosophy.externalDeps.filter(
+          (entry): entry is string => typeof entry === "string",
+        )
+      : undefined;
+    const testDeps = Array.isArray(philosophy.testDeps)
+      ? philosophy.testDeps.filter(
+          (entry): entry is string => typeof entry === "string",
+        )
+      : undefined;
+
+    const meta: KitMeta = {};
+    if (typeof parsed.schemaVersion === "string")
+      meta.schemaVersion = parsed.schemaVersion;
+    if (typeof parsed.name === "string") meta.name = parsed.name;
+    if (typeof parsed.version === "string") meta.version = parsed.version;
+    if (typeof parsed.description === "string")
+      meta.description = parsed.description;
+    if (externalDeps !== undefined || testDeps !== undefined) {
+      meta.philosophy = {};
+      if (externalDeps !== undefined) meta.philosophy.externalDeps = externalDeps;
+      if (testDeps !== undefined) meta.philosophy.testDeps = testDeps;
+    }
+    return meta;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadKitMeta(
+  fromMetaUrl: string,
+  name: string,
+  version: string,
+): Promise<KitMeta | null> {
+  const packageRoot = findCulletPackageRoot(fromMetaUrl);
+  const candidates = [
+    join(packageRoot, KITS_DIR, name, "versions", version, "meta.json"),
+    join(packageRoot, "dist", "kits", name, "versions", version, "meta.json"),
+  ];
+
+  for (const candidate of candidates) {
+    const meta = await readKitMeta(candidate);
+    if (meta !== null) return meta;
+  }
+
+  return null;
+}
+
+export async function loadKitContext(
+  fromMetaUrl: string,
+  name: string,
+  version: string,
+): Promise<string | null> {
+  const packageRoot = findCulletPackageRoot(fromMetaUrl);
+  const candidates = [
+    join(packageRoot, KITS_DIR, name, "versions", version, "KIT_CONTEXT.md"),
+    join(packageRoot, "dist", "kits", name, "versions", version, "KIT_CONTEXT.md"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return await readFile(candidate, "utf8");
+    } catch {
+      // try next
+    }
+  }
+
+  return null;
 }
 
 export async function resolveKitSourceDir(

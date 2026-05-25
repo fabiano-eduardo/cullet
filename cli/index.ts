@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Command } from "commander";
 import pc from "picocolors";
+import { createDoctorCommand } from "./commands/doctor.js";
 import { createFullControlCommand } from "./commands/fullControl.js";
 import { createInfoCommand } from "./commands/info.js";
 import { createListCommand } from "./commands/list.js";
@@ -32,6 +33,7 @@ async function main(): Promise<void> {
   program.addCommand(createListCommand());
   program.addCommand(createInfoCommand());
   program.addCommand(createFullControlCommand());
+  program.addCommand(createDoctorCommand());
 
   await program.parseAsync(process.argv);
 }

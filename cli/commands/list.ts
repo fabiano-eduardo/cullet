@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import pc from "picocolors";
-import { loadRegistry } from "../utils/resolve.js";
+import { loadKitDeprecation, loadRegistry } from "../utils/resolve.js";
 
 export function createListCommand(): Command {
   return new Command("list")
@@ -22,9 +22,29 @@ export function createListCommand(): Command {
 
       for (const name of names) {
         const entry = registry[name];
-        console.log(`${pc.green(name)} ${pc.dim(`(latest: ${entry.latest})`)}`);
+        const deprecation = await loadKitDeprecation(
+          import.meta.url,
+          name,
+          entry.latest,
+        );
+        const marker = deprecation ? pc.yellow(" [deprecated]") : "";
+
+        console.log(
+          `${pc.green(name)} ${pc.dim(`(latest: ${entry.latest})`)}${marker}`,
+        );
         console.log(`  ${entry.description}`);
         console.log(`  versoes: ${pc.bold(entry.versions.join(", "))}`);
+
+        if (deprecation) {
+          console.log(
+            pc.yellow(
+              `  deprecated desde ${deprecation.since}: ${deprecation.reason}`,
+            ),
+          );
+          if (deprecation.successor) {
+            console.log(pc.yellow(`  sucessor: ${deprecation.successor}`));
+          }
+        }
       }
     });
 }

@@ -1,20 +1,49 @@
 # cullet
 
-`cullet` e uma colecao de kits arquiteturais opinativos para TypeScript, publicada como pacote npm. Cada kit entrega uma arquitetura completa e curada para um tipo especifico de problema, com decisoes ja tomadas sobre gestao de erros, observabilidade, testes, resiliencia, seguranca e manutenibilidade. Voce instala o pacote, importa o kit que precisa ou copia a arquitetura para dentro da sua aplicacao quando quiser controle total.
+`cullet` é uma coleção de kits arquiteturais opinativos para TypeScript, publicada como pacote npm. Cada kit entrega uma arquitetura completa e curada para um tipo específico de problema, com decisões já tomadas sobre gestão de erros, observabilidade, testes, resiliência, segurança e manutenibilidade.
 
-O nome vem de "bala de cobre", uma piada com a frase "nao existe bala de prata". Talvez nao exista bala de prata, mas pode existir uma bala de cobre: nao a solucao perfeita universal, mas a arquitetura certa para o problema certo. Cullet nao e framework, nao e biblioteca, nao e gerador de codigo: e uma curadoria de arquiteturas prontas para quem nao quer comecar do zero, mas quer controle total desde o primeiro dia.
+O nome vem de "bala de cobre", uma piada com a frase "não existe bala de prata". Talvez não exista bala de prata, mas pode existir uma bala de cobre: não a solução perfeita universal, mas a arquitetura certa para o problema certo. `cullet` não é framework, não é biblioteca, não é gerador de código — é uma curadoria de arquiteturas prontas para quem não quer começar do zero, mas quer controle total desde o primeiro dia.
 
-## Instalacao
+A filosofia completa (modelo de erros, observabilidade, testes, resiliência, segurança, manutenibilidade) vive em [`PHILOSOPHY.md`](./PHILOSOPHY.md). As regras de versionamento em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
+
+---
+
+## Instalação
 
 ```bash
 npm install cullet
 ```
 
-## Uso via import direto
+Antes de importar qualquer kit, rode o doctor para validar o tsconfig e o package.json do seu projeto:
 
-O modo mais simples e consumir o kit como modulo versionado do proprio pacote.
+```bash
+npx cullet doctor
+```
+
+Ele aponta problemas comuns: `moduleResolution` incompatível, `"type": "module"` ausente, `paths` sem `baseUrl`, TypeScript abaixo da versão mínima testada.
+
+---
+
+## Os dois modos, lado a lado
+
+O `cullet` tem dois modos de consumo. Eles **não são exclusivos**: você pode começar via import direto e migrar um kit específico para full-control quando precisar customizar.
+
+| Aspecto                    | **Import direto** (`cullet/<kit>`)                                          | **Full-control** (`npx cullet fc <kit>`)                                        |
+| -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Onde o código vive         | Em `node_modules/cullet/dist/kits/...`                                      | Copiado para `./cullet/<kit>@<versão>/` dentro do seu projeto                   |
+| Como atualiza              | `npm update cullet` traz versões novas                                      | Não atualiza sozinho — é seu fork local                                         |
+| Quando customizar          | Forks via composição em volta da API exportada                              | Você edita o kit livremente como código próprio                                 |
+| Como o TS resolve          | Subpath export `cullet/<kit>` no `package.json`                             | Alias `cullet/<kit>` em `tsconfig.json` apontando para `./cullet/<kit>@<v>/`    |
+| Dependências externas      | Declaradas como `peerDependencies` do `cullet`                              | **Você instala manualmente** — o `package.json` do `cullet` deixa de influenciar |
+
+### Exemplo lado a lado
+
+O bloco abaixo é o mesmo código sob os dois modos. A única diferença está no import.
+
+**Import direto** — instalou, importou, usou:
 
 ```ts
+// modo: import direto
 import {
   Entity,
   RuleSet,
@@ -24,23 +53,36 @@ import {
   deny,
   type Policy,
 } from "cullet/erp-core";
+```
 
+**Full-control** — depois de `npx cullet fc erp-core@1.0.0`:
+
+```ts
+// modo: full-control (alias cullet/erp-core -> ./cullet/erp-core@1.0.0/index.ts)
+import {
+  Entity,
+  RuleSet,
+  Timeline,
+  ValueObject,
+  allow,
+  deny,
+  type Policy,
+} from "cullet/erp-core";
+```
+
+O código de aplicação é idêntico:
+
+```ts
 const customerCodeRules = new RuleSet<string>("CustomerCodeRules", [
   {
     name: "required",
-    validate: (value) => {
-      return value.trim().length > 0
-        ? null
-        : "Codigo do cliente e obrigatorio.";
-    },
+    validate: (value) =>
+      value.trim().length > 0 ? null : "Código do cliente é obrigatório.",
   },
   {
     name: "prefix",
-    validate: (value) => {
-      return value.startsWith("CUS-")
-        ? null
-        : "Codigo precisa comecar com CUS-.";
-    },
+    validate: (value) =>
+      value.startsWith("CUS-") ? null : "Código precisa começar com CUS-.",
   },
 ]);
 
@@ -81,11 +123,10 @@ class Customer extends Entity<string, CustomerProps> {
 
 const canActivateCustomer: Policy<Customer> = {
   name: "can-activate-customer",
-  evaluate: (customer) => {
-    return customer.toJSON().status === "draft"
+  evaluate: (customer) =>
+    customer.toJSON().status === "draft"
       ? allow()
-      : deny("Somente clientes em draft podem ser ativados.");
-  },
+      : deny("Somente clientes em draft podem ser ativados."),
 };
 
 const statusTimeline = new Timeline<CustomerProps["status"]>([
@@ -101,89 +142,119 @@ if (decision.allowed) {
 }
 ```
 
-Se voce quiser travar a dependencia em uma versao especifica do kit, importe pelo subpath versionado:
+> Quer pinar em uma versão exata? Use o subpath versionado:
+> ```ts
+> import { Timeline } from "cullet/erp-core/1.0.0";
+> ```
 
-```ts
-import { Timeline } from "cullet/erp-core/1.0.0";
-```
+---
 
 ## CLI
 
-Depois de instalar `cullet`, o binario `cullet` fica disponivel no projeto. Em geral, o fluxo mais pratico e usar `npx`.
+Depois de instalar `cullet`, o binário fica disponível no projeto. Em geral, o fluxo mais prático é via `npx`.
 
-### Listar kits
+### `cullet list`
 
 ```bash
 npx cullet list
 ```
 
-Mostra os kits registrados, suas versoes e a descricao de cada um.
+Lista os kits do registry, suas versões, descrições e deprecações.
 
-### Preparar uso por import
-
-```bash
-npx cullet install erp-core
-```
-
-Ou para travar em uma versao exata:
+### `cullet info <kit>`
 
 ```bash
-npx cullet install erp-core@1.0.0
+npx cullet info erp-core
+npx cullet info erp-core@1.0.0
+npx cullet info erp-core --full   # KIT_CONTEXT.md integral, sem resumir
+npx cullet info erp-core --alias  # cria alias cullet/erp-core no tsconfig
 ```
 
-O comando valida o registry e mostra como importar o kit. Se voce quiser adicionar um alias local no `tsconfig.json`, use a flag `--alias`:
+Valida o kit no registry, mostra como importar, lista as dependências externas declaradas no `meta.json` e exibe um resumo do `KIT_CONTEXT.md` — a janela direta para decidir se o kit cabe no seu projeto.
 
-```bash
-npx cullet install erp-core@1.0.0 --alias
-```
-
-### Full-control
+### `cullet fc <kit>`
 
 ```bash
 npx cullet fc erp-core
+npx cullet fc erp-core@1.0.0
+npx cullet fc erp-core@1.0.0 --dry-run
 ```
 
-Ou escolhendo uma versao explicita:
+Copia o kit para `./cullet/<nome>@<versão>/` e atualiza o alias `cullet/<nome>` no `tsconfig.json`. Avisa se o seu `baseUrl` não é `"."` (porque o `paths` é resolvido relativo a `baseUrl`) e lista as `externalDeps` do `meta.json` que você precisa instalar manualmente — no full-control, as `peerDependencies` do `cullet` deixam de influenciar: o Node passa a resolver imports pelo `node_modules` do seu projeto.
+
+Com `--dry-run`, o CLI mostra o destino, uma amostra dos arquivos que seriam copiados e o alias resultante, sem escrever nada.
+
+Se o destino já existir e você estiver em modo real, o CLI pede confirmação antes de sobrescrever.
+
+### `cullet doctor`
 
 ```bash
-npx cullet fc erp-core@1.0.0
+npx cullet doctor
 ```
 
-O modo `full-control` copia o kit compilado para dentro do seu projeto em `./cullet/nome@versao/`, atualiza o alias `cullet/nome` no `tsconfig.json` e deixa o codigo local para voce editar como quiser.
+Audita o projeto consumidor procurando configurações incompatíveis com o `cullet`:
 
-Se o diretorio de destino ja existir, o CLI pergunta antes de sobrescrever.
+- `tsconfig.json` com `moduleResolution` que não respeita os `exports` do pacote (`node`, `node10`, `classic`).
+- `package.json` sem `"type": "module"` (os kits são publicados como ESM).
+- `paths` configurado mas `baseUrl` ausente.
+- TypeScript abaixo do mínimo testado (5.0).
+
+Retorna exit code `1` quando há erros — útil para colocar em CI.
+
+---
 
 ## Quando usar full-control
 
-Use o modo `full-control` quando:
+Use o modo `fc` quando:
 
-- voce precisa customizar o kit alem do que um import direto permite
-- voce quer versionar a copia junto com a sua aplicacao
-- voce pretende adaptar a arquitetura a regras muito especificas do projeto
-- voce quer inspecionar, debugar ou evoluir o kit localmente
+- precisa customizar o kit além do que um import direto permite
+- quer versionar a cópia junto com a aplicação
+- pretende adaptar a arquitetura a regras muito específicas do projeto
+- quer inspecionar, debugar ou evoluir o kit localmente
 
-Para consumo padrao, o import direto costuma ser suficiente. Para forks de verdade, prefira `full-control`.
+Para consumo padrão, o import direto basta. Para forks de verdade, prefira `fc`.
 
-## Como as versoes funcionam
+---
 
-Cada kit fica organizado em `kits/<nome>/versions/<versao>/`.
+## Como as versões funcionam
 
-- `registry/index.json` registra quais versoes existem e qual e a latest
-- `cullet/<nome>` sempre aponta para a versao latest exportada pelo pacote
-- `cullet/<nome>/<versao>` fixa o consumo em uma versao exata
-- `cullet fc <nome>@<versao>` copia exatamente aquela versao para dentro do projeto consumidor
+Cada kit fica organizado em `kits/<nome>/versions/<versão>/`.
+
+- `registry/index.json` registra quais versões existem e qual é a `latest`.
+- `cullet/<nome>` sempre aponta para a `latest` exportada pelo pacote.
+- `cullet/<nome>/<versão>` fixa o consumo em uma versão exata.
+- `cullet fc <nome>@<versão>` copia exatamente aquela versão para dentro do projeto consumidor.
+
+Regras completas em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
+
+---
 
 ## Kits atuais
 
-### erp-core
+- [`erp-core`](./kits/erp-core/versions/1.0.0/README.md) — núcleo de ERP com clean architecture, temporalidade, policies e rule sets.
+- [`dummy-api`](./kits/dummy-api/versions/1.0.0/README.md) — kit dummy de validação do fluxo de criação (sandbox do catálogo).
 
-Descricao: core ERP com clean architecture, temporalidade, policies e rule sets.
-
-Nesta versao inicial do pacote, o `erp-core` existe como superficie versionada e tipada para integracao do `cullet`. O aprofundamento do kit continua evoluindo separadamente.
+---
 
 ## Como contribuir com novos kits
 
-Todo kit novo deve seguir a mesma convencao estrutural:
+Para criar um kit novo, use o template embutido:
+
+```bash
+npm run new-kit -- <nome-do-kit>
+# opcional:
+npm run new-kit -- <nome-do-kit> --description "Descrição curta do kit"
+```
+
+O script copia `templates/kit/` para `kits/<nome>/versions/1.0.0/`, faz substituição de placeholders e atualiza `registry/index.json`. Depois disso:
+
+1. Refinar `meta.json` (philosophy, exports).
+2. Preencher `KIT_CONTEXT.md` com o sumário prompt-friendly real.
+3. Atualizar `README.md` seguindo o template (**o que entrega**, **como começa**, **decisões tomadas**, **como evoluir**).
+4. Implementar as camadas em `core/`.
+5. Rodar `npm run validate-kits` e `npm run build`.
+
+Estrutura resultante:
 
 ```text
 kits/
@@ -192,19 +263,17 @@ kits/
       1.0.0/
         index.ts
         meta.json
+        README.md
+        KIT_CONTEXT.md
         core/
-          ...
-      latest/
-        index.ts
+          domain/
+          application/ports/
+          errors/
+          exceptions/
+          result/
 ```
 
-Checklist esperado para uma contribuicao:
-
-- adicionar a nova pasta em `kits/<nome>/versions/<versao>/`
-- criar `meta.json` com nome, versao, entrypoint, exports, changelog e deprecated
-- atualizar `registry/index.json` com a nova versao e o ponteiro `latest`
-- garantir que o `index.ts` exporta a superficie publica do kit
-- validar o build do pacote e o funcionamento do CLI
+---
 
 ## Desenvolvimento local
 
@@ -214,4 +283,4 @@ npm run build
 npm run cli -- list
 ```
 
-O build gera `dist/` com os bundles ESM, as declaracoes `.d.ts` e tambem replica os fontes dos kits para suportar o modo `full-control`.
+O build gera `dist/` com bundles ESM, declarações `.d.ts` e os fontes dos kits replicados para suportar o modo `fc`.
