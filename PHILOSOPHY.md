@@ -2,6 +2,8 @@
 
 Este documento existe para tornar a "filosofia comum" do `cullet` um **artefato verificável**, não um valor declarado em README. Cada kit publicado neste repositório precisa aderir às regras abaixo. Quando um kit divergir, a divergência deve ser explícita no `KIT_CONTEXT.md` do próprio kit, com justificativa.
 
+Checklist operacional, buckets A/B/C e revisão humana obrigatória vivem em `CONTRIBUTING-KIT.md`.
+
 Esta filosofia é o critério de curadoria. Se um kit não a respeita, não é cullet.
 
 ---

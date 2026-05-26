@@ -85,7 +85,18 @@
         "nodenextImports": { "enum": ["off", "warn", "error"] },
         "noBareAny": { "enum": ["off", "warn", "error"] },
         "noExternalImports": { "enum": ["off", "warn", "error"] },
-        "noUpwardImports": { "enum": ["off", "warn", "error"] }
+        "noUpwardImports": { "enum": ["off", "warn", "error"] },
+        "applicationReturnsResult": { "enum": ["off", "warn", "error"] },
+        "architectureLayers": { "enum": ["off", "warn", "error"] },
+        "portsArePure": { "enum": ["off", "warn", "error"] },
+        "observabilityPorts": { "enum": ["off", "warn", "error"] },
+        "testConventions": { "enum": ["off", "warn", "error"] },
+        "noMocksInCoreTests": { "enum": ["off", "warn", "error"] },
+        "kitContext": { "enum": ["off", "warn", "error"] },
+        "requiredCoreTests": { "enum": ["off", "warn", "error"] },
+        "folderDepth": { "enum": ["off", "warn", "error"] },
+        "fileSize": { "enum": ["off", "warn", "error"] },
+        "noObservabilityRuntimeDeps": { "enum": ["off", "warn", "error"] }
       }
     },
     "exports": { "type": "array", "items": { "type": "string" } },

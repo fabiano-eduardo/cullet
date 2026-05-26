@@ -6,6 +6,8 @@ O nome vem de "bala de cobre", uma piada com a frase "não existe bala de prata"
 
 A filosofia completa (modelo de erros, observabilidade, testes, resiliência, segurança, manutenibilidade) vive em [`PHILOSOPHY.md`](./PHILOSOPHY.md). As regras de versionamento em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
 
+A documentação navegável vive em [`docs/`](./docs) e é publicada no GitHub Pages do projeto. Para trabalhar nela localmente, instale as dependências em `docs/` e rode `npm run docs:dev`.
+
 ---
 
 ## Instalação
@@ -239,6 +241,8 @@ Regras completas em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
 
 ## Como contribuir com novos kits
 
+O guia operacional completo vive em [`kits/AUTHORING.md`](./kits/AUTHORING.md). O resumo abaixo cobre só o bootstrap do scaffold.
+
 Para criar um kit novo, use o template embutido:
 
 ```bash
@@ -282,11 +286,20 @@ kits/
 npm install
 npm run build
 npm run cli -- list
+npm run docs:build
 ```
 
 O build gera `dist/` com bundles ESM, declarações `.d.ts` e os fontes dos kits replicados para suportar o modo `fc`.
 
+O site de docs é isolado do pacote npm. Na primeira vez, rode também `npm --prefix docs install`.
+
 ## Validação de release
+
+O release do pacote agora é automatizado via `changesets`:
+
+1. No PR, adicione um changeset com `npm run changeset`.
+2. O merge em `main` cria ou atualiza o release PR com `package.json` e `CHANGELOG.md`.
+3. O merge do release PR publica no npm e cria a release/tag no GitHub.
 
 Antes de publicar, rode o dry-run completo do pacote:
 
