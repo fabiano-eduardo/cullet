@@ -1,10 +1,11 @@
-import { UseCase } from '../use-case';
-import { version } from '../../versioning/version';
+import { UseCase } from "../use-case";
+import { version } from "../../versioning/version";
+import type { Result } from "../../result/result";
 
-import { RequestedBy } from './requested-by';
+import { RequestedBy } from "./requested-by";
 
 interface CommandInput {
-	readonly requestedBy: RequestedBy;
+  readonly requestedBy: RequestedBy;
 }
 
 /**
@@ -17,11 +18,11 @@ interface CommandInput {
  * The Command/Query distinction is semantic: the type declares the intent
  * before any implementation exists, guiding code review and API contracts.
  */
-@version('1.0')
-abstract class Command<Input extends CommandInput, Output> extends UseCase<
-	Input,
-	Output
-> {}
+@version("1.0")
+abstract class Command<
+  Input extends CommandInput,
+  Output extends Result<unknown, unknown> = Result<void, never>,
+> extends UseCase<Input, Output> {}
 
 export type { CommandInput };
 export { Command };
