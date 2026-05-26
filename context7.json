@@ -1,0 +1,15 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "cullet",
+  "description": "Opinionated catalog of architectural TypeScript kits. Supports direct import and full-control copy via CLI.",
+  "folders": ["kits", "cli"],
+  "excludeFolders": ["tmp", "coverage", "dist", "node_modules", "tests/fixtures"],
+  "excludeFiles": ["CLAUDE.md"],
+  "rules": [
+    "Use 'cullet fc <kit>@<version>' to copy kit source into the project",
+    "Use 'cullet list' to see available kits",
+    "Use 'cullet inspect <kit>@<version>' to view kit details before copying",
+    "Kits follow semantic versioning under kits/<name>/versions/<version>/",
+    "ESM-only package, requires Node >= 18 and zod as peer dependency"
+  ]
+}

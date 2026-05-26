@@ -7,6 +7,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
@@ -26,10 +27,30 @@ const DEFAULT_LINT = {
   noBareAny: "error",
   noExternalImports: "error",
   noUpwardImports: "error",
+  applicationReturnsResult: "error",
+  architectureLayers: "error",
+  portsArePure: "error",
+  observabilityPorts: "error",
+  testConventions: "error",
+  noMocksInCoreTests: "error",
+  kitContext: "warn",
+  requiredCoreTests: "error",
+  folderDepth: "error",
+  fileSize: "warn",
+  noObservabilityRuntimeDeps: "error",
 };
 
+const OBSERVABILITY_RUNTIME_ROOTS = new Set(["pino", "winston", "bunyan"]);
+const OBSERVABILITY_RUNTIME_PREFIXES = ["@opentelemetry/"];
+const MOCK_CALL_RE = /\b(?:vi|jest)\.mock\s*\(/;
+
 async function exists(p) {
-  try { await stat(p); return true; } catch { return false; }
+  try {
+    await stat(p);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function findKitMetas() {
@@ -78,27 +99,41 @@ function validateAgainstSchema(data, schema, path = "$") {
       return errors;
     }
     for (const req of schema.required ?? []) {
-      if (!(req in data)) errors.push(`${path}: missing required field "${req}"`);
+      if (!(req in data))
+        errors.push(`${path}: missing required field "${req}"`);
     }
     for (const [k, v] of Object.entries(data)) {
       if (schema.properties && k in schema.properties) {
-        errors.push(...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`));
+        errors.push(
+          ...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`),
+        );
       } else if (schema.additionalProperties === false) {
         errors.push(`${path}: unknown field "${k}"`);
       }
     }
   } else if (type === "array") {
-    if (!Array.isArray(data)) { errors.push(`${path}: expected array`); return errors; }
-    if (schema.uniqueItems && new Set(data.map((x) => JSON.stringify(x))).size !== data.length) {
+    if (!Array.isArray(data)) {
+      errors.push(`${path}: expected array`);
+      return errors;
+    }
+    if (
+      schema.uniqueItems &&
+      new Set(data.map((x) => JSON.stringify(x))).size !== data.length
+    ) {
       errors.push(`${path}: items must be unique`);
     }
     if (schema.items) {
       data.forEach((item, i) => {
-        errors.push(...validateAgainstSchema(item, schema.items, `${path}[${i}]`));
+        errors.push(
+          ...validateAgainstSchema(item, schema.items, `${path}[${i}]`),
+        );
       });
     }
   } else if (type === "string") {
-    if (typeof data !== "string") { errors.push(`${path}: expected string`); return errors; }
+    if (typeof data !== "string") {
+      errors.push(`${path}: expected string`);
+      return errors;
+    }
     if (schema.minLength != null && data.length < schema.minLength) {
       errors.push(`${path}: string shorter than minLength ${schema.minLength}`);
     }
@@ -130,14 +165,64 @@ async function walkTs(dir, acc = []) {
   return acc;
 }
 
+async function walkFiles(dir, acc = []) {
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) await walkFiles(p, acc);
+    else if (e.isFile()) acc.push(p);
+  }
+  return acc;
+}
+
 // --- Import extraction ---
 
-const IMPORT_RE = /(?:^|\n)\s*(?:import\b[^;]*?from|export\b[^;]*?from|import\()\s*['"]([^'"]+)['"]/g;
+function parseTsSource(file, src) {
+  return ts.createSourceFile(
+    file,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+}
 
-function extractImports(src) {
+function visit(node, cb) {
+  cb(node);
+  ts.forEachChild(node, (child) => visit(child, cb));
+}
+
+function extractImports(sourceFile) {
   const out = [];
-  let m;
-  while ((m = IMPORT_RE.exec(src)) !== null) out.push(m[1]);
+
+  visit(sourceFile, (node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      out.push({ spec: node.moduleSpecifier.text, node, kind: "import" });
+      return;
+    }
+
+    if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      out.push({ spec: node.moduleSpecifier.text, node, kind: "export" });
+      return;
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      out.push({ spec: node.arguments[0].text, node, kind: "dynamic-import" });
+    }
+  });
+
   return out;
 }
 
@@ -149,7 +234,10 @@ function stripCommentsAndStrings(src) {
   // Replace line comments (preserve newlines)
   s = s.replace(/\/\/[^\n]*/g, (m) => " ".repeat(m.length));
   // Replace string literals (single, double, backtick) — keep length so line numbers stay
-  s = s.replace(/(['"`])(?:\\.|(?!\1)[^\\])*\1/g, (m) => m[0] + " ".repeat(m.length - 2) + m[0]);
+  s = s.replace(
+    /(['"`])(?:\\.|(?!\1)[^\\])*\1/g,
+    (m) => m[0] + " ".repeat(m.length - 2) + m[0],
+  );
   return s;
 }
 
@@ -162,7 +250,10 @@ function findBareAny(src) {
     const upto = src.slice(0, m.index);
     const line = upto.split("\n").length;
     const lineEnd = src.indexOf("\n", m.index);
-    const lineSrc = src.slice(upto.lastIndexOf("\n") + 1, lineEnd === -1 ? src.length : lineEnd);
+    const lineSrc = src.slice(
+      upto.lastIndexOf("\n") + 1,
+      lineEnd === -1 ? src.length : lineEnd,
+    );
     // Justification: trailing "// any-ok: <reason>" on same line
     if (/\/\/\s*any-ok:/.test(lineSrc)) continue;
     hits.push({ line, snippet: lineSrc.trim() });
@@ -177,11 +268,18 @@ function level(lintCfg, rule) {
 }
 
 function isRelative(spec) {
-  return spec.startsWith("./") || spec.startsWith("../") || spec === "." || spec === "..";
+  return (
+    spec.startsWith("./") ||
+    spec.startsWith("../") ||
+    spec === "." ||
+    spec === ".."
+  );
 }
 
 function isBare(spec) {
-  return !isRelative(spec) && !spec.startsWith("/") && !spec.startsWith("node:");
+  return (
+    !isRelative(spec) && !spec.startsWith("/") && !spec.startsWith("node:")
+  );
 }
 
 function bareRoot(spec) {
@@ -194,6 +292,243 @@ function resolveRelative(fromFile, spec) {
   return resolve(dirname(fromFile), spec);
 }
 
+function pushFinding(findings, severity, msg, file) {
+  if (severity === "off") return;
+  findings.push({ severity, msg, file });
+}
+
+function splitRelative(relPath) {
+  return relPath.split("/").filter(Boolean);
+}
+
+function getCoreLayerFromPath(kitDir, filePath) {
+  const rel = relative(kitDir, filePath);
+  const parts = splitRelative(rel);
+  if (parts[0] !== "core") return null;
+  if (parts[1] === "application" && parts[2] === "ports") return "ports";
+  return parts[1] ?? null;
+}
+
+function isSpecFile(file) {
+  return /\.(spec|test)\.ts$/.test(file);
+}
+
+function getCallName(node) {
+  if (ts.isIdentifier(node.expression)) return node.expression.text;
+  if (ts.isPropertyAccessExpression(node.expression))
+    return node.expression.name.text;
+  return null;
+}
+
+function normalizeLabel(value) {
+  return value.replace(/[^a-z0-9]+/gi, "").toLowerCase();
+}
+
+function collectRootDescribeTitles(sourceFile) {
+  const titles = [];
+
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isExpressionStatement(stmt)) continue;
+    if (!ts.isCallExpression(stmt.expression)) continue;
+    if (getCallName(stmt.expression) !== "describe") continue;
+
+    const [titleArg] = stmt.expression.arguments;
+    if (
+      ts.isStringLiteral(titleArg) ||
+      ts.isNoSubstitutionTemplateLiteral(titleArg)
+    ) {
+      titles.push(titleArg.text);
+    } else {
+      titles.push(null);
+    }
+  }
+
+  return titles;
+}
+
+function collectTestCaseTitles(sourceFile) {
+  const titles = [];
+
+  visit(sourceFile, (node) => {
+    if (!ts.isCallExpression(node)) return;
+    const name = getCallName(node);
+    if (name !== "it" && name !== "test") return;
+
+    const [titleArg] = node.arguments;
+    if (
+      ts.isStringLiteral(titleArg) ||
+      ts.isNoSubstitutionTemplateLiteral(titleArg)
+    ) {
+      titles.push(titleArg.text);
+    } else {
+      titles.push(null);
+    }
+  });
+
+  return titles;
+}
+
+function collectExportNames(sourceFile) {
+  const names = new Set();
+
+  for (const stmt of sourceFile.statements) {
+    if (
+      ts.isClassDeclaration(stmt) ||
+      ts.isFunctionDeclaration(stmt) ||
+      ts.isInterfaceDeclaration(stmt) ||
+      ts.isTypeAliasDeclaration(stmt)
+    ) {
+      if (
+        stmt.modifiers?.some(
+          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+        ) &&
+        stmt.name
+      ) {
+        names.add(stmt.name.text);
+      }
+      continue;
+    }
+
+    if (!ts.isVariableStatement(stmt)) continue;
+    if (
+      !stmt.modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+      )
+    )
+      continue;
+    for (const decl of stmt.declarationList.declarations) {
+      if (ts.isIdentifier(decl.name)) names.add(decl.name.text);
+    }
+  }
+
+  return [...names];
+}
+
+function getTypeParameterConstraintText(classDecl, sourceFile, typeParamName) {
+  const typeParam = classDecl.typeParameters?.find(
+    (param) => param.name.text === typeParamName,
+  );
+  if (!typeParam?.constraint) return null;
+  return typeParam.constraint.getText(sourceFile);
+}
+
+function hasRuntimeImport(importDecl) {
+  const clause = importDecl.importClause;
+  if (!clause) return true;
+  if (clause.isTypeOnly) return false;
+  if (clause.name) return true;
+  if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+    return true;
+  if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+    return clause.namedBindings.elements.some((element) => !element.isTypeOnly);
+  }
+  return true;
+}
+
+function isPortDeclarationStatement(stmt) {
+  return (
+    ts.isInterfaceDeclaration(stmt) ||
+    ts.isTypeAliasDeclaration(stmt) ||
+    (ts.isExportDeclaration(stmt) && stmt.isTypeOnly) ||
+    (ts.isImportDeclaration(stmt) && !hasRuntimeImport(stmt))
+  );
+}
+
+function countTokens(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function isObservabilityRuntimeDep(name) {
+  return (
+    OBSERVABILITY_RUNTIME_ROOTS.has(name) ||
+    OBSERVABILITY_RUNTIME_PREFIXES.some((prefix) => name.startsWith(prefix))
+  );
+}
+
+function expectedTargetPathForSpec(file) {
+  if (file.endsWith(".spec.ts")) return file.replace(/\.spec\.ts$/, ".ts");
+  if (file.endsWith(".test.ts")) return file.replace(/\.test\.ts$/, ".ts");
+  return null;
+}
+
+function baseNameWithoutSpec(relPath) {
+  const parts = splitRelative(relPath);
+  const fileName = parts[parts.length - 1] ?? relPath;
+  return fileName.replace(/\.(spec|test)\.ts$/, "");
+}
+
+function matchesResultConstraint(constraintText) {
+  return constraintText != null && /\bResult\s*</.test(constraintText);
+}
+
+function hasOutputTypeParameter(classDecl) {
+  return (
+    classDecl.typeParameters?.some((param) => param.name.text === "Output") ??
+    false
+  );
+}
+
+function hardSeverity(levelName) {
+  if (levelName === "off") return "off";
+  if (levelName === "warn") return "warn";
+  return "error";
+}
+
+function softSeverity(levelName) {
+  if (levelName === "off") return "off";
+  return "warn";
+}
+
+async function validateObservabilityPort(
+  findings,
+  kit,
+  lint,
+  relPath,
+  contractName,
+  requiredPatterns,
+) {
+  const severity = level(lint, "observabilityPorts");
+  if (severity === "off") return;
+
+  const filePath = join(kit.kitDir, relPath);
+  if (!(await exists(filePath))) {
+    pushFinding(
+      findings,
+      severity,
+      `missing observability contract at ${relPath}`,
+      relPath,
+    );
+    return;
+  }
+
+  const src = await readFile(filePath, "utf8");
+  const sourceFile = parseTsSource(filePath, src);
+  const imports = extractImports(sourceFile);
+
+  for (const { spec } of imports) {
+    if (!isBare(spec)) continue;
+    if (isObservabilityRuntimeDep(bareRoot(spec))) {
+      pushFinding(
+        findings,
+        severity,
+        `${contractName} must not import observability runtime library "${spec}"`,
+        relPath,
+      );
+    }
+  }
+
+  for (const pattern of requiredPatterns) {
+    if (!pattern.test(src)) {
+      pushFinding(
+        findings,
+        severity,
+        `${contractName} is missing required contract fragment ${pattern}`,
+        relPath,
+      );
+    }
+  }
+}
+
 async function validateKit(kit, schema) {
   const findings = []; // { severity: "error"|"warn", msg, file? }
 
@@ -201,12 +536,16 @@ async function validateKit(kit, schema) {
   try {
     meta = JSON.parse(await readFile(kit.metaPath, "utf8"));
   } catch (err) {
-    findings.push({ severity: "error", msg: `meta.json: invalid JSON — ${err.message}` });
+    findings.push({
+      severity: "error",
+      msg: `meta.json: invalid JSON — ${err.message}`,
+    });
     return { kit, findings };
   }
 
   const schemaErrors = validateAgainstSchema(meta, schema);
-  for (const e of schemaErrors) findings.push({ severity: "error", msg: `schema: ${e}` });
+  for (const e of schemaErrors)
+    findings.push({ severity: "error", msg: `schema: ${e}` });
   if (schemaErrors.length > 0) return { kit, findings };
 
   // Existence checks
@@ -220,12 +559,16 @@ async function validateKit(kit, schema) {
     ["entryPoint", entryPath],
   ]) {
     if (!(await exists(p))) {
-      findings.push({ severity: "error", msg: `${label}: file not found at ${relative(kit.kitDir, p)}` });
+      findings.push({
+        severity: "error",
+        msg: `${label}: file not found at ${relative(kit.kitDir, p)}`,
+      });
       continue;
     }
     if (label !== "entryPoint") {
       const content = (await readFile(p, "utf8")).trim();
-      if (content.length === 0) findings.push({ severity: "error", msg: `${label}: file is empty` });
+      if (content.length === 0)
+        findings.push({ severity: "error", msg: `${label}: file is empty` });
     }
   }
 
@@ -235,16 +578,206 @@ async function validateKit(kit, schema) {
   const testDeps = new Set(meta.philosophy.testDeps ?? []);
 
   const tsFiles = await walkTs(kit.kitDir);
+  const allFiles = await walkFiles(kit.kitDir);
   const kitDirResolved = resolve(kit.kitDir);
+
+  const contextLint = level(lint, "kitContext");
+  if (contextLint !== "off" && (await exists(contextPath))) {
+    const contextText = (await readFile(contextPath, "utf8")).trim();
+    const tokenCount = countTokens(contextText);
+    const requiredContextSections = [
+      /##\s+(Propósito|Purpose)\b/i,
+      /##\s+(Camadas|Layers)\b/i,
+      /##\s+(Decisões-chave|Key decisions)\b/i,
+      /##\s+(Pontos de extensão|Extension points)\b/i,
+      /##\s+(Não-objetivos|Non-goals)\b/i,
+    ];
+
+    for (const pattern of requiredContextSections) {
+      if (!pattern.test(contextText)) {
+        pushFinding(
+          findings,
+          contextLint,
+          `KIT_CONTEXT.md is missing required section ${pattern}`,
+          relative(kit.kitDir, contextPath),
+        );
+      }
+    }
+
+    if (tokenCount < 200 || tokenCount > 400) {
+      pushFinding(
+        findings,
+        contextLint,
+        `KIT_CONTEXT.md should stay between 200 and 400 tokens; found ${tokenCount}`,
+        relative(kit.kitDir, contextPath),
+      );
+    }
+  }
+
+  const depthLint = level(lint, "folderDepth");
+  if (depthLint !== "off") {
+    for (const file of allFiles) {
+      const rel = relative(kit.kitDir, file);
+      const depth = splitRelative(rel).length - 1;
+      if (depth > 5) {
+        pushFinding(
+          findings,
+          depthLint,
+          `path exceeds maximum depth of 5 segments from kit root`,
+          rel,
+        );
+      }
+    }
+  }
+
+  const requiredCoreTestsLint = level(lint, "requiredCoreTests");
+  if (requiredCoreTestsLint !== "off") {
+    const hasDomainSource = tsFiles.some((file) => {
+      const rel = relative(kit.kitDir, file);
+      return rel.startsWith("core/domain/") && !isSpecFile(file);
+    });
+    const hasApplicationSource = tsFiles.some((file) => {
+      const rel = relative(kit.kitDir, file);
+      return (
+        rel.startsWith("core/application/") &&
+        !rel.startsWith("core/application/ports/") &&
+        !isSpecFile(file)
+      );
+    });
+    const hasDomainSpec = tsFiles.some(
+      (file) =>
+        relative(kit.kitDir, file).startsWith("core/domain/") &&
+        file.endsWith(".spec.ts"),
+    );
+    const hasApplicationSpec = tsFiles.some(
+      (file) =>
+        relative(kit.kitDir, file).startsWith("core/application/") &&
+        file.endsWith(".spec.ts"),
+    );
+
+    if (hasDomainSource && !hasDomainSpec) {
+      pushFinding(
+        findings,
+        requiredCoreTestsLint,
+        `core/domain requires at least one colocated .spec.ts test`,
+        "core/domain",
+      );
+    }
+    if (hasApplicationSource && !hasApplicationSpec) {
+      pushFinding(
+        findings,
+        requiredCoreTestsLint,
+        `core/application requires at least one colocated .spec.ts test`,
+        "core/application",
+      );
+    }
+  }
+
+  const observabilityLint = level(lint, "observabilityPorts");
+  if (observabilityLint !== "off") {
+    const observabilityKinds = new Set(meta.philosophy.observability ?? []);
+    if (observabilityKinds.has("log-port")) {
+      await validateObservabilityPort(
+        findings,
+        kit,
+        lint,
+        "core/application/ports/logger.port.ts",
+        "LoggerPort",
+        [
+          /\b(?:interface|type)\s+LoggerPort\b/,
+          /\bdebug\s*\(/,
+          /\binfo\s*\(/,
+          /\bwarn\s*\(/,
+          /\berror\s*\(/,
+          /Record<\s*string\s*,\s*unknown\s*>/,
+        ],
+      );
+    }
+    if (observabilityKinds.has("metric-port")) {
+      await validateObservabilityPort(
+        findings,
+        kit,
+        lint,
+        "core/application/ports/metrics.port.ts",
+        "MetricsPort",
+        [
+          /\b(?:interface|type)\s+MetricsPort\b/,
+          /\bcounter\s*\(/,
+          /\bgauge\s*\(/,
+          /\bhistogram\s*\(/,
+        ],
+      );
+    }
+    if (observabilityKinds.has("trace-port")) {
+      await validateObservabilityPort(
+        findings,
+        kit,
+        lint,
+        "core/application/ports/tracer.port.ts",
+        "TracerPort",
+        [
+          /\b(?:interface|type)\s+TracerPort\b/,
+          /\bstartSpan\s*\(/,
+          /\bsetAttribute\s*\(/,
+          /\brecordException\s*\(/,
+          /\bend\s*\(/,
+        ],
+      );
+    }
+  }
+
+  const packageLint = level(lint, "noObservabilityRuntimeDeps");
+  const kitPackagePath = join(kit.kitDir, "package.json");
+  if (packageLint !== "off" && (await exists(kitPackagePath))) {
+    const pkg = JSON.parse(await readFile(kitPackagePath, "utf8"));
+    const dependencySections = [
+      "dependencies",
+      "peerDependencies",
+      "optionalDependencies",
+    ];
+    for (const section of dependencySections) {
+      for (const depName of Object.keys(pkg[section] ?? {})) {
+        if (isObservabilityRuntimeDep(depName)) {
+          pushFinding(
+            findings,
+            packageLint,
+            `package.json must not expose observability runtime dependency "${depName}" in ${section}`,
+            "package.json",
+          );
+        }
+      }
+    }
+  }
 
   for (const file of tsFiles) {
     const rel = relative(kit.kitDir, file);
-    const isSpec = /\.spec\.ts$/.test(file) || /\.test\.ts$/.test(file);
+    const isSpec = isSpecFile(file);
     const src = await readFile(file, "utf8");
+    const sourceFile = parseTsSource(file, src);
+    const imports = extractImports(sourceFile);
+
+    const fileSizeLint = level(lint, "fileSize");
+    if (fileSizeLint !== "off") {
+      const lineCount = src.split("\n").length;
+      if (lineCount > 600) {
+        pushFinding(
+          findings,
+          hardSeverity(fileSizeLint),
+          `file exceeds hard size limit of 600 lines (${lineCount})`,
+          rel,
+        );
+      } else if (lineCount > 300) {
+        pushFinding(
+          findings,
+          softSeverity(fileSizeLint),
+          `file exceeds review threshold of 300 lines (${lineCount})`,
+          rel,
+        );
+      }
+    }
 
     // Imports
-    const imports = extractImports(src);
-    for (const spec of imports) {
+    for (const { spec } of imports) {
       if (isRelative(spec)) {
         // noUpwardImports
         const lvl = level(lint, "noUpwardImports");
@@ -273,7 +806,8 @@ async function validateKit(kit, schema) {
         const nl = level(lint, "noExternalImports");
         if (nl !== "off") {
           const root = bareRoot(spec);
-          const allowed = externalDeps.has(root) || (isSpec && testDeps.has(root));
+          const allowed =
+            externalDeps.has(root) || (isSpec && testDeps.has(root));
           if (!allowed) {
             findings.push({
               severity: nl,
@@ -283,6 +817,209 @@ async function validateKit(kit, schema) {
           }
         }
       }
+    }
+
+    const architectureLint = level(lint, "architectureLayers");
+    if (architectureLint !== "off") {
+      const sourceLayer = getCoreLayerFromPath(kit.kitDir, file);
+      for (const { spec } of imports) {
+        if (sourceLayer === "domain" && !isSpec && isBare(spec)) {
+          pushFinding(
+            findings,
+            architectureLint,
+            `domain must not import runtime modules from outside the kit: "${spec}"`,
+            rel,
+          );
+          continue;
+        }
+
+        if (!isRelative(spec)) continue;
+
+        const target = resolveRelative(file, spec);
+        const targetLayer = getCoreLayerFromPath(kit.kitDir, target);
+
+        if (sourceLayer === "domain" && !isSpec) {
+          if (targetLayer === "application" || targetLayer === "adapters") {
+            pushFinding(
+              findings,
+              architectureLint,
+              `domain may only import domain or exceptions; found "${spec}"`,
+              rel,
+            );
+          }
+        }
+
+        if (sourceLayer === "application" && targetLayer === "adapters") {
+          pushFinding(
+            findings,
+            architectureLint,
+            `application must not import adapters directly`,
+            rel,
+          );
+        }
+
+        if (sourceLayer === "adapters" && targetLayer === "application") {
+          pushFinding(
+            findings,
+            architectureLint,
+            `adapters must not import application directly`,
+            rel,
+          );
+        }
+      }
+    }
+
+    const portsLint = level(lint, "portsArePure");
+    if (portsLint !== "off" && rel.startsWith("core/application/ports/")) {
+      for (const stmt of sourceFile.statements) {
+        if (!isPortDeclarationStatement(stmt)) {
+          const kind = ts.SyntaxKind[stmt.kind] ?? "unknown";
+          pushFinding(
+            findings,
+            portsLint,
+            `ports must stay as pure contracts; found top-level ${kind}`,
+            rel,
+          );
+        }
+      }
+
+      for (const stmt of sourceFile.statements) {
+        if (!ts.isImportDeclaration(stmt)) continue;
+        if (hasRuntimeImport(stmt)) {
+          pushFinding(
+            findings,
+            portsLint,
+            `ports must use type-only imports`,
+            rel,
+          );
+        }
+      }
+    }
+
+    const applicationResultLint = level(lint, "applicationReturnsResult");
+    if (
+      applicationResultLint !== "off" &&
+      rel.startsWith("core/application/") &&
+      !rel.startsWith("core/application/ports/") &&
+      !isSpec
+    ) {
+      visit(sourceFile, (node) => {
+        if (!ts.isClassDeclaration(node) || !node.name) return;
+        if (!hasOutputTypeParameter(node)) return;
+        const constraint = getTypeParameterConstraintText(
+          node,
+          sourceFile,
+          "Output",
+        );
+        if (!matchesResultConstraint(constraint)) {
+          pushFinding(
+            findings,
+            applicationResultLint,
+            `application class ${node.name.text} must constrain Output to Result<...>`,
+            rel,
+          );
+        }
+      });
+    }
+
+    const testLint = level(lint, "testConventions");
+    if (testLint !== "off" && isSpec) {
+      if (rel.includes("/__tests__/")) {
+        pushFinding(
+          findings,
+          testLint,
+          `tests must be colocated; __tests__/ is not allowed`,
+          rel,
+        );
+      }
+
+      if (rel.endsWith(".test.ts")) {
+        pushFinding(
+          findings,
+          testLint,
+          `test files must use the .spec.ts suffix`,
+          rel,
+        );
+      }
+
+      const rootDescribeTitles = collectRootDescribeTitles(sourceFile);
+      if (rootDescribeTitles.length === 0) {
+        pushFinding(
+          findings,
+          testLint,
+          `spec file must declare at least one root describe() block`,
+          rel,
+        );
+      } else if (rootDescribeTitles.some((title) => title == null)) {
+        pushFinding(
+          findings,
+          testLint,
+          `root describe() title must be a string literal`,
+          rel,
+        );
+      } else if (rootDescribeTitles.length === 1) {
+        const expected = normalizeLabel(baseNameWithoutSpec(rel));
+        const actual = normalizeLabel(rootDescribeTitles[0]);
+        const targetPath = expectedTargetPathForSpec(file);
+        let exportedNames = [];
+        if (targetPath && (await exists(targetPath))) {
+          const targetSrc = await readFile(targetPath, "utf8");
+          exportedNames = collectExportNames(
+            parseTsSource(targetPath, targetSrc),
+          ).map((name) => normalizeLabel(name));
+        }
+        const matchesTarget =
+          actual === expected ||
+          actual.includes(expected) ||
+          expected.includes(actual);
+        const matchesExport = exportedNames.some(
+          (name) =>
+            actual === name || actual.includes(name) || name.includes(actual),
+        );
+        if (!matchesTarget && !matchesExport) {
+          pushFinding(
+            findings,
+            testLint,
+            `root describe() must match the tested unit name`,
+            rel,
+          );
+        }
+      }
+
+      for (const title of collectTestCaseTitles(sourceFile)) {
+        if (title == null) {
+          pushFinding(
+            findings,
+            testLint,
+            `it()/test() titles must be string literals`,
+            rel,
+          );
+          continue;
+        }
+        if (/^should\b/i.test(title)) {
+          pushFinding(
+            findings,
+            testLint,
+            `it() descriptions must avoid \"should\"; use active voice`,
+            rel,
+          );
+        }
+      }
+    }
+
+    const noMocksLint = level(lint, "noMocksInCoreTests");
+    if (
+      noMocksLint !== "off" &&
+      isSpec &&
+      /^(core\/domain|core\/application)\//.test(rel) &&
+      MOCK_CALL_RE.test(src)
+    ) {
+      pushFinding(
+        findings,
+        noMocksLint,
+        `core tests must use in-memory stubs instead of module mocks`,
+        rel,
+      );
     }
 
     // Bare any
@@ -321,11 +1058,15 @@ async function main() {
 
     const header = `${kit.kitName}@${kit.version}`;
     if (findings.length === 0) {
-      console.log(`${c.green("✓")} ${c.bold(header)} ${c.dim("(no findings)")}`);
+      console.log(
+        `${c.green("✓")} ${c.bold(header)} ${c.dim("(no findings)")}`,
+      );
       continue;
     }
     const status = errs.length > 0 ? c.red("✗") : c.yellow("!");
-    console.log(`${status} ${c.bold(header)} — ${errs.length} error(s), ${warns.length} warning(s)`);
+    console.log(
+      `${status} ${c.bold(header)} — ${errs.length} error(s), ${warns.length} warning(s)`,
+    );
     for (const f of findings) {
       const tag = f.severity === "error" ? c.red("error") : c.yellow("warn ");
       const loc = f.file ? c.dim(` [${f.file}]`) : "";
@@ -333,7 +1074,11 @@ async function main() {
     }
   }
 
-  console.log(c.dim(`\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`));
+  console.log(
+    c.dim(
+      `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`,
+    ),
+  );
   process.exit(errors > 0 ? 1 : 0);
 }
 
