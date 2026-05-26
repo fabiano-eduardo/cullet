@@ -44,16 +44,19 @@ Releases are fully automated via GitHub Actions (`.github/workflows/release.yml`
    ```
 3. The workflow runs: typecheck → validate-kits → sync-exports:check → tests → e2e → build → pack-validate → publish → GitHub Release.
 
-**npm authentication: Trusted Publishing via OIDC (no token needed)**
+**npm authentication: NPM_TOKEN + provenance attestation**
 
-This project uses [npm Trusted Publishing](https://docs.npmjs.com/generating-provenance-statements#using-third-party-package-publishing-tools) (OIDC-based), configured on npmjs.com under the package settings. There is **no `NPM_TOKEN` secret** — the GitHub Actions workflow authenticates directly via the OIDC token (`id-token: write` permission). Do not add `NODE_AUTH_TOKEN` or any npm secret to the workflow.
+Publishing requires an npm Automation token stored as the `NPM_TOKEN` GitHub Actions secret. The workflow passes it via `NODE_AUTH_TOKEN` to the publish step.
+
+`--provenance` uses the `id-token: write` OIDC permission to attach a signed provenance attestation to the package — this is separate from authentication and does not replace the token.
 
 The publish command is:
 ```bash
 npm publish --provenance --access public
+# env: NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
-`--provenance` attaches a signed provenance attestation to the published package.
+Note: npm does **not** support token-free OIDC publishing (unlike PyPI). `--provenance` and OIDC are for attestation only.
 
 ## Adding a new kit
 
