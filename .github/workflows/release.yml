@@ -20,7 +20,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          registry-url: "https://registry.npmjs.org"
 
       - run: npm ci
 
@@ -47,8 +46,6 @@ jobs:
 
       - name: Publish to npm (with provenance)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }}
 
       - name: Extract version from tag
         id: version
