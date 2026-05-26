@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -23,6 +25,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Require a changeset on pull requests
+        if: github.event_name == 'pull_request'
+        run: npx changeset status --since=origin/${{ github.base_ref }}
 
       - name: TypeScript typecheck
         run: npm run typecheck

@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+:root {
+  --sl-color-accent-low: #2a1107;
+  --sl-color-accent: #bf6231;
+  --sl-color-accent-high: #f5c5a2;
+  --sl-color-white: #f7f1ec;
+  --sl-color-gray-1: #e9ddd5;
+  --sl-color-gray-2: #cdb8ad;
+  --sl-color-gray-3: #94786a;
+  --sl-color-gray-4: #6f584d;
+  --sl-color-gray-5: #4b3a33;
+  --sl-color-gray-6: #312520;
+  --sl-color-black: #130f0d;
+}
+
+:root[data-theme="light"] {
+  --sl-color-bg: #fffaf6;
+  --sl-color-bg-nav: rgba(255, 250, 246, 0.9);
+  --sl-color-text: #2a1f1b;
+}
+
+:root[data-theme="dark"] {
+  --sl-color-bg: #130f0d;
+  --sl-color-bg-nav: rgba(19, 15, 13, 0.88);
+  --sl-color-text: #f7f1ec;
+}
+
+html,
+body {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at top right, rgba(229, 155, 98, 0.16), transparent 26%),
+    radial-gradient(circle at top left, rgba(125, 51, 18, 0.18), transparent 22%);
+}
+
+h1,
+h2,
+h3,
+.site-title {
+  letter-spacing: -0.03em;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(229, 155, 98, 0.14), transparent 55%);
+}
+
+.hero img {
+  filter: drop-shadow(0 24px 48px rgba(191, 98, 49, 0.28));
+}
+
+.card,
+.sl-link-card {
+  border-radius: 1rem;
+}

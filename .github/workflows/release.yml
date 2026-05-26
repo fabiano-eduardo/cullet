@@ -2,19 +2,26 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
-  contents: write # create GitHub Release
-  id-token: write # OIDC token for npm provenance
+  contents: write
+  id-token: write
+  pull-requests: write
 
 jobs:
   release:
-    name: Publish to npm + GitHub Release
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -45,49 +52,13 @@ jobs:
       - name: Validate publishable tarball
         run: npm run release:dry-run
 
-      - name: Publish to npm (with provenance)
-        run: npm publish --provenance --access public
+      - name: Create release PR or publish package
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: release cullet"
+          title: "chore: release cullet"
+          publish: npm run release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          PRERELEASE=""
-          if echo "$TAG" | grep -q '-'; then PRERELEASE="--prerelease"; fi
-          gh release create "$TAG" \
-            --repo "$REPO" \
-            --title "cullet v${VERSION}" \
-            --notes "## cullet v${VERSION}
-
-          See [CHANGELOG.md](https://github.com/${REPO}/blob/main/CHANGELOG.md) for full release notes.
-
-          ### Kits incluídos
-
-          | Kit | Versão | Descrição |
-          |-----|--------|-----------|
-          | \`erp-core\` | \`1.0.0\` | Clean-architecture core para domínios ERP |
-          | \`dummy-api\` | \`1.0.0\` | Kit de validação do pipeline de catalog |
-
-          ### Instalação
-
-          \`\`\`bash
-          npm install cullet
-          npx cullet doctor
-          npx cullet list
-          npx cullet fc erp-core@1.0.0
-          \`\`\`
-
-          ### Referências
-
-          - [Filosofia e critérios de curadoria](https://github.com/${REPO}/blob/main/PHILOSOPHY.md)
-          - [README — modos de consumo e exemplos](https://github.com/${REPO}#readme)" \
-            $PRERELEASE
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
