@@ -31,4 +31,4 @@ hero:
 
 - [`erp-core`](/kits/erp-core/) é o kit real de referência: domínio, aplicação, policies, timeline e contratos de observabilidade.
 - [`dummy-api`](/kits/dummy-api/) é o sandbox do pipeline de catálogo, útil para testar o fluxo de scaffold, validação e empacotamento.
-- Telemetria do CLI permanece fora da árvore por enquanto: o projeto só deve capturar métricas quando o modelo opt-in e a governança de dados estiverem fechados.
+- O CLI agora expõe telemetria opt-in: log local sempre, export HTTP opcional e payload mínimo focado em adoção de comandos/kits.

@@ -57,6 +57,15 @@ describe("parseKitArg", () => {
       expect(() => parseKitArg("erp-core@   ")).toThrow(/Formato invalido/);
     });
 
+    it("rejects malformed scoped names without the scope separator", () => {
+      expect(() => parseKitArg("@scope@1.0.0")).toThrow(/Formato invalido/);
+    });
+
+    it("rejects multiple version separators in unscoped names", () => {
+      expect(() => parseKitArg("erp-core@beta@1.0.0")).toThrow(
+        /Formato invalido/,
+      );
+    });
   });
 
   describe("edge cases", () => {
@@ -68,7 +77,7 @@ describe("parseKitArg", () => {
       expect(parseKitArg("@version")).toEqual({ name: "@version" });
     });
 
-    it("uses the LAST @ as separator when multiple are present", () => {
+    it("parses scoped names using the @ after the package name", () => {
       expect(parseKitArg("@scope/name@1.0.0")).toEqual({
         name: "@scope/name",
         version: "1.0.0",

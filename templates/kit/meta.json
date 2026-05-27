@@ -1,8 +1,20 @@
 {
-  "schemaVersion": "1",
+  "schemaVersion": "2",
   "name": "__KIT_NAME__",
   "version": "1.0.0",
   "description": "__KIT_DESCRIPTION__",
+  "compatibility": {
+    "engines": {
+      "node": ">=18",
+      "typescript": ">=5.0.0"
+    },
+    "directImport": {
+      "peerDependencies": []
+    },
+    "fullControl": {
+      "dependencies": []
+    }
+  },
   "entryPoint": "index.ts",
   "philosophy": {
     "errorModel": "mixed",
@@ -22,8 +34,6 @@
     "noUpwardImports": "error"
   },
   "exports": [],
-  "changelog": [
-    "1.0.0 - Initial scaffold."
-  ],
+  "changelog": ["1.0.0 - Initial scaffold."],
   "deprecated": false
 }

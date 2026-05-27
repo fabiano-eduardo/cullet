@@ -174,6 +174,7 @@ npx cullet info erp-core --alias  # cria alias cullet/erp-core no tsconfig
 ```
 
 Valida o kit no registry, mostra como importar, lista as dependências externas declaradas no `meta.json` e exibe um resumo do `KIT_CONTEXT.md` — a janela direta para decidir se o kit cabe no seu projeto.
+Valida o kit no registry, mostra como importar, lista a matriz de compatibilidade declarada no `meta.json` (`compatibility.engines` e `compatibility.directImport.peerDependencies`) e exibe um resumo do `KIT_CONTEXT.md` estruturado — a janela direta para decidir se o kit cabe no seu projeto.
 
 ### `cullet fc <kit>`
 
@@ -183,11 +184,21 @@ npx cullet fc erp-core@1.0.0
 npx cullet fc erp-core@1.0.0 --dry-run
 ```
 
-Copia o kit para `./cullet/<nome>@<versão>/` e atualiza o alias `cullet/<nome>` no `tsconfig.json`. Avisa se o seu `baseUrl` não é `"."` (porque o `paths` é resolvido relativo a `baseUrl`) e lista as `externalDeps` do `meta.json` que você precisa instalar manualmente — no full-control, as `peerDependencies` do `cullet` deixam de influenciar: o Node passa a resolver imports pelo `node_modules` do seu projeto.
+Copia o kit para `./cullet/<nome>@<versão>/` e atualiza o alias `cullet/<nome>` no `tsconfig.json`. Avisa se o seu `baseUrl` não é `"."` (porque o `paths` é resolvido relativo a `baseUrl`) e lista `compatibility.fullControl.dependencies`, com ranges, que você precisa instalar manualmente — no full-control, as `peerDependencies` do `cullet` deixam de influenciar: o Node passa a resolver imports pelo `node_modules` do seu projeto.
 
 Com `--dry-run`, o CLI mostra o destino, uma amostra dos arquivos que seriam copiados e o alias resultante, sem escrever nada.
 
-Se o destino já existir e você estiver em modo real, o CLI pede confirmação antes de sobrescrever.
+Se o destino já existir e você estiver em modo real, o CLI pede confirmação antes de sobrescrever. A troca é transacional: o conteúdo antigo vai para backup temporário e só sai de cena quando a nova cópia assume o lugar, então falhas no meio não deixam o projeto em estado parcialmente sobrescrito.
+
+### `cullet migrate <kit>`
+
+```bash
+npx cullet migrate erp-core@1.0.0
+npx cullet migrate erp-core@1.0.0 --dry-run
+npx cullet migrate erp-core@1.0.0 --apply
+```
+
+Lê o caminho de migração declarado em `meta.json -> deprecated.successor`, mostra o sucessor recomendado, o guia de migração e o codemod associado quando existirem. Sem flags, só imprime o plano. Com `--dry-run`, executa o codemod em modo simulado. Com `--apply`, executa a migração no diretório atual.
 
 ### `cullet doctor`
 
@@ -203,6 +214,17 @@ Audita o projeto consumidor procurando configurações incompatíveis com o `cul
 - TypeScript abaixo do mínimo testado (5.0).
 
 Retorna exit code `1` quando há erros — útil para colocar em CI.
+
+### `cullet telemetry`
+
+```bash
+npx cullet telemetry status
+npx cullet telemetry enable
+npx cullet telemetry enable --endpoint https://telemetry.example.dev/events
+npx cullet telemetry disable
+```
+
+Telemetria agora é explicitamente opt-in. Quando habilitada, cada execução de comando grava um evento anônimo em um log local (`events.ndjson`) e, opcionalmente, envia o mesmo payload por HTTP `POST` para um endpoint configurado. O payload contém apenas dados de adoção do CLI: comando, kit/versão resolvidos quando aplicável, sucesso/falha, duração, plataforma, arquitetura e versão do `cullet`.
 
 ---
 
@@ -230,6 +252,16 @@ Cada kit fica organizado em `kits/<nome>/versions/<versão>/`.
 
 Regras completas em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
 
+## API do catálogo
+
+Além dos kits, o pacote também exporta `cullet/registry` para consumo programático em runtime:
+
+```ts
+import { listKits, loadKit, loadRegistry } from "cullet/registry";
+```
+
+Essa API retorna o registry tipado, o `meta.json` parseado (incluindo `compatibility`) e o `KIT_CONTEXT.md` estruturado em seções estáveis (`purpose`, `layers`, `key-decisions`, `extension-points`, `non-goals`).
+
 ---
 
 ## Kits atuais
@@ -253,7 +285,7 @@ npm run new-kit -- <nome-do-kit> --description "Descrição curta do kit"
 
 O script copia `templates/kit/` para `kits/<nome>/versions/1.0.0/`, faz substituição de placeholders e atualiza `registry/index.json`. Depois disso:
 
-1. Refinar `meta.json` (philosophy, exports).
+1. Refinar `meta.json` (`compatibility`, `philosophy`, `exports`).
 2. Preencher `KIT_CONTEXT.md` com o sumário prompt-friendly real.
 3. Atualizar `README.md` seguindo o template (**o que entrega**, **como começa**, **decisões tomadas**, **como evoluir**).
 4. Implementar as camadas em `core/`.

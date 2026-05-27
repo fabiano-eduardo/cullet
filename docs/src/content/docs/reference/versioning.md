@@ -23,7 +23,14 @@ description: Como o cullet versiona pacote e kits sem quebrar consumidores exist
 
 ## Deprecação
 
-Uma versão pode ser marcada como deprecated em `meta.json`, com `since`, `reason` e, opcionalmente, `successor`. O CLI passa a mostrar esse aviso em `list`, `info` e `fc`, mas a versão continua disponível.
+Uma versão pode ser marcada como deprecated em `meta.json`, com `since`, `reason` e, opcionalmente, `successor`.
+
+`successor` pode ser:
+
+- uma string legada como `erp-core/2.0.0`;
+- um objeto com `name`, `version`, `guide`, `notes` e `codemod.path`.
+
+O CLI mostra esse aviso em `list`, `info` e `fc`, e `cullet migrate <kit>@<versão>` usa esse bloco para imprimir ou executar o caminho de migração codificado.
 
 ## Referência completa
 

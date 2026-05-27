@@ -39,7 +39,16 @@ Em `meta.json`:
   "deprecated": {
     "since": "1.2.0",
     "reason": "API de policies foi reescrita; v1 não suporta condições com escopo de tenant.",
-    "successor": "erp-core/2.0.0"
+    "successor": {
+      "name": "erp-core",
+      "version": "2.0.0",
+      "guide": "MIGRATION.md",
+      "notes": "Atualize os aliases antes de trocar os imports pinados.",
+      "codemod": {
+        "path": "codemods/1.0.0-to-2.0.0.mjs",
+        "description": "Renomeia os simbolos legados da API de policies"
+      }
+    }
   }
 }
 ```
@@ -48,7 +57,7 @@ Campos:
 
 - **`since`** (obrigatório, SemVer) — versão do kit a partir da qual a deprecation foi anunciada (geralmente coincide com a release do sucessor).
 - **`reason`** (obrigatório, string não vazia) — por que esta versão foi deprecated. Curta e útil.
-- **`successor`** (opcional, `nome/versao`) — kit/versão que substitui esta. Usuários do CLI veem essa referência.
+- **`successor`** (opcional) — string legada `nome/versao` ou objeto com `name`, `version`, `guide`, `notes` e `codemod`. Usuários do CLI veem essa referência e o `cullet migrate` usa o bloco estruturado.
 
 Para deixar uma versão ativa, use `"deprecated": false` (default do template).
 
@@ -56,6 +65,7 @@ Para deixar uma versão ativa, use `"deprecated": false` (default do template).
 
 - `cullet list` marca o kit com `[deprecated]` quando a versão `latest` está deprecated, e imprime a razão e o sucessor.
 - `cullet info <nome>@<versao>` e `cullet fc <nome>@<versao>` exibem warning amarelo antes de qualquer instrução.
+- `cullet migrate <nome>@<versao>` lê o `successor` estruturado, mostra o guia/codemod e pode executar o codemod em `--dry-run` ou `--apply`.
 
 A motivação é dupla: usuários veem o aviso no fluxo natural, e o catálogo nunca quebra silenciosamente.
 

@@ -26,4 +26,11 @@ O catálogo agora usa `changesets` como fonte de verdade da intenção de releas
 
 ## Telemetria do CLI
 
-Continua deliberadamente desativada. Antes de implementar qualquer coleta opt-in, o projeto ainda precisa fechar a política de consentimento, payload mínimo, retenção e exposição pública desses dados.
+Agora existe uma trilha opt-in mínima no CLI:
+
+- consentimento explícito via `cullet telemetry enable|disable`;
+- log local em NDJSON para inspeção e auditoria;
+- export HTTP opcional por evento via `POST` JSON;
+- payload mínimo: comando, kit/versão, sucesso/falha, duração, plataforma, arquitetura e versão do CLI.
+
+Se a política de retenção ou exposição pública mudar, a documentação do endpoint remoto precisa ser atualizada junto com o payload aceito.

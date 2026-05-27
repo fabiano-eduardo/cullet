@@ -8,6 +8,8 @@ import { createDoctorCommand } from "./commands/doctor.js";
 import { createFullControlCommand } from "./commands/fullControl.js";
 import { createInfoCommand } from "./commands/info.js";
 import { createListCommand } from "./commands/list.js";
+import { createMigrateCommand } from "./commands/migrate.js";
+import { createTelemetryCommand } from "./commands/telemetry.js";
 import { findCulletPackageRoot } from "./utils/resolve.js";
 
 async function readPackageVersion(): Promise<string> {
@@ -16,7 +18,9 @@ async function readPackageVersion(): Promise<string> {
   const parsed = JSON.parse(raw) as { version?: unknown };
 
   if (typeof parsed.version !== "string") {
-    throw new Error("package.json do cullet nao contem um campo version valido.");
+    throw new Error(
+      "package.json do cullet nao contem um campo version valido.",
+    );
   }
 
   return parsed.version;
@@ -33,6 +37,8 @@ async function main(): Promise<void> {
   program.addCommand(createListCommand());
   program.addCommand(createInfoCommand());
   program.addCommand(createFullControlCommand());
+  program.addCommand(createMigrateCommand());
+  program.addCommand(createTelemetryCommand());
   program.addCommand(createDoctorCommand());
 
   await program.parseAsync(process.argv);

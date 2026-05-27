@@ -9,7 +9,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
-const here = dirname(fileURLToPath(import.meta.url));
+const scriptPath = fileURLToPath(import.meta.url);
+const here = dirname(scriptPath);
 const repoRoot = resolve(here, "..");
 const kitsRoot = resolve(repoRoot, "kits");
 const schemaPath = resolve(kitsRoot, "kit-spec.schema.json");
@@ -42,7 +43,13 @@ const DEFAULT_LINT = {
 
 const OBSERVABILITY_RUNTIME_ROOTS = new Set(["pino", "winston", "bunyan"]);
 const OBSERVABILITY_RUNTIME_PREFIXES = ["@opentelemetry/"];
-const MOCK_CALL_RE = /\b(?:vi|jest)\.mock\s*\(/;
+const REQUIRED_KIT_CONTEXT_SECTION_IDS = [
+  "purpose",
+  "layers",
+  "key-decisions",
+  "extension-points",
+  "non-goals",
+];
 
 async function exists(p) {
   try {
@@ -51,6 +58,21 @@ async function exists(p) {
   } catch {
     return false;
   }
+}
+
+function findDuplicateValues(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  for (const value of values) {
+    if (seen.has(value)) {
+      duplicates.add(value);
+      continue;
+    }
+    seen.add(value);
+  }
+
+  return [...duplicates];
 }
 
 async function findKitMetas() {
@@ -185,6 +207,33 @@ function parseTsSource(file, src) {
     true,
     ts.ScriptKind.TS,
   );
+}
+
+function isModuleMockCallExpression(node) {
+  if (!ts.isCallExpression(node)) return false;
+  if (!ts.isPropertyAccessExpression(node.expression)) return false;
+  const { expression, name } = node.expression;
+  return (
+    ts.isIdentifier(expression) &&
+    (expression.text === "vi" || expression.text === "jest") &&
+    name.text === "mock"
+  );
+}
+
+function hasModuleMockCallInSourceFile(sourceFile) {
+  let found = false;
+
+  visit(sourceFile, (node) => {
+    if (!found && isModuleMockCallExpression(node)) {
+      found = true;
+    }
+  });
+
+  return found;
+}
+
+export function hasModuleMockCall(src, file = "inline.ts") {
+  return hasModuleMockCallInSourceFile(parseTsSource(file, src));
 }
 
 function visit(node, cb) {
@@ -576,32 +625,109 @@ async function validateKit(kit, schema) {
   const lint = meta.lint ?? {};
   const externalDeps = new Set(meta.philosophy.externalDeps ?? []);
   const testDeps = new Set(meta.philosophy.testDeps ?? []);
+  const directImportDependencyNames = (
+    meta.compatibility?.directImport?.peerDependencies ?? []
+  ).map((dependency) => dependency.name);
+  const fullControlDependencyNames = (
+    meta.compatibility?.fullControl?.dependencies ?? []
+  ).map((dependency) => dependency.name);
+  const compatibilityDependencyNames = [
+    ...directImportDependencyNames,
+    ...fullControlDependencyNames,
+  ];
+  const compatibilityDependencySet = new Set(compatibilityDependencyNames);
 
   const tsFiles = await walkTs(kit.kitDir);
   const allFiles = await walkFiles(kit.kitDir);
   const kitDirResolved = resolve(kit.kitDir);
 
+  for (const dependencyName of externalDeps) {
+    if (!compatibilityDependencySet.has(dependencyName)) {
+      pushFinding(
+        findings,
+        "error",
+        `compatibility matrix is missing dependency \"${dependencyName}\" declared in philosophy.externalDeps`,
+        relative(kit.kitDir, kit.metaPath),
+      );
+    }
+  }
+
+  for (const duplicateName of findDuplicateValues(
+    directImportDependencyNames,
+  )) {
+    pushFinding(
+      findings,
+      "error",
+      `compatibility.directImport.peerDependencies declares dependency \"${duplicateName}\" more than once`,
+      relative(kit.kitDir, kit.metaPath),
+    );
+  }
+
+  for (const duplicateName of findDuplicateValues(fullControlDependencyNames)) {
+    pushFinding(
+      findings,
+      "error",
+      `compatibility.fullControl.dependencies declares dependency \"${duplicateName}\" more than once`,
+      relative(kit.kitDir, kit.metaPath),
+    );
+  }
+
   const contextLint = level(lint, "kitContext");
   if (contextLint !== "off" && (await exists(contextPath))) {
     const contextText = (await readFile(contextPath, "utf8")).trim();
     const tokenCount = countTokens(contextText);
-    const requiredContextSections = [
-      /##\s+(Propósito|Purpose)\b/i,
-      /##\s+(Camadas|Layers)\b/i,
-      /##\s+(Decisões-chave|Key decisions)\b/i,
-      /##\s+(Pontos de extensão|Extension points)\b/i,
-      /##\s+(Não-objetivos|Non-goals)\b/i,
-    ];
+    const headingIds = [];
+    const structuredHeadingPattern = /^##\s+\[(?<id>[a-z-]+)\]\s+.+$/gmu;
+    let headingMatch;
 
-    for (const pattern of requiredContextSections) {
-      if (!pattern.test(contextText)) {
+    while (
+      (headingMatch = structuredHeadingPattern.exec(contextText)) !== null
+    ) {
+      if (headingMatch.groups?.id) {
+        headingIds.push(headingMatch.groups.id);
+      }
+    }
+
+    for (const sectionId of REQUIRED_KIT_CONTEXT_SECTION_IDS) {
+      if (!headingIds.includes(sectionId)) {
         pushFinding(
           findings,
           contextLint,
-          `KIT_CONTEXT.md is missing required section ${pattern}`,
+          `KIT_CONTEXT.md is missing required structured section [${sectionId}]`,
           relative(kit.kitDir, contextPath),
         );
       }
+    }
+
+    for (const duplicateId of findDuplicateValues(headingIds)) {
+      pushFinding(
+        findings,
+        contextLint,
+        `KIT_CONTEXT.md repeats structured section [${duplicateId}]`,
+        relative(kit.kitDir, contextPath),
+      );
+    }
+
+    const unexpectedStructuredIds = headingIds.filter(
+      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId),
+    );
+
+    for (const unexpectedId of unexpectedStructuredIds) {
+      pushFinding(
+        findings,
+        contextLint,
+        `KIT_CONTEXT.md uses unknown structured section [${unexpectedId}]`,
+        relative(kit.kitDir, contextPath),
+      );
+    }
+
+    if (/^##\s+(?!\[).+$/mu.test(contextText)) {
+      pushFinding(
+        findings,
+        contextLint,
+        "KIT_CONTEXT.md requires structured headings in the form ## [section-id] Title",
+        relative(kit.kitDir, contextPath),
+      );
     }
 
     if (tokenCount < 200 || tokenCount > 400) {
@@ -811,7 +937,9 @@ async function validateKit(kit, schema) {
           if (!allowed) {
             findings.push({
               severity: nl,
-              msg: `external import not declared in philosophy.${isSpec ? "testDeps|externalDeps" : "externalDeps"}: "${spec}"`,
+              msg: `external import not declared in philosophy.${
+                isSpec ? "testDeps|externalDeps" : "externalDeps"
+              }: "${spec}"`,
               file: rel,
             });
           }
@@ -1012,7 +1140,7 @@ async function validateKit(kit, schema) {
       noMocksLint !== "off" &&
       isSpec &&
       /^(core\/domain|core\/application)\//.test(rel) &&
-      MOCK_CALL_RE.test(src)
+      hasModuleMockCallInSourceFile(sourceFile)
     ) {
       pushFinding(
         findings,
@@ -1065,7 +1193,9 @@ async function main() {
     }
     const status = errs.length > 0 ? c.red("✗") : c.yellow("!");
     console.log(
-      `${status} ${c.bold(header)} — ${errs.length} error(s), ${warns.length} warning(s)`,
+      `${status} ${c.bold(header)} — ${errs.length} error(s), ${
+        warns.length
+      } warning(s)`,
     );
     for (const f of findings) {
       const tag = f.severity === "error" ? c.red("error") : c.yellow("warn ");
@@ -1082,7 +1212,9 @@ async function main() {
   process.exit(errors > 0 ? 1 : 0);
 }
 
-main().catch((err) => {
-  console.error(c.red("validate-kit crashed:"), err);
-  process.exit(2);
-});
+if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
+  main().catch((err) => {
+    console.error(c.red("validate-kit crashed:"), err);
+    process.exit(2);
+  });
+}

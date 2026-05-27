@@ -1,6 +1,14 @@
 import { constants } from "node:fs";
 import { access, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import {
+  applyEdits,
+  modify,
+  parse,
+  printParseErrorCode,
+  type FormattingOptions,
+  type ParseError,
+} from "jsonc-parser";
 
 type JsonPrimitive = boolean | null | number | string;
 type JsonValue = JsonArray | JsonObject | JsonPrimitive;
@@ -33,7 +41,10 @@ export interface AliasUpdateResult {
 
 interface LoadedTsConfig {
   path: string;
+  rawContent: string;
   config: TsConfigJson;
+  formattingOptions: FormattingOptions;
+  hadTrailingNewline: boolean;
 }
 
 export interface TsconfigInspection {
@@ -53,129 +64,19 @@ function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stripJsonComments(content: string): string {
-  let result = "";
-  let inString = false;
-  let stringDelimiter = '"';
-  let index = 0;
-
-  while (index < content.length) {
-    const current = content[index];
-    const next = content[index + 1];
-
-    if (inString) {
-      result += current;
-
-      if (current === "\\" && next !== undefined) {
-        result += next;
-        index += 2;
-        continue;
-      }
-
-      if (current === stringDelimiter) {
-        inString = false;
-      }
-
-      index += 1;
-      continue;
-    }
-
-    if (current === '"' || current === "'") {
-      inString = true;
-      stringDelimiter = current;
-      result += current;
-      index += 1;
-      continue;
-    }
-
-    if (current === "/" && next === "/") {
-      index += 2;
-
-      while (index < content.length && content[index] !== "\n") {
-        index += 1;
-      }
-
-      continue;
-    }
-
-    if (current === "/" && next === "*") {
-      index += 2;
-
-      while (
-        index < content.length &&
-        !(content[index] === "*" && content[index + 1] === "/")
-      ) {
-        index += 1;
-      }
-
-      index += 2;
-      continue;
-    }
-
-    result += current;
-    index += 1;
-  }
-
-  return result;
-}
-
-function stripTrailingCommas(content: string): string {
-  let result = "";
-  let inString = false;
-  let stringDelimiter = '"';
-
-  for (let index = 0; index < content.length; index += 1) {
-    const current = content[index];
-
-    if (inString) {
-      result += current;
-
-      if (current === "\\" && content[index + 1] !== undefined) {
-        result += content[index + 1];
-        index += 1;
-        continue;
-      }
-
-      if (current === stringDelimiter) {
-        inString = false;
-      }
-
-      continue;
-    }
-
-    if (current === '"' || current === "'") {
-      inString = true;
-      stringDelimiter = current;
-      result += current;
-      continue;
-    }
-
-    if (current === ",") {
-      let lookaheadIndex = index + 1;
-
-      while (
-        lookaheadIndex < content.length &&
-        /\s/.test(content[lookaheadIndex])
-      ) {
-        lookaheadIndex += 1;
-      }
-
-      const next = content[lookaheadIndex];
-
-      if (next === "}" || next === "]") {
-        continue;
-      }
-    }
-
-    result += current;
-  }
-
-  return result;
-}
-
 function parseTsconfig(rawContent: string): TsConfigJson {
-  const normalized = stripTrailingCommas(stripJsonComments(rawContent));
-  const parsed = JSON.parse(normalized) as unknown;
+  const errors: ParseError[] = [];
+  const parsed = parse(rawContent, errors, {
+    allowTrailingComma: true,
+  }) as unknown;
+
+  if (errors.length > 0) {
+    throw new Error(
+      `O tsconfig.json nao e um JSONC valido: ${printParseErrorCode(
+        errors[0].error,
+      )}.`,
+    );
+  }
 
   if (!isJsonObject(parsed)) {
     throw new Error("O tsconfig.json precisa conter um objeto JSON na raiz.");
@@ -184,13 +85,14 @@ function parseTsconfig(rawContent: string): TsConfigJson {
   return parsed;
 }
 
-function ensureObject(container: JsonObject, key: string): JsonObject {
+function readObjectField(
+  container: JsonObject,
+  key: string,
+): JsonObject | undefined {
   const existing = container[key];
 
   if (existing === undefined) {
-    const nextValue: JsonObject = {};
-    container[key] = nextValue;
-    return nextValue;
+    return undefined;
   }
 
   if (!isJsonObject(existing)) {
@@ -200,6 +102,77 @@ function ensureObject(container: JsonObject, key: string): JsonObject {
   }
 
   return existing;
+}
+
+function detectFormattingOptions(rawContent: string): FormattingOptions {
+  const eol = rawContent.includes("\r\n") ? "\r\n" : "\n";
+  const spaceIndents: number[] = [];
+  let usesTabs = false;
+
+  for (const line of rawContent.split(/\r?\n/u)) {
+    const match = /^([ \t]+)\S/u.exec(line);
+
+    if (match === null) {
+      continue;
+    }
+
+    const indentation = match[1];
+
+    if (indentation.includes("\t")) {
+      usesTabs = true;
+      break;
+    }
+
+    if (indentation.length > 0) {
+      spaceIndents.push(indentation.length);
+    }
+  }
+
+  if (usesTabs) {
+    return {
+      insertSpaces: false,
+      tabSize: 1,
+      eol,
+    };
+  }
+
+  return {
+    insertSpaces: true,
+    tabSize: spaceIndents.length === 0 ? 2 : Math.min(...spaceIndents),
+    eol,
+  };
+}
+
+function applyJsoncEdit(
+  rawContent: string,
+  path: Array<string | number>,
+  value: JsonValue | undefined,
+  formattingOptions: FormattingOptions,
+): string {
+  return applyEdits(
+    rawContent,
+    modify(rawContent, path, value, { formattingOptions }),
+  );
+}
+
+function normalizeTrailingNewline(
+  rawContent: string,
+  eol: string,
+  hadTrailingNewline: boolean,
+): string {
+  if (hadTrailingNewline) {
+    return rawContent.endsWith(eol) ? rawContent : `${rawContent}${eol}`;
+  }
+
+  if (rawContent.endsWith("\r\n")) {
+    return rawContent.slice(0, -2);
+  }
+
+  if (rawContent.endsWith("\n")) {
+    return rawContent.slice(0, -1);
+  }
+
+  return rawContent;
 }
 
 async function loadTsconfig(
@@ -217,7 +190,10 @@ async function loadTsconfig(
 
   return {
     path: tsconfigPath,
+    rawContent,
     config: parseTsconfig(rawContent),
+    formattingOptions: detectFormattingOptions(rawContent),
+    hadTrailingNewline: /\r?\n$/u.test(rawContent),
   };
 }
 
@@ -254,13 +230,13 @@ export async function upsertPathAlias(
     };
   }
 
-  const compilerOptions = ensureObject(
+  const compilerOptions = readObjectField(
     loadedTsconfig.config,
     "compilerOptions",
   );
 
   if (
-    compilerOptions.baseUrl !== undefined &&
+    compilerOptions?.baseUrl !== undefined &&
     typeof compilerOptions.baseUrl !== "string"
   ) {
     throw new Error(
@@ -268,17 +244,19 @@ export async function upsertPathAlias(
     );
   }
 
-  const baseUrlWasExplicit = typeof compilerOptions.baseUrl === "string";
+  const baseUrlWasExplicit = typeof compilerOptions?.baseUrl === "string";
+  const consumerBaseUrl = baseUrlWasExplicit
+    ? (compilerOptions.baseUrl as string)
+    : ".";
 
-  if (compilerOptions.baseUrl === undefined) {
-    compilerOptions.baseUrl = ".";
-  }
-
-  const consumerBaseUrl = compilerOptions.baseUrl as string;
-
-  const paths = ensureObject(compilerOptions, "paths");
-  const hadAlias = Object.prototype.hasOwnProperty.call(paths, alias);
-  const currentValue = readStringArray(paths[alias]);
+  const paths =
+    compilerOptions === undefined
+      ? undefined
+      : readObjectField(compilerOptions, "paths");
+  const hadAlias =
+    paths !== undefined && Object.prototype.hasOwnProperty.call(paths, alias);
+  const currentValue =
+    paths === undefined ? null : readStringArray(paths[alias]);
 
   if (
     currentValue !== null &&
@@ -295,14 +273,49 @@ export async function upsertPathAlias(
     };
   }
 
-  paths[alias] = [target];
+  let nextContent = loadedTsconfig.rawContent;
+
+  if (compilerOptions === undefined) {
+    nextContent = applyJsoncEdit(
+      nextContent,
+      ["compilerOptions"],
+      {},
+      loadedTsconfig.formattingOptions,
+    );
+  }
+
+  if (!baseUrlWasExplicit) {
+    nextContent = applyJsoncEdit(
+      nextContent,
+      ["compilerOptions", "baseUrl"],
+      ".",
+      loadedTsconfig.formattingOptions,
+    );
+  }
+
+  if (paths === undefined) {
+    nextContent = applyJsoncEdit(
+      nextContent,
+      ["compilerOptions", "paths"],
+      {},
+      loadedTsconfig.formattingOptions,
+    );
+  }
+
+  nextContent = applyJsoncEdit(
+    nextContent,
+    ["compilerOptions", "paths", alias],
+    [target],
+    loadedTsconfig.formattingOptions,
+  );
+  nextContent = normalizeTrailingNewline(
+    nextContent,
+    loadedTsconfig.formattingOptions.eol ?? "\n",
+    loadedTsconfig.hadTrailingNewline,
+  );
 
   if (!options.dryRun) {
-    await writeFile(
-      loadedTsconfig.path,
-      `${JSON.stringify(loadedTsconfig.config, null, 2)}\n`,
-      "utf8",
-    );
+    await writeFile(loadedTsconfig.path, nextContent, "utf8");
   }
 
   return {

@@ -49,18 +49,21 @@ Se você estiver abrindo uma nova major de um kit existente, não use o scaffold
 
 `meta.json` é a peça que o catálogo, o CLI e o validador usam para entender o kit. Os campos abaixo são os que normalmente exigem decisão humana:
 
-| Campo | O que precisa estar certo |
-| --- | --- |
-| `name` | kebab-case estável; vira parte do import `cullet/<nome>` |
-| `version` | SemVer do kit, não do pacote npm |
-| `description` | resumo curto, útil e específico |
-| `entryPoint` | normalmente `index.ts`; precisa existir |
-| `philosophy.errorModel` | `typed-result`, `typed-exceptions` ou `mixed` |
-| `philosophy.observability` | declare `log-port`, `metric-port` e/ou `trace-port` apenas se o kit realmente expõe essas portas |
-| `philosophy.externalDeps` | dependências runtime que o consumidor precisará instalar em import direto |
-| `docs.context` / `docs.readme` | caminhos reais dos arquivos markdown |
-| `exports` | nomes que o kit promete na superfície pública |
-| `deprecated` | `false` para kit ativo; objeto com `since` e `reason` quando houver sucessor claro |
+| Campo                                         | O que precisa estar certo                                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `name`                                        | kebab-case estável; vira parte do import `cullet/<nome>`                                                    |
+| `version`                                     | SemVer do kit, não do pacote npm                                                                            |
+| `description`                                 | resumo curto, útil e específico                                                                             |
+| `compatibility.engines`                       | ranges mínimos testados de Node e TypeScript para o kit                                                     |
+| `compatibility.directImport.peerDependencies` | peers e ranges exigidos quando o kit é consumido por `import` direto                                        |
+| `compatibility.fullControl.dependencies`      | deps e ranges que o consumidor precisa instalar depois do `cullet fc`                                       |
+| `entryPoint`                                  | normalmente `index.ts`; precisa existir                                                                     |
+| `philosophy.errorModel`                       | `typed-result`, `typed-exceptions` ou `mixed`                                                               |
+| `philosophy.observability`                    | declare `log-port`, `metric-port` e/ou `trace-port` apenas se o kit realmente expõe essas portas            |
+| `philosophy.externalDeps`                     | allowlist dos imports runtime externos usados pelo lint arquitetural                                        |
+| `docs.context` / `docs.readme`                | caminhos reais dos arquivos markdown                                                                        |
+| `exports`                                     | nomes que o kit promete na superfície pública                                                               |
+| `deprecated`                                  | `false` para kit ativo; objeto com `since`, `reason` e `successor` estruturado quando houver migração clara |
 
 ### Regras práticas para `exports`
 
@@ -72,7 +75,7 @@ Se você estiver abrindo uma nova major de um kit existente, não use o scaffold
 
 O `KIT_CONTEXT.md` não é apêndice; ele é parte do contrato do catálogo. O validador espera:
 
-- seções `Propósito`, `Camadas`, `Decisões-chave`, `Pontos de extensão` e `Não-objetivos`;
+- headings estruturados no formato `## [purpose] Propósito`, `## [layers] Camadas`, `## [key-decisions] Decisões-chave`, `## [extension-points] Pontos de extensão` e `## [non-goals] Não-objetivos`;
 - entre 200 e 400 tokens;
 - texto real, sem placeholder vazio.
 
@@ -153,7 +156,7 @@ Para uma versão nova de um kit existente:
 2. atualize `meta.json.version` e `meta.json.changelog`;
 3. acrescente a versão em `registry/index.json -> versions`;
 4. atualize `latest` se a nova versão for a referência principal;
-5. marque a versão antiga como `deprecated` quando houver sucessor explícito.
+5. marque a versão antiga como `deprecated` quando houver sucessor explícito, preferindo o formato estruturado com `guide` e `codemod` para que `cullet migrate` consiga expor o caminho de upgrade.
 
 Versões publicadas são imutáveis. Bug crítico se resolve com PATCH novo, nunca editando a pasta antiga.
 

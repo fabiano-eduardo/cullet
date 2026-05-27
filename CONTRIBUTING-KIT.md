@@ -74,16 +74,16 @@ Usando os blocos de regra abaixo como unidade de auditoria, o catálogo está co
 
 ### 7. DX assistida por IA
 
-| Regra                                                                                    | Bucket | Situação atual                                                            |
-| ---------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
-| `KIT_CONTEXT.md` existe, não está vazio e cabe no orçamento de contexto                  | A      | Existência já era validada; orçamento agora é verificado por `kitContext` |
-| `KIT_CONTEXT.md` contém propósito, camadas, decisões, pontos de extensão e não-objetivos | B      | `validate-kit.mjs` aplica `kitContext`                                    |
+| Regra                                                                                                                        | Bucket | Situação atual                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| `KIT_CONTEXT.md` existe, não está vazio e cabe no orçamento de contexto                                                      | A      | Existência já era validada; orçamento agora é verificado por `kitContext` |
+| `KIT_CONTEXT.md` usa headings estruturados (`[purpose]`, `[layers]`, `[key-decisions]`, `[extension-points]`, `[non-goals]`) | B      | `validate-kit.mjs` aplica `kitContext`                                    |
 
 ### Aderência de catálogo
 
 | Regra                                                                                   | Bucket | Situação atual                                         |
 | --------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------ |
-| `meta.json`, `README.md`, `KIT_CONTEXT.md` e `entryPoint` existem e passam no schema    | A      | Existência + schema já eram validados                  |
+| `meta.json`, `README.md`, `KIT_CONTEXT.md` e `entryPoint` existem e passam no schema    | A      | Existência + schema + `compatibility` já são validados |
 | Kits com código em `core/domain` e `core/application` precisam de specs correspondentes | B      | `validate-kit.mjs` aplica `requiredCoreTests`          |
 | `package.json` do kit não expõe runtime de observabilidade                              | B      | `validate-kit.mjs` aplica `noObservabilityRuntimeDeps` |
 | Divergências de filosofia ficam explicitadas no contexto do kit                         | C      | Revisão humana obrigatória                             |

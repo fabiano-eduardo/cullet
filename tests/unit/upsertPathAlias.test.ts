@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { upsertPathAlias } from "../../cli/utils/tsconfig.js";
 
@@ -19,7 +20,16 @@ afterEach(async () => {
 
 async function readTsconfigJson(): Promise<Record<string, unknown>> {
   const raw = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
-  return JSON.parse(raw) as Record<string, unknown>;
+  const errors: ParseError[] = [];
+  const parsed = parse(raw, errors, { allowTrailingComma: true }) as unknown;
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Invalid JSONC in test fixture: ${printParseErrorCode(errors[0].error)}`,
+    );
+  }
+
+  return parsed as Record<string, unknown>;
 }
 
 describe("upsertPathAlias", () => {
@@ -97,10 +107,7 @@ describe("upsertPathAlias", () => {
       ),
     );
 
-    const before = await readFile(
-      join(projectRoot, "tsconfig.json"),
-      "utf8",
-    );
+    const before = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
     const result = await upsertPathAlias(projectRoot, ALIAS, TARGET);
     const after = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
 
@@ -170,9 +177,44 @@ describe("upsertPathAlias", () => {
     const result = await upsertPathAlias(projectRoot, ALIAS, TARGET);
 
     expect(result.status).toBe("created");
+    const raw = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
+    expect(raw).toContain("// Project root tsconfig");
+    expect(raw).toContain("/* base options */");
     const written = await readTsconfigJson();
     const compilerOptions = written.compilerOptions as Record<string, unknown>;
     expect(compilerOptions.paths).toEqual({ [ALIAS]: [TARGET] });
+  });
+
+  it("preserves the existing indentation style when writing aliases", async () => {
+    const jsonc = `{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {}
+	}
+}`;
+    await writeFile(join(projectRoot, "tsconfig.json"), jsonc);
+
+    const result = await upsertPathAlias(projectRoot, ALIAS, TARGET);
+
+    expect(result.status).toBe("created");
+    const raw = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
+    expect(raw).toMatch(/^\t\t\t"cullet\/erp-core":/mu);
+  });
+
+  it("preserves four-space indentation when writing aliases", async () => {
+    const jsonc = `{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {}
+    }
+}`;
+    await writeFile(join(projectRoot, "tsconfig.json"), jsonc);
+
+    const result = await upsertPathAlias(projectRoot, ALIAS, TARGET);
+
+    expect(result.status).toBe("created");
+    const raw = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
+    expect(raw).toMatch(/^ {12}"cullet\/erp-core":/mu);
   });
 
   it("parses tsconfig.json with trailing commas", async () => {
@@ -184,10 +226,7 @@ describe("upsertPathAlias", () => {
         },
       },
     }`;
-    await writeFile(
-      join(projectRoot, "tsconfig.json"),
-      withTrailingCommas,
-    );
+    await writeFile(join(projectRoot, "tsconfig.json"), withTrailingCommas);
 
     const result = await upsertPathAlias(projectRoot, ALIAS, TARGET);
 
@@ -213,10 +252,7 @@ describe("upsertPathAlias", () => {
     });
 
     expect(result.status).toBe("created");
-    const after = await readFile(
-      join(projectRoot, "tsconfig.json"),
-      "utf8",
-    );
+    const after = await readFile(join(projectRoot, "tsconfig.json"), "utf8");
     expect(after).toBe(original);
   });
 
@@ -226,9 +262,9 @@ describe("upsertPathAlias", () => {
       JSON.stringify({ compilerOptions: { baseUrl: 42 } }),
     );
 
-    await expect(
-      upsertPathAlias(projectRoot, ALIAS, TARGET),
-    ).rejects.toThrow(/baseUrl.*string/);
+    await expect(upsertPathAlias(projectRoot, ALIAS, TARGET)).rejects.toThrow(
+      /baseUrl.*string/,
+    );
   });
 
   it("throws when compilerOptions is not an object", async () => {
@@ -237,8 +273,8 @@ describe("upsertPathAlias", () => {
       JSON.stringify({ compilerOptions: "nope" }),
     );
 
-    await expect(
-      upsertPathAlias(projectRoot, ALIAS, TARGET),
-    ).rejects.toThrow(/compilerOptions.*objeto/);
+    await expect(upsertPathAlias(projectRoot, ALIAS, TARGET)).rejects.toThrow(
+      /compilerOptions.*objeto/,
+    );
   });
 });

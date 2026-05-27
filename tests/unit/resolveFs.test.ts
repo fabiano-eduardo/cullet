@@ -1,9 +1,4 @@
-import {
-  mkdir,
-  mkdtemp,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -25,13 +20,15 @@ async function writeJson(path: string, data: unknown): Promise<void> {
   await writeFile(path, JSON.stringify(data, null, 2));
 }
 
-async function setupFakeCullet(opts: {
-  registry?: unknown;
-  meta?: Record<string, unknown> | null;
-  context?: string | null;
-  buildKitDist?: boolean;
-  kitSrcEntry?: boolean;
-} = {}): Promise<void> {
+async function setupFakeCullet(
+  opts: {
+    registry?: unknown;
+    meta?: Record<string, unknown> | null;
+    context?: string | null;
+    buildKitDist?: boolean;
+    kitSrcEntry?: boolean;
+  } = {},
+): Promise<void> {
   await writeJson(join(root, "package.json"), {
     name: "cullet",
     version: "0.0.0",
@@ -51,11 +48,33 @@ async function setupFakeCullet(opts: {
     await writeJson(
       join(srcDir, "meta.json"),
       opts.meta ?? {
-        schemaVersion: "1",
+        schemaVersion: "2",
         name: "erp-core",
         version: "1.0.0",
         description: "ERP core",
         philosophy: { externalDeps: ["zod"], testDeps: [] },
+        compatibility: {
+          engines: {
+            node: ">=18",
+            typescript: ">=5.0.0",
+          },
+          directImport: {
+            peerDependencies: [
+              {
+                name: "zod",
+                range: ">=3.22.0 <5",
+              },
+            ],
+          },
+          fullControl: {
+            dependencies: [
+              {
+                name: "zod",
+                range: ">=3.22.0 <5",
+              },
+            ],
+          },
+        },
       },
     );
   }
@@ -194,6 +213,28 @@ describe("loadKitMeta", () => {
     const meta = await loadKitMeta(metaUrl, "erp-core", "1.0.0");
     expect(meta?.name).toBe("erp-core");
     expect(meta?.philosophy?.externalDeps).toEqual(["zod"]);
+    expect(meta?.compatibility).toEqual({
+      engines: {
+        node: ">=18",
+        typescript: ">=5.0.0",
+      },
+      directImport: {
+        peerDependencies: [
+          {
+            name: "zod",
+            range: ">=3.22.0 <5",
+          },
+        ],
+      },
+      fullControl: {
+        dependencies: [
+          {
+            name: "zod",
+            range: ">=3.22.0 <5",
+          },
+        ],
+      },
+    });
   });
 
   it("returns null when meta.json does not exist", async () => {
@@ -208,6 +249,14 @@ describe("loadKitMeta", () => {
         name: 42,
         description: ["wrong"],
         philosophy: { externalDeps: [1, 2] },
+        compatibility: {
+          engines: {
+            node: 18,
+          },
+          directImport: {
+            peerDependencies: [1, 2],
+          },
+        },
       },
     });
     const meta = await loadKitMeta(metaUrl, "erp-core", "1.0.0");
@@ -215,6 +264,7 @@ describe("loadKitMeta", () => {
     expect(meta?.name).toBeUndefined();
     expect(meta?.description).toBeUndefined();
     expect(meta?.philosophy?.externalDeps).toEqual([]);
+    expect(meta?.compatibility).toBeUndefined();
   });
 });
 
@@ -239,19 +289,56 @@ describe("loadKitDeprecation", () => {
         deprecated: {
           since: "2026-01-01",
           reason: "rewritten",
-          successor: "erp-core@2.0.0",
+          successor: {
+            name: "erp-core",
+            version: "2.0.0",
+            guide: "MIGRATION.md",
+            notes: "Renomeie RuleSet para PolicySet antes de atualizar.",
+            codemod: {
+              path: "codemods/1.0.0-to-2.0.0.mjs",
+              description: "Renomeia simbolos legados da API de policies",
+            },
+          },
         },
       },
     });
-    const deprecation = await loadKitDeprecation(
-      metaUrl,
-      "erp-core",
-      "1.0.0",
-    );
+    const deprecation = await loadKitDeprecation(metaUrl, "erp-core", "1.0.0");
     expect(deprecation).toEqual({
       since: "2026-01-01",
       reason: "rewritten",
-      successor: "erp-core@2.0.0",
+      successor: {
+        name: "erp-core",
+        version: "2.0.0",
+        guide: "MIGRATION.md",
+        notes: "Renomeie RuleSet para PolicySet antes de atualizar.",
+        codemod: {
+          path: "codemods/1.0.0-to-2.0.0.mjs",
+          description: "Renomeia simbolos legados da API de policies",
+        },
+      },
+    });
+  });
+
+  it("normalizes legacy successor strings", async () => {
+    await setupFakeCullet({
+      meta: {
+        deprecated: {
+          since: "2026-01-01",
+          reason: "rewritten",
+          successor: "erp-core/2.0.0",
+        },
+      },
+    });
+
+    await expect(
+      loadKitDeprecation(metaUrl, "erp-core", "1.0.0"),
+    ).resolves.toEqual({
+      since: "2026-01-01",
+      reason: "rewritten",
+      successor: {
+        name: "erp-core",
+        version: "2.0.0",
+      },
     });
   });
 

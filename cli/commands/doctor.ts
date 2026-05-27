@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join, win32 } from "node:path";
 import pc from "picocolors";
 import { inspectTsconfig } from "../utils/tsconfig.js";
+import { runCommandWithTelemetry } from "../utils/telemetry.js";
 
 interface DoctorOptions {
   cwd?: string;
@@ -64,7 +65,9 @@ function findDeclaredTypescriptVersion(pkg: PackageJsonLike): string | null {
   return null;
 }
 
-function parseSemverFromRange(range: string): { major: number; minor: number } | null {
+function parseSemverFromRange(
+  range: string,
+): { major: number; minor: number } | null {
   const match = /(\d+)\.(\d+)/.exec(range);
   if (!match) return null;
   return {
@@ -73,9 +76,12 @@ function parseSemverFromRange(range: string): { major: number; minor: number } |
   };
 }
 
-async function detectTypescriptVersion(
-  projectRoot: string,
-): Promise<{ source: "node_modules" | "package.json"; raw: string; major: number; minor: number } | null> {
+async function detectTypescriptVersion(projectRoot: string): Promise<{
+  source: "node_modules" | "package.json";
+  raw: string;
+  major: number;
+  minor: number;
+} | null> {
   const installedPath = join(
     projectRoot,
     "node_modules",
@@ -119,7 +125,8 @@ function readCompilerOptions(
   config: Record<string, unknown> | null,
 ): Record<string, unknown> | undefined {
   if (!config) return undefined;
-  const compilerOptions = (config as { compilerOptions?: unknown }).compilerOptions;
+  const compilerOptions = (config as { compilerOptions?: unknown })
+    .compilerOptions;
   if (typeof compilerOptions !== "object" || compilerOptions === null) {
     return undefined;
   }
@@ -132,6 +139,20 @@ function isKitDirAssumingEsm(/* placeholder for future per-kit detection */): bo
   return true;
 }
 
+function isAbsoluteProjectPath(value: string): boolean {
+  return isAbsolute(value) || win32.isAbsolute(value);
+}
+
+export function resolveDoctorProjectRoot(
+  baseCwd: string,
+  optionCwd?: string,
+): string {
+  if (!optionCwd) return baseCwd;
+  return isAbsoluteProjectPath(optionCwd)
+    ? optionCwd
+    : join(baseCwd, optionCwd);
+}
+
 export function createDoctorCommand(): Command {
   return new Command("doctor")
     .description(
@@ -142,134 +163,153 @@ export function createDoctorCommand(): Command {
       "Diretorio do projeto a auditar (padrao: process.cwd())",
     )
     .action(async (options: DoctorOptions) => {
-      const projectRoot = options.cwd
-        ? options.cwd.startsWith("/")
-          ? options.cwd
-          : join(process.cwd(), options.cwd)
-        : process.cwd();
+      await runCommandWithTelemetry({
+        fromMetaUrl: import.meta.url,
+        command: "doctor",
+        async handler(tracker) {
+          tracker.set("cwdOverride", options.cwd !== undefined);
 
-      const findings: Finding[] = [];
+          const projectRoot = resolveDoctorProjectRoot(
+            process.cwd(),
+            options.cwd,
+          );
+          const findings: Finding[] = [];
 
-      const tsconfigInspection = await inspectTsconfig(projectRoot);
-      if (tsconfigInspection === null) {
-        findings.push({
-          severity: "warn",
-          code: "tsconfig-missing",
-          message:
-            "Nenhum tsconfig.json foi encontrado no projeto. Sem ele, o cullet nao consegue registrar aliases nem garantir resolucao correta.",
-          hint:
-            "Crie um tsconfig.json na raiz com moduleResolution \"bundler\" (ou \"nodenext\") e baseUrl \".\".",
-        });
-      } else {
-        const compilerOptions = readCompilerOptions(
-          tsconfigInspection.config as Record<string, unknown>,
-        );
-        const moduleResolution = readModuleResolution(compilerOptions);
-
-        if (moduleResolution === null) {
-          findings.push({
-            severity: "warn",
-            code: "module-resolution-absent",
-            message:
-              "compilerOptions.moduleResolution nao esta definido. O TypeScript pode cair em uma resolucao classica que ignora os exports do cullet.",
-            hint:
-              'Defina "moduleResolution": "bundler" (ou "nodenext") no tsconfig.json.',
-          });
-        } else if (KNOWN_INCOMPATIBLE_MODULE_RESOLUTIONS.has(moduleResolution.normalized)) {
-          findings.push({
-            severity: "error",
-            code: "module-resolution-incompatible",
-            message: `compilerOptions.moduleResolution="${moduleResolution.raw}" nao le os subpath exports do cullet.`,
-            hint:
-              'Use "bundler" (Vite/tsup/esbuild) ou "nodenext" (Node ESM). Esses sao os modos que respeitam o campo "exports" do package.json do cullet.',
-          });
-        } else if (!ACCEPTED_MODULE_RESOLUTIONS.has(moduleResolution.normalized)) {
-          findings.push({
-            severity: "warn",
-            code: "module-resolution-unverified",
-            message: `compilerOptions.moduleResolution="${moduleResolution.raw}" nao foi validado com o cullet.`,
-            hint:
-              'O cullet e testado contra "bundler" e "nodenext". Outros modos podem funcionar, mas a equivalencia nao e garantida.',
-          });
-        }
-
-        if (compilerOptions) {
-          const hasPaths =
-            typeof compilerOptions.paths === "object" &&
-            compilerOptions.paths !== null &&
-            !Array.isArray(compilerOptions.paths);
-          const hasBaseUrl = typeof compilerOptions.baseUrl === "string";
-
-          if (hasPaths && !hasBaseUrl) {
+          const tsconfigInspection = await inspectTsconfig(projectRoot);
+          if (tsconfigInspection === null) {
             findings.push({
               severity: "warn",
-              code: "paths-without-baseurl",
+              code: "tsconfig-missing",
               message:
-                'compilerOptions.paths esta definido sem compilerOptions.baseUrl. Em TypeScript < 5.0, paths so e resolvido com baseUrl explicito.',
-              hint:
-                'Adicione "baseUrl": "." ao tsconfig para garantir compatibilidade com versoes antigas do TS.',
+                "Nenhum tsconfig.json foi encontrado no projeto. Sem ele, o cullet nao consegue registrar aliases nem garantir resolucao correta.",
+              hint: 'Crie um tsconfig.json na raiz com moduleResolution "bundler" (ou "nodenext") e baseUrl ".".',
             });
+          } else {
+            const compilerOptions = readCompilerOptions(
+              tsconfigInspection.config as Record<string, unknown>,
+            );
+            const moduleResolution = readModuleResolution(compilerOptions);
+
+            if (moduleResolution === null) {
+              findings.push({
+                severity: "warn",
+                code: "module-resolution-absent",
+                message:
+                  "compilerOptions.moduleResolution nao esta definido. O TypeScript pode cair em uma resolucao classica que ignora os exports do cullet.",
+                hint: 'Defina "moduleResolution": "bundler" (ou "nodenext") no tsconfig.json.',
+              });
+            } else if (
+              KNOWN_INCOMPATIBLE_MODULE_RESOLUTIONS.has(
+                moduleResolution.normalized,
+              )
+            ) {
+              findings.push({
+                severity: "error",
+                code: "module-resolution-incompatible",
+                message: `compilerOptions.moduleResolution="${moduleResolution.raw}" nao le os subpath exports do cullet.`,
+                hint: 'Use "bundler" (Vite/tsdown/esbuild) ou "nodenext" (Node ESM). Esses sao os modos que respeitam o campo "exports" do package.json do cullet.',
+              });
+            } else if (
+              !ACCEPTED_MODULE_RESOLUTIONS.has(moduleResolution.normalized)
+            ) {
+              findings.push({
+                severity: "warn",
+                code: "module-resolution-unverified",
+                message: `compilerOptions.moduleResolution="${moduleResolution.raw}" nao foi validado com o cullet.`,
+                hint: 'O cullet e testado contra "bundler" e "nodenext". Outros modos podem funcionar, mas a equivalencia nao e garantida.',
+              });
+            }
+
+            if (compilerOptions) {
+              const hasPaths =
+                typeof compilerOptions.paths === "object" &&
+                compilerOptions.paths !== null &&
+                !Array.isArray(compilerOptions.paths);
+              const hasBaseUrl = typeof compilerOptions.baseUrl === "string";
+
+              if (hasPaths && !hasBaseUrl) {
+                findings.push({
+                  severity: "warn",
+                  code: "paths-without-baseurl",
+                  message:
+                    "compilerOptions.paths esta definido sem compilerOptions.baseUrl. Em TypeScript < 5.0, paths so e resolvido com baseUrl explicito.",
+                  hint: 'Adicione "baseUrl": "." ao tsconfig para garantir compatibilidade com versoes antigas do TS.',
+                });
+              }
+            }
           }
-        }
-      }
 
-      const consumerPkg = await readJsonFile<PackageJsonLike>(
-        join(projectRoot, "package.json"),
-      );
-      if (consumerPkg === null) {
-        findings.push({
-          severity: "warn",
-          code: "package-json-missing",
-          message:
-            "Nenhum package.json foi encontrado no diretorio raiz. Verifique se voce esta executando o doctor a partir da raiz do projeto.",
-        });
-      } else {
-        const kitAssumesEsm = isKitDirAssumingEsm();
-        if (kitAssumesEsm && consumerPkg.type !== "module") {
-          findings.push({
-            severity: "error",
-            code: "package-type-not-module",
-            message:
-              'Os kits do cullet sao publicados como ESM, mas o seu package.json nao declara "type": "module".',
-            hint:
-              'Adicione "type": "module" ao package.json, ou consuma os kits via bundler com interop CJS->ESM.',
-          });
-        }
-      }
+          const consumerPkg = await readJsonFile<PackageJsonLike>(
+            join(projectRoot, "package.json"),
+          );
+          if (consumerPkg === null) {
+            findings.push({
+              severity: "warn",
+              code: "package-json-missing",
+              message:
+                "Nenhum package.json foi encontrado no diretorio raiz. Verifique se voce esta executando o doctor a partir da raiz do projeto.",
+            });
+          } else {
+            const kitAssumesEsm = isKitDirAssumingEsm();
+            if (kitAssumesEsm && consumerPkg.type !== "module") {
+              findings.push({
+                severity: "error",
+                code: "package-type-not-module",
+                message:
+                  'Os kits do cullet sao publicados como ESM, mas o seu package.json nao declara "type": "module".',
+                hint: 'Adicione "type": "module" ao package.json, ou consuma os kits via bundler com interop CJS->ESM.',
+              });
+            }
+          }
 
-      const ts = await detectTypescriptVersion(projectRoot);
-      if (ts === null) {
-        findings.push({
-          severity: "info",
-          code: "typescript-not-detected",
-          message:
-            "Nao foi possivel detectar a versao do TypeScript (nem em node_modules, nem nas dependencias do package.json).",
-          hint: `Os kits sao testados com TypeScript >= ${MIN_TS_DISPLAY}.`,
-        });
-      } else {
-        const tooOld =
-          ts.major < MIN_TS_MAJOR ||
-          (ts.major === MIN_TS_MAJOR && ts.minor < MIN_TS_MINOR);
-        if (tooOld) {
-          findings.push({
-            severity: "error",
-            code: "typescript-version-low",
-            message: `TypeScript ${ts.raw} detectado (origem: ${ts.source}). Minimo testado: ${MIN_TS_DISPLAY}.`,
-            hint: `Atualize com: npm install -D typescript@latest`,
-          });
-        }
-      }
+          const ts = await detectTypescriptVersion(projectRoot);
+          if (ts === null) {
+            findings.push({
+              severity: "info",
+              code: "typescript-not-detected",
+              message:
+                "Nao foi possivel detectar a versao do TypeScript (nem em node_modules, nem nas dependencias do package.json).",
+              hint: `Os kits sao testados com TypeScript >= ${MIN_TS_DISPLAY}.`,
+            });
+          } else {
+            const tooOld =
+              ts.major < MIN_TS_MAJOR ||
+              (ts.major === MIN_TS_MAJOR && ts.minor < MIN_TS_MINOR);
+            if (tooOld) {
+              findings.push({
+                severity: "error",
+                code: "typescript-version-low",
+                message: `TypeScript ${ts.raw} detectado (origem: ${ts.source}). Minimo testado: ${MIN_TS_DISPLAY}.`,
+                hint: `Atualize com: npm install -D typescript@latest`,
+              });
+            }
+          }
 
-      report(findings);
-      const hasError = findings.some((finding) => finding.severity === "error");
-      if (hasError) process.exitCode = 1;
+          const errorCount = findings.filter(
+            (finding) => finding.severity === "error",
+          ).length;
+          const warnCount = findings.filter(
+            (finding) => finding.severity === "warn",
+          ).length;
+          tracker.set("findingCount", findings.length);
+          tracker.set("errorCount", errorCount);
+          tracker.set("warnCount", warnCount);
+
+          report(findings);
+          if (errorCount > 0) {
+            process.exitCode = 1;
+          }
+        },
+      });
     });
 }
 
 function report(findings: Finding[]): void {
   if (findings.length === 0) {
     console.log(
-      pc.green("cullet doctor: nenhum problema detectado. Tudo certo para usar o cullet."),
+      pc.green(
+        "cullet doctor: nenhum problema detectado. Tudo certo para usar o cullet.",
+      ),
     );
     return;
   }
@@ -289,8 +329,8 @@ function report(findings: Finding[]): void {
       finding.severity === "error"
         ? pc.red("error")
         : finding.severity === "warn"
-          ? pc.yellow("warn ")
-          : pc.cyan("info ");
+        ? pc.yellow("warn ")
+        : pc.cyan("info ");
     console.log("");
     console.log(`${tag} ${pc.bold(`[${finding.code}]`)} ${finding.message}`);
     if (finding.hint) {

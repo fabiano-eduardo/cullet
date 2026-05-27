@@ -9,6 +9,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildPackageExports } from "./package-exports.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "..");
@@ -20,27 +21,7 @@ const checkOnly = process.argv.includes("--check");
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"));
 const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
-
-function kitDistEntry(name, version, ext) {
-  return `./dist/kits/${name}/versions/${version}/index.${ext}`;
-}
-
-function exportFor(name, version) {
-  return {
-    types: kitDistEntry(name, version, "d.ts"),
-    import: kitDistEntry(name, version, "js"),
-  };
-}
-
-const nextExports = {};
-
-for (const [name, entry] of Object.entries(registry)) {
-  nextExports[`./${name}`] = exportFor(name, entry.latest);
-
-  for (const version of entry.versions) {
-    nextExports[`./${name}/${version}`] = exportFor(name, version);
-  }
-}
+const nextExports = buildPackageExports(registry);
 
 const currentExports = JSON.stringify(packageJson.exports ?? {});
 const desiredExports = JSON.stringify(nextExports);
@@ -70,4 +51,6 @@ await writeFile(
   "utf8",
 );
 
-console.log("package.json exports atualizados a partir de registry/index.json.");
+console.log(
+  "package.json exports atualizados a partir de registry/index.json.",
+);
