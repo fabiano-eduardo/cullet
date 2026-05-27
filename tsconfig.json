@@ -12,6 +12,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["cli/**/*.ts", "kits/**/*.ts", "tsup.config.ts"],
+  "include": [
+    "cli/**/*.ts",
+    "kits/**/*.ts",
+    "registry/**/*.ts",
+    "tsdown.config.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

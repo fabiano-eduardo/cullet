@@ -21,6 +21,8 @@ async function writeCulletPackage(dir: string): Promise<void> {
     join(dir, "package.json"),
     JSON.stringify({ name: "cullet", version: "0.0.0" }, null, 2),
   );
+  await mkdir(join(dir, "registry"), { recursive: true });
+  await writeFile(join(dir, "registry", "index.json"), "{}\n");
 }
 
 async function writeJsonPackage(
@@ -70,18 +72,32 @@ describe("findCulletPackageRoot", () => {
     const culletRoot = join(workspace, "cullet");
     await writeCulletPackage(culletRoot);
 
-    const intermediate = join(culletRoot, "node_modules", "tsup");
-    await writeJsonPackage(intermediate, { name: "tsup" });
+    const intermediate = join(culletRoot, "node_modules", "tsdown");
+    await writeJsonPackage(intermediate, { name: "tsdown" });
 
     const intermediateNested = join(intermediate, "dist", "index.js");
     await mkdir(join(intermediate, "dist"), { recursive: true });
     await writeFile(intermediateNested, "");
 
     // Caller is inside cullet but past a non-cullet package.json — the
-    // function should keep walking up after seeing `tsup` and land on cullet.
+    // function should keep walking up after seeing `tsdown` and land on cullet.
     expect(findCulletPackageRoot(asMetaUrl(intermediateNested))).toBe(
       culletRoot,
     );
+  });
+
+  it("ignores same-name package.json files without cullet markers", async () => {
+    const culletRoot = join(workspace, "cullet");
+    await writeCulletPackage(culletRoot);
+
+    const lookalike = join(culletRoot, "dist");
+    await writeJsonPackage(lookalike, { name: "cullet", version: "9.9.9" });
+
+    const nested = join(lookalike, "chunks", "index.js");
+    await mkdir(join(lookalike, "chunks"), { recursive: true });
+    await writeFile(nested, "");
+
+    expect(findCulletPackageRoot(asMetaUrl(nested))).toBe(culletRoot);
   });
 
   it("resolves a pnpm-style nested layout", async () => {
