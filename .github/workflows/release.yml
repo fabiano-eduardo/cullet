@@ -27,9 +27,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - run: npm ci
+
+      - name: ESLint
+        run: npm run lint
 
       - name: TypeScript typecheck
         run: npm run typecheck

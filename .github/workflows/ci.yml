@@ -30,6 +30,21 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npx changeset status --since=origin/${{ github.base_ref }}
 
+      - name: Prettier (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          FORMAT_BASE_REF: origin/${{ github.base_ref }}
+        run: npm run format:check:changed
+
+      - name: Prettier (changed files)
+        if: github.event_name != 'pull_request'
+        env:
+          FORMAT_BASE_REF: ${{ github.event.before }}
+        run: npm run format:check:changed
+
+      - name: ESLint
+        run: npm run lint
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
