@@ -40,8 +40,10 @@ const SECTION_DEFINITIONS: readonly {
 const SECTION_IDS = new Set<KitContextSectionId>(KIT_CONTEXT_SECTION_ORDER);
 const LEGACY_TITLE_TO_ID = new Map<string, KitContextSectionId>(
   SECTION_DEFINITIONS.flatMap((definition) =>
-    definition.titles.map((title) => [normalize(title), definition.id] as const)
-  )
+    definition.titles.map(
+      (title) => [normalize(title), definition.id] as const,
+    ),
+  ),
 );
 
 const STRUCTURED_SECTION_HEADING_PATTERN =
@@ -59,7 +61,7 @@ function normalize(value: string): string {
 
 function resolveSectionId(
   explicitId: string | undefined,
-  title: string
+  title: string,
 ): KitContextSectionId | null {
   if (
     explicitId !== undefined &&
@@ -130,7 +132,7 @@ export function parseKitContextDocument(raw: string): KitContextDocument {
 }
 
 export function findMissingKitContextSections(
-  document: KitContextDocument
+  document: KitContextDocument,
 ): KitContextSectionId[] {
   const present = new Set<KitContextSectionId>();
 
@@ -141,6 +143,6 @@ export function findMissingKitContextSections(
   }
 
   return KIT_CONTEXT_SECTION_ORDER.filter(
-    (sectionId) => !present.has(sectionId)
+    (sectionId) => !present.has(sectionId),
   );
 }

@@ -79,7 +79,7 @@ export async function listKits(): Promise<CatalogKitSummary[]> {
 
 export async function loadKit(
   name: string,
-  requestedVersion?: string
+  requestedVersion?: string,
 ): Promise<CatalogKit> {
   const registry = await loadRegistry();
   const entry = resolveRegistryEntry(registry, name);

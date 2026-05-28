@@ -86,7 +86,7 @@ function resolveHomeDir(env: NodeJS.ProcessEnv): string {
   }
 
   throw new Error(
-    "HOME nao esta definido; nao foi possivel resolver a telemetria do cullet."
+    "HOME nao esta definido; nao foi possivel resolver a telemetria do cullet.",
   );
 }
 
@@ -124,13 +124,13 @@ function resolveStateDir(env: NodeJS.ProcessEnv): string {
 }
 
 export function resolveTelemetryConfigPath(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): string {
   return join(resolveConfigDir(env), "telemetry.json");
 }
 
 export function resolveTelemetryLogPath(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): string {
   return join(resolveStateDir(env), "events.ndjson");
 }
@@ -170,7 +170,7 @@ function normalizeTelemetryEndpoint(endpoint: string): string {
   const candidate = endpoint.trim();
   if (candidate.length === 0) {
     throw new Error(
-      "O endpoint de telemetria precisa ser uma URL HTTPS valida."
+      "O endpoint de telemetria precisa ser uma URL HTTPS valida.",
     );
   }
 
@@ -179,7 +179,7 @@ function normalizeTelemetryEndpoint(endpoint: string): string {
     url = new URL(candidate);
   } catch {
     throw new Error(
-      "O endpoint de telemetria precisa ser uma URL HTTPS valida."
+      "O endpoint de telemetria precisa ser uma URL HTTPS valida.",
     );
   }
 
@@ -203,7 +203,7 @@ function readConfiguredTelemetryEndpoint(value: unknown): string | undefined {
 }
 
 async function readTelemetryConfigFile(
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
 ): Promise<TelemetryConfig> {
   try {
     const raw = await readFile(resolveTelemetryConfigPath(env), "utf8");
@@ -230,7 +230,7 @@ async function readTelemetryConfigFile(
 
 async function writeTelemetryConfigFile(
   env: NodeJS.ProcessEnv,
-  config: TelemetryConfig
+  config: TelemetryConfig,
 ): Promise<void> {
   const configPath = resolveTelemetryConfigPath(env);
   await mkdir(dirname(configPath), { recursive: true });
@@ -242,7 +242,7 @@ async function writeTelemetryConfigFile(
 
 function toStatus(
   env: NodeJS.ProcessEnv,
-  config: TelemetryConfig
+  config: TelemetryConfig,
 ): TelemetryStatus {
   return {
     enabled: config.enabled,
@@ -255,7 +255,7 @@ function toStatus(
 
 async function appendLocalEvent(
   env: NodeJS.ProcessEnv,
-  payload: TelemetryEnvelope
+  payload: TelemetryEnvelope,
 ): Promise<void> {
   const logPath = resolveTelemetryLogPath(env);
   await mkdir(dirname(logPath), { recursive: true });
@@ -275,7 +275,7 @@ async function readTelemetryResponseText(response: Response): Promise<string> {
 
 function formatTelemetryResponseError(
   status: number,
-  responseBody: string
+  responseBody: string,
 ): string {
   const trimmedBody = responseBody.trim();
   if (trimmedBody.length === 0) {
@@ -291,7 +291,7 @@ function formatTelemetryResponseError(
 function logRemoteTelemetryFailure(
   endpoint: string,
   error: unknown,
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
 ): void {
   if (!isVerboseTelemetryEnabled(env)) {
     return;
@@ -301,7 +301,7 @@ function logRemoteTelemetryFailure(
 
   try {
     process.stderr.write(
-      `[cullet telemetry] Falha ao exportar evento para ${endpoint}: ${detail}\n`
+      `[cullet telemetry] Falha ao exportar evento para ${endpoint}: ${detail}\n`,
     );
   } catch {
     return;
@@ -310,7 +310,7 @@ function logRemoteTelemetryFailure(
 
 async function postRemoteEvent(
   endpoint: string,
-  payload: TelemetryEnvelope
+  payload: TelemetryEnvelope,
 ): Promise<void> {
   const normalizedEndpoint = normalizeTelemetryEndpoint(endpoint);
   const controller = new AbortController();
@@ -330,7 +330,7 @@ async function postRemoteEvent(
 
     if (!response.ok) {
       throw new Error(
-        formatTelemetryResponseError(response.status, responseBody)
+        formatTelemetryResponseError(response.status, responseBody),
       );
     }
   } finally {
@@ -339,7 +339,7 @@ async function postRemoteEvent(
 }
 
 export async function getTelemetryStatus(
-  options: { env?: NodeJS.ProcessEnv } = {}
+  options: { env?: NodeJS.ProcessEnv } = {},
 ): Promise<TelemetryStatus> {
   const env = options.env ?? process.env;
   const config = await readTelemetryConfigFile(env);
@@ -347,7 +347,7 @@ export async function getTelemetryStatus(
 }
 
 export async function enableTelemetry(
-  options: { endpoint?: string; env?: NodeJS.ProcessEnv } = {}
+  options: { endpoint?: string; env?: NodeJS.ProcessEnv } = {},
 ): Promise<TelemetryStatus> {
   const env = options.env ?? process.env;
   const current = await readTelemetryConfigFile(env);
@@ -366,7 +366,7 @@ export async function enableTelemetry(
 }
 
 export async function disableTelemetry(
-  options: { env?: NodeJS.ProcessEnv } = {}
+  options: { env?: NodeJS.ProcessEnv } = {},
 ): Promise<TelemetryStatus> {
   const env = options.env ?? process.env;
   const current = await readTelemetryConfigFile(env);
@@ -383,7 +383,7 @@ export async function disableTelemetry(
 export async function emitTelemetryIfEnabled(
   fromMetaUrl: string,
   event: TelemetryEventInput,
-  options: { env?: NodeJS.ProcessEnv } = {}
+  options: { env?: NodeJS.ProcessEnv } = {},
 ): Promise<boolean> {
   const env = options.env ?? process.env;
 
@@ -458,7 +458,7 @@ export async function runCommandWithTelemetry<T>(options: {
         durationMs: Date.now() - startedAt,
         properties: tracker.snapshot(),
       },
-      { env: options.env }
+      { env: options.env },
     );
     return result;
   } catch (error) {
@@ -471,7 +471,7 @@ export async function runCommandWithTelemetry<T>(options: {
         durationMs: Date.now() - startedAt,
         properties: tracker.snapshot(),
       },
-      { env: options.env }
+      { env: options.env },
     );
     throw error;
   }

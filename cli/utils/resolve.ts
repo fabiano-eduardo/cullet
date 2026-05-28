@@ -85,7 +85,7 @@ export function parseKitArg(rawValue: string): ParsedKitArg {
 export async function resolveBuiltKitDir(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<string> {
   return resolveSharedBuiltKitDir(fromMetaUrl, name, version);
 }
@@ -93,7 +93,7 @@ export async function resolveBuiltKitDir(
 export async function resolveKitSourceDir(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<string> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const sourceDir = kitSrcDir(packageRoot, name, version);
@@ -110,7 +110,7 @@ export async function resolveKitSourceDir(
       return distDir;
     } catch {
       throw new Error(
-        `O fonte do kit "${name}@${version}" nao foi encontrado em ${sourceDir} nem em ${distDir}.`
+        `O fonte do kit "${name}@${version}" nao foi encontrado em ${sourceDir} nem em ${distDir}.`,
       );
     }
   }

@@ -49,7 +49,7 @@ export interface KitMigrationResult {
 }
 
 type KitMigrationRunner = (
-  context: KitMigrationContext
+  context: KitMigrationContext,
 ) => Promise<KitMigrationResult | void>;
 
 interface MigrationModuleShape {
@@ -59,14 +59,14 @@ interface MigrationModuleShape {
 
 function assertPathInsideVersionRoot(
   rootDir: string,
-  declaredPath: string
+  declaredPath: string,
 ): string {
   const resolvedPath = resolve(rootDir, declaredPath);
   const rootWithSeparator = `${rootDir}${sep}`;
 
   if (resolvedPath !== rootDir && !resolvedPath.startsWith(rootWithSeparator)) {
     throw new Error(
-      `O asset de migracao "${declaredPath}" precisa permanecer dentro da pasta da versao do kit.`
+      `O asset de migracao "${declaredPath}" precisa permanecer dentro da pasta da versao do kit.`,
     );
   }
 
@@ -77,7 +77,7 @@ async function resolveKitVersionAsset(
   fromMetaUrl: string,
   name: string,
   version: string,
-  declaredPath: string
+  declaredPath: string,
 ): Promise<string | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const roots = [
@@ -113,7 +113,7 @@ function normalizeResult(value: unknown): KitMigrationResult {
   if (
     Array.isArray(result.changedFiles) &&
     result.changedFiles.every(
-      (entry): entry is string => typeof entry === "string"
+      (entry): entry is string => typeof entry === "string",
     )
   ) {
     normalized.changedFiles = [...result.changedFiles];
@@ -123,7 +123,7 @@ function normalizeResult(value: unknown): KitMigrationResult {
 }
 
 async function loadKitMigrationRunner(
-  codemodPath: string
+  codemodPath: string,
 ): Promise<KitMigrationRunner> {
   const moduleExports = (await import(
     pathToFileURL(codemodPath).href
@@ -132,12 +132,12 @@ async function loadKitMigrationRunner(
     typeof moduleExports.run === "function"
       ? moduleExports.run
       : typeof moduleExports.default === "function"
-      ? moduleExports.default
-      : null;
+        ? moduleExports.default
+        : null;
 
   if (candidate === null) {
     throw new Error(
-      `O codemod ${codemodPath} precisa exportar uma funcao "run" ou default.`
+      `O codemod ${codemodPath} precisa exportar uma funcao "run" ou default.`,
     );
   }
 
@@ -147,7 +147,7 @@ async function loadKitMigrationRunner(
 export async function loadKitMigrationPlan(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<KitMigrationPlan | null> {
   const deprecation = await loadKitDeprecation(fromMetaUrl, name, version);
 
@@ -168,7 +168,7 @@ export async function loadKitMigrationPlan(
         fromMetaUrl,
         name,
         version,
-        deprecation.successor.guide
+        deprecation.successor.guide,
       ),
     };
   }
@@ -181,7 +181,7 @@ export async function loadKitMigrationPlan(
         fromMetaUrl,
         name,
         version,
-        deprecation.successor.codemod.path
+        deprecation.successor.codemod.path,
       ),
     };
   }
@@ -195,17 +195,17 @@ export async function runKitMigrationCodemod(
     projectDir: string;
     dryRun: boolean;
     report(message: string): void;
-  }
+  },
 ): Promise<KitMigrationResult> {
   if (plan.codemod === undefined) {
     throw new Error(
-      `Nenhum codemod foi declarado para ${plan.source.name}@${plan.source.version}.`
+      `Nenhum codemod foi declarado para ${plan.source.name}@${plan.source.version}.`,
     );
   }
 
   if (plan.codemod.resolvedPath === null) {
     throw new Error(
-      `O codemod ${plan.codemod.declaredPath} nao foi encontrado para ${plan.source.name}@${plan.source.version}.`
+      `O codemod ${plan.codemod.declaredPath} nao foi encontrado para ${plan.source.name}@${plan.source.version}.`,
     );
   }
 

@@ -30,10 +30,10 @@ const conflicts = findPackageExportConflicts(currentExportsValue, nextExports);
 
 if (conflicts.length > 0) {
   console.error(
-    "package.json.exports contem entradas manuais que o sync nao gerencia."
+    "package.json.exports contem entradas manuais que o sync nao gerencia.",
   );
   console.error(
-    "Para evitar sobrescrita silenciosa, atualize scripts/package-exports.mjs ou remova a entrada manual."
+    "Para evitar sobrescrita silenciosa, atualize scripts/package-exports.mjs ou remova a entrada manual.",
   );
 
   for (const conflict of conflicts) {
@@ -43,7 +43,7 @@ if (conflicts.length > 0) {
     }
 
     console.error(
-      `- condicao manual nao gerada: ${conflict.subpath} -> ${conflict.condition}`
+      `- condicao manual nao gerada: ${conflict.subpath} -> ${conflict.condition}`,
     );
   }
 
@@ -60,7 +60,7 @@ if (currentExports === desiredExports) {
 
 if (checkOnly) {
   console.error(
-    "package.json.exports esta fora de sincronia com registry/index.json."
+    "package.json.exports esta fora de sincronia com registry/index.json.",
   );
   console.error("Execute `npm run sync-exports` para regenerar.");
   console.error("Esperado:");
@@ -75,9 +75,9 @@ packageJson.exports = nextExports;
 await writeFile(
   packageJsonPath,
   JSON.stringify(packageJson, null, 2) + "\n",
-  "utf8"
+  "utf8",
 );
 
 console.log(
-  "package.json exports atualizados a partir de registry/index.json."
+  "package.json exports atualizados a partir de registry/index.json.",
 );

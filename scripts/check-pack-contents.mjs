@@ -41,7 +41,7 @@ function resolveTarballPath(rawPath) {
   if (latestTarball !== undefined) return latestTarball;
 
   throw new Error(
-    "Nenhum tarball .tgz encontrado. Rode `npm pack` antes de validar o conteudo."
+    "Nenhum tarball .tgz encontrado. Rode `npm pack` antes de validar o conteudo.",
   );
 }
 
@@ -72,7 +72,7 @@ const entries = result.stdout
 
 const registryRaw = await readFile(
   resolve(repoRoot, "registry", "index.json"),
-  "utf8"
+  "utf8",
 );
 const registry = JSON.parse(registryRaw);
 
@@ -113,7 +113,7 @@ const forbidden = entries.filter(
     (entry.startsWith("registry/") && entry !== "registry/index.json") ||
     /(^|\/)__tests__(\/|$)/.test(entry) ||
     /\.(spec|test)\.ts$/.test(entry) ||
-    isUnexpectedRootDistChunk(entry)
+    isUnexpectedRootDistChunk(entry),
 );
 
 if (missing.length > 0 || forbidden.length > 0) {
@@ -131,5 +131,5 @@ if (missing.length > 0 || forbidden.length > 0) {
 console.log(
   `Tarball OK (${basename(tarballPath)}): ${entries.length} arquivos, ${
     required.size
-  } esperados verificados.`
+  } esperados verificados.`,
 );

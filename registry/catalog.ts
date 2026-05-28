@@ -81,7 +81,7 @@ function kitSrcDir(packageRoot: string, name: string, version: string): string {
 function kitDistDir(
   packageRoot: string,
   name: string,
-  version: string
+  version: string,
 ): string {
   return join(packageRoot, DIST_KITS_DIR, name, "versions", version);
 }
@@ -112,7 +112,7 @@ function isCulletPackageRoot(dir: string): boolean {
 function parseRegistry(data: unknown): Registry {
   if (!isRecord(data)) {
     throw new Error(
-      "O arquivo registry/index.json nao contem um objeto valido."
+      "O arquivo registry/index.json nao contem um objeto valido.",
     );
   }
 
@@ -132,7 +132,7 @@ function parseRegistry(data: unknown): Registry {
       !versions.every((value): value is string => typeof value === "string")
     ) {
       throw new Error(
-        `A lista de versoes de "${name}" no registry esta invalida.`
+        `A lista de versoes de "${name}" no registry esta invalida.`,
       );
     }
 
@@ -142,7 +142,7 @@ function parseRegistry(data: unknown): Registry {
 
     if (typeof description !== "string") {
       throw new Error(
-        `O campo description de "${name}" no registry esta invalido.`
+        `O campo description de "${name}" no registry esta invalido.`,
       );
     }
 
@@ -157,7 +157,7 @@ function parseRegistry(data: unknown): Registry {
 }
 
 function parseVersionedKitArg(
-  rawValue: string
+  rawValue: string,
 ): { name: string; version?: string } | null {
   const value = rawValue.trim();
 
@@ -206,7 +206,7 @@ function parseLegacySuccessorReference(value: string): KitSuccessor | null {
 }
 
 function parseSuccessorCodemod(
-  value: unknown
+  value: unknown,
 ): KitSuccessorCodemod | undefined {
   if (!isRecord(value)) return undefined;
 
@@ -324,7 +324,7 @@ function parseKitCompatibility(value: unknown): KitCompatibility | undefined {
   const node = engines.node;
   const typescript = engines.typescript;
   const peerDependencies = parseKitDependencyList(
-    directImport.peerDependencies
+    directImport.peerDependencies,
   );
   const dependencies = parseKitDependencyList(fullControl.dependencies);
 
@@ -362,7 +362,7 @@ function fallbackKitDependencies(names: string[] | undefined): KitDependency[] {
 }
 
 async function readKitDeprecationCandidate(
-  metaPath: string
+  metaPath: string,
 ): Promise<{ status: "ok"; deprecation: KitDeprecation | null } | null> {
   try {
     const raw = await readFile(metaPath, "utf8");
@@ -386,7 +386,7 @@ function warnOnDeprecationMetaDivergence(
   sourceMetaPath: string,
   sourceDeprecation: KitDeprecation | null,
   distMetaPath: string,
-  distDeprecation: KitDeprecation | null
+  distDeprecation: KitDeprecation | null,
 ): void {
   if (JSON.stringify(sourceDeprecation) === JSON.stringify(distDeprecation)) {
     return;
@@ -404,7 +404,7 @@ function warnOnDeprecationMetaDivergence(
       `${sourceMetaPath} e ${distMetaPath}.`,
       `A resolucao local prioriza ${sourceMetaPath}; rode o build antes de publicar para alinhar o comportamento com o pacote publicado.`,
     ].join(" "),
-    { code: DEPRECATION_META_DIVERGENCE_WARNING_CODE }
+    { code: DEPRECATION_META_DIVERGENCE_WARNING_CODE },
   );
 }
 
@@ -417,12 +417,12 @@ async function readKitMeta(metaPath: string): Promise<KitMeta | null> {
     const compatibility = parseKitCompatibility(parsed.compatibility);
     const externalDeps = Array.isArray(philosophy.externalDeps)
       ? philosophy.externalDeps.filter(
-          (entry): entry is string => typeof entry === "string"
+          (entry): entry is string => typeof entry === "string",
         )
       : undefined;
     const testDeps = Array.isArray(philosophy.testDeps)
       ? philosophy.testDeps.filter(
-          (entry): entry is string => typeof entry === "string"
+          (entry): entry is string => typeof entry === "string",
         )
       : undefined;
 
@@ -465,7 +465,7 @@ export function findCulletPackageRoot(fromMetaUrl: string): string {
   }
 
   throw new Error(
-    "Nao foi possivel localizar o package.json do cullet a partir do pacote."
+    "Nao foi possivel localizar o package.json do cullet a partir do pacote.",
   );
 }
 
@@ -481,14 +481,14 @@ export async function loadRegistry(fromMetaUrl: string): Promise<Registry> {
     const message =
       error instanceof Error ? error.message : "falha ao ler o arquivo";
     throw new Error(
-      `Nao foi possivel carregar o registry do cullet: ${message}`
+      `Nao foi possivel carregar o registry do cullet: ${message}`,
     );
   }
 }
 
 export function resolveRegistryEntry(
   registry: Registry,
-  name: string
+  name: string,
 ): RegistryEntry {
   const entry = registry[name];
 
@@ -502,15 +502,15 @@ export function resolveRegistryEntry(
 export function resolveVersion(
   name: string,
   entry: RegistryEntry,
-  requestedVersion?: string
+  requestedVersion?: string,
 ): string {
   const version = requestedVersion ?? entry.latest;
 
   if (!entry.versions.includes(version)) {
     throw new Error(
       `A versao "${version}" nao foi encontrada para "${name}". Versoes disponiveis: ${entry.versions.join(
-        ", "
-      )}.`
+        ", ",
+      )}.`,
     );
   }
 
@@ -546,16 +546,16 @@ export function describeKitSuccessor(successor: KitSuccessor): string[] {
 export async function loadKitDeprecation(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<KitDeprecation | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const sourceMetaPath = join(
     kitSrcDir(packageRoot, name, version),
-    "meta.json"
+    "meta.json",
   );
   const distMetaPath = join(
     kitDistDir(packageRoot, name, version),
-    "meta.json"
+    "meta.json",
   );
   const sourceCandidate = await readKitDeprecationCandidate(sourceMetaPath);
 
@@ -570,7 +570,7 @@ export async function loadKitDeprecation(
         sourceMetaPath,
         sourceCandidate.deprecation,
         distMetaPath,
-        distCandidate.deprecation
+        distCandidate.deprecation,
       );
     }
 
@@ -582,7 +582,7 @@ export async function loadKitDeprecation(
 }
 
 export function getDirectImportPeerDependencies(
-  meta: KitMeta | null | undefined
+  meta: KitMeta | null | undefined,
 ): KitDependency[] {
   const dependencies = meta?.compatibility?.directImport.peerDependencies;
 
@@ -592,7 +592,7 @@ export function getDirectImportPeerDependencies(
 }
 
 export function getFullControlDependencies(
-  meta: KitMeta | null | undefined
+  meta: KitMeta | null | undefined,
 ): KitDependency[] {
   const dependencies = meta?.compatibility?.fullControl.dependencies;
 
@@ -604,7 +604,7 @@ export function getFullControlDependencies(
 export async function loadKitMeta(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<KitMeta | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const candidates = [
@@ -623,7 +623,7 @@ export async function loadKitMeta(
 export async function loadKitContext(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<string | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const candidates = [
@@ -645,7 +645,7 @@ export async function loadKitContext(
 export async function resolveBuiltKitDir(
   fromMetaUrl: string,
   name: string,
-  version: string
+  version: string,
 ): Promise<string> {
   const kitDir = kitDistDir(findCulletPackageRoot(fromMetaUrl), name, version);
 
@@ -654,7 +654,7 @@ export async function resolveBuiltKitDir(
     return kitDir;
   } catch {
     throw new Error(
-      `O kit compilado "${name}@${version}" nao foi encontrado em ${kitDir}. Execute "npm run build" no pacote cullet antes de usar full-control.`
+      `O kit compilado "${name}@${version}" nao foi encontrado em ${kitDir}. Execute "npm run build" no pacote cullet antes de usar full-control.`,
     );
   }
 }

@@ -101,7 +101,7 @@ function validateAgainstSchema(data, schema, path = "$") {
 
   if (Array.isArray(schema.oneOf)) {
     const variantErrors = schema.oneOf.map((variant) =>
-      validateAgainstSchema(data, variant, path)
+      validateAgainstSchema(data, variant, path),
     );
     const matched = variantErrors.some((errs) => errs.length === 0);
     if (!matched) {
@@ -126,7 +126,7 @@ function validateAgainstSchema(data, schema, path = "$") {
     for (const [k, v] of Object.entries(data)) {
       if (schema.properties && k in schema.properties) {
         errors.push(
-          ...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`)
+          ...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`),
         );
       } else if (schema.additionalProperties === false) {
         errors.push(`${path}: unknown field "${k}"`);
@@ -146,7 +146,7 @@ function validateAgainstSchema(data, schema, path = "$") {
     if (schema.items) {
       data.forEach((item, i) => {
         errors.push(
-          ...validateAgainstSchema(item, schema.items, `${path}[${i}]`)
+          ...validateAgainstSchema(item, schema.items, `${path}[${i}]`),
         );
       });
     }
@@ -216,7 +216,7 @@ function stripCommentsAndStrings(src) {
   // Replace string literals (single, double, backtick) — keep length so line numbers stay
   s = s.replace(
     /(['"`])(?:\\.|(?!\1)[^\\])*\1/g,
-    (m) => m[0] + " ".repeat(m.length - 2) + m[0]
+    (m) => m[0] + " ".repeat(m.length - 2) + m[0],
   );
   return s;
 }
@@ -232,7 +232,7 @@ function findBareAny(src) {
     const lineEnd = src.indexOf("\n", m.index);
     const lineSrc = src.slice(
       upto.lastIndexOf("\n") + 1,
-      lineEnd === -1 ? src.length : lineEnd
+      lineEnd === -1 ? src.length : lineEnd,
     );
     // Justification: trailing "// any-ok: <reason>" on same line
     if (/\/\/\s*any-ok:/.test(lineSrc)) continue;
@@ -360,7 +360,7 @@ function collectExportNames(sourceFile) {
     ) {
       if (
         stmt.modifiers?.some(
-          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
         ) &&
         stmt.name
       ) {
@@ -372,7 +372,7 @@ function collectExportNames(sourceFile) {
     if (!ts.isVariableStatement(stmt)) continue;
     if (
       !stmt.modifiers?.some(
-        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
       )
     )
       continue;
@@ -386,7 +386,7 @@ function collectExportNames(sourceFile) {
 
 function getTypeParameterConstraintText(classDecl, sourceFile, typeParamName) {
   const typeParam = classDecl.typeParameters?.find(
-    (param) => param.name.text === typeParamName
+    (param) => param.name.text === typeParamName,
   );
   if (!typeParam?.constraint) return null;
   return typeParam.constraint.getText(sourceFile);
@@ -465,7 +465,7 @@ async function validateObservabilityPort(
   lint,
   relPath,
   contractName,
-  requiredPatterns
+  requiredPatterns,
 ) {
   const severity = level(lint, "observabilityPorts");
   if (severity === "off") return;
@@ -476,7 +476,7 @@ async function validateObservabilityPort(
       findings,
       severity,
       `missing observability contract at ${relPath}`,
-      relPath
+      relPath,
     );
     return;
   }
@@ -492,7 +492,7 @@ async function validateObservabilityPort(
         findings,
         severity,
         `${contractName} must not import observability runtime library "${spec}"`,
-        relPath
+        relPath,
       );
     }
   }
@@ -503,7 +503,7 @@ async function validateObservabilityPort(
         findings,
         severity,
         `${contractName} is missing required contract fragment ${pattern}`,
-        relPath
+        relPath,
       );
     }
   }
@@ -583,19 +583,19 @@ async function validateKit(kit, schema) {
         findings,
         "error",
         `compatibility matrix is missing dependency "${dependencyName}" declared in philosophy.externalDeps`,
-        relative(kit.kitDir, kit.metaPath)
+        relative(kit.kitDir, kit.metaPath),
       );
     }
   }
 
   for (const duplicateName of findDuplicateValues(
-    directImportDependencyNames
+    directImportDependencyNames,
   )) {
     pushFinding(
       findings,
       "error",
       `compatibility.directImport.peerDependencies declares dependency "${duplicateName}" more than once`,
-      relative(kit.kitDir, kit.metaPath)
+      relative(kit.kitDir, kit.metaPath),
     );
   }
 
@@ -604,7 +604,7 @@ async function validateKit(kit, schema) {
       findings,
       "error",
       `compatibility.fullControl.dependencies declares dependency "${duplicateName}" more than once`,
-      relative(kit.kitDir, kit.metaPath)
+      relative(kit.kitDir, kit.metaPath),
     );
   }
 
@@ -630,7 +630,7 @@ async function validateKit(kit, schema) {
           findings,
           contextLint,
           `KIT_CONTEXT.md is missing required structured section [${sectionId}]`,
-          relative(kit.kitDir, contextPath)
+          relative(kit.kitDir, contextPath),
         );
       }
     }
@@ -640,12 +640,12 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md repeats structured section [${duplicateId}]`,
-        relative(kit.kitDir, contextPath)
+        relative(kit.kitDir, contextPath),
       );
     }
 
     const unexpectedStructuredIds = headingIds.filter(
-      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId)
+      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId),
     );
 
     for (const unexpectedId of unexpectedStructuredIds) {
@@ -653,7 +653,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md uses unknown structured section [${unexpectedId}]`,
-        relative(kit.kitDir, contextPath)
+        relative(kit.kitDir, contextPath),
       );
     }
 
@@ -662,7 +662,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         "KIT_CONTEXT.md requires structured headings in the form ## [section-id] Title",
-        relative(kit.kitDir, contextPath)
+        relative(kit.kitDir, contextPath),
       );
     }
 
@@ -671,7 +671,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md should stay between 200 and 400 tokens; found ${tokenCount}`,
-        relative(kit.kitDir, contextPath)
+        relative(kit.kitDir, contextPath),
       );
     }
   }
@@ -686,7 +686,7 @@ async function validateKit(kit, schema) {
           findings,
           depthLint,
           `path exceeds maximum depth of 5 segments from kit root`,
-          rel
+          rel,
         );
       }
     }
@@ -709,12 +709,12 @@ async function validateKit(kit, schema) {
     const hasDomainSpec = tsFiles.some(
       (file) =>
         relative(kit.kitDir, file).startsWith("core/domain/") &&
-        file.endsWith(".spec.ts")
+        file.endsWith(".spec.ts"),
     );
     const hasApplicationSpec = tsFiles.some(
       (file) =>
         relative(kit.kitDir, file).startsWith("core/application/") &&
-        file.endsWith(".spec.ts")
+        file.endsWith(".spec.ts"),
     );
 
     if (hasDomainSource && !hasDomainSpec) {
@@ -722,7 +722,7 @@ async function validateKit(kit, schema) {
         findings,
         requiredCoreTestsLint,
         `core/domain requires at least one colocated .spec.ts test`,
-        "core/domain"
+        "core/domain",
       );
     }
     if (hasApplicationSource && !hasApplicationSpec) {
@@ -730,7 +730,7 @@ async function validateKit(kit, schema) {
         findings,
         requiredCoreTestsLint,
         `core/application requires at least one colocated .spec.ts test`,
-        "core/application"
+        "core/application",
       );
     }
   }
@@ -752,7 +752,7 @@ async function validateKit(kit, schema) {
           /\bwarn\s*\(/,
           /\berror\s*\(/,
           /Record<\s*string\s*,\s*unknown\s*>/,
-        ]
+        ],
       );
     }
     if (observabilityKinds.has("metric-port")) {
@@ -767,7 +767,7 @@ async function validateKit(kit, schema) {
           /\bcounter\s*\(/,
           /\bgauge\s*\(/,
           /\bhistogram\s*\(/,
-        ]
+        ],
       );
     }
     if (observabilityKinds.has("trace-port")) {
@@ -783,7 +783,7 @@ async function validateKit(kit, schema) {
           /\bsetAttribute\s*\(/,
           /\brecordException\s*\(/,
           /\bend\s*\(/,
-        ]
+        ],
       );
     }
   }
@@ -804,7 +804,7 @@ async function validateKit(kit, schema) {
             findings,
             packageLint,
             `package.json must not expose observability runtime dependency "${depName}" in ${section}`,
-            "package.json"
+            "package.json",
           );
         }
       }
@@ -826,14 +826,14 @@ async function validateKit(kit, schema) {
           findings,
           hardSeverity(fileSizeLint),
           `file exceeds hard size limit of 600 lines (${lineCount})`,
-          rel
+          rel,
         );
       } else if (lineCount > 300) {
         pushFinding(
           findings,
           softSeverity(fileSizeLint),
           `file exceeds review threshold of 300 lines (${lineCount})`,
-          rel
+          rel,
         );
       }
     }
@@ -892,7 +892,7 @@ async function validateKit(kit, schema) {
             findings,
             architectureLint,
             `domain must not import runtime modules from outside the kit: "${spec}"`,
-            rel
+            rel,
           );
           continue;
         }
@@ -908,7 +908,7 @@ async function validateKit(kit, schema) {
               findings,
               architectureLint,
               `domain may only import domain or exceptions; found "${spec}"`,
-              rel
+              rel,
             );
           }
         }
@@ -918,7 +918,7 @@ async function validateKit(kit, schema) {
             findings,
             architectureLint,
             `application must not import adapters directly`,
-            rel
+            rel,
           );
         }
 
@@ -927,7 +927,7 @@ async function validateKit(kit, schema) {
             findings,
             architectureLint,
             `adapters must not import application directly`,
-            rel
+            rel,
           );
         }
       }
@@ -942,7 +942,7 @@ async function validateKit(kit, schema) {
             findings,
             portsLint,
             `ports must stay as pure contracts; found top-level ${kind}`,
-            rel
+            rel,
           );
         }
       }
@@ -954,7 +954,7 @@ async function validateKit(kit, schema) {
             findings,
             portsLint,
             `ports must use type-only imports`,
-            rel
+            rel,
           );
         }
       }
@@ -973,14 +973,14 @@ async function validateKit(kit, schema) {
         const constraint = getTypeParameterConstraintText(
           node,
           sourceFile,
-          "Output"
+          "Output",
         );
         if (!matchesResultConstraint(constraint)) {
           pushFinding(
             findings,
             applicationResultLint,
             `application class ${node.name.text} must constrain Output to Result<...>`,
-            rel
+            rel,
           );
         }
       });
@@ -993,7 +993,7 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `tests must be colocated; __tests__/ is not allowed`,
-          rel
+          rel,
         );
       }
 
@@ -1002,7 +1002,7 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `test files must use the .spec.ts suffix`,
-          rel
+          rel,
         );
       }
 
@@ -1012,14 +1012,14 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `spec file must declare at least one root describe() block`,
-          rel
+          rel,
         );
       } else if (rootDescribeTitles.some((title) => title == null)) {
         pushFinding(
           findings,
           testLint,
           `root describe() title must be a string literal`,
-          rel
+          rel,
         );
       } else if (rootDescribeTitles.length === 1) {
         const expected = normalizeLabel(baseNameWithoutSpec(rel));
@@ -1029,7 +1029,7 @@ async function validateKit(kit, schema) {
         if (targetPath && (await exists(targetPath))) {
           const targetSrc = await readFile(targetPath, "utf8");
           exportedNames = collectExportNames(
-            parseTsSource(targetPath, targetSrc)
+            parseTsSource(targetPath, targetSrc),
           ).map((name) => normalizeLabel(name));
         }
         const matchesTarget =
@@ -1038,14 +1038,14 @@ async function validateKit(kit, schema) {
           expected.includes(actual);
         const matchesExport = exportedNames.some(
           (name) =>
-            actual === name || actual.includes(name) || name.includes(actual)
+            actual === name || actual.includes(name) || name.includes(actual),
         );
         if (!matchesTarget && !matchesExport) {
           pushFinding(
             findings,
             testLint,
             `root describe() must match the tested unit name`,
-            rel
+            rel,
           );
         }
       }
@@ -1056,7 +1056,7 @@ async function validateKit(kit, schema) {
             findings,
             testLint,
             `it()/test() titles must be string literals`,
-            rel
+            rel,
           );
           continue;
         }
@@ -1065,7 +1065,7 @@ async function validateKit(kit, schema) {
             findings,
             testLint,
             `it() descriptions must avoid "should"; use active voice`,
-            rel
+            rel,
           );
         }
       }
@@ -1082,7 +1082,7 @@ async function validateKit(kit, schema) {
         findings,
         noMocksLint,
         `core tests must use in-memory stubs instead of module mocks`,
-        rel
+        rel,
       );
     }
 
@@ -1123,7 +1123,7 @@ async function main() {
     const header = `${kit.kitName}@${kit.version}`;
     if (findings.length === 0) {
       console.log(
-        `${pc.green("✓")} ${pc.bold(header)} ${pc.dim("(no findings)")}`
+        `${pc.green("✓")} ${pc.bold(header)} ${pc.dim("(no findings)")}`,
       );
       continue;
     }
@@ -1131,7 +1131,7 @@ async function main() {
     console.log(
       `${status} ${pc.bold(header)} — ${errs.length} error(s), ${
         warns.length
-      } warning(s)`
+      } warning(s)`,
     );
     for (const f of findings) {
       const tag = f.severity === "error" ? pc.red("error") : pc.yellow("warn ");
@@ -1142,8 +1142,8 @@ async function main() {
 
   console.log(
     pc.dim(
-      `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`
-    )
+      `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`,
+    ),
   );
   process.exit(errors > 0 ? 1 : 0);
 }

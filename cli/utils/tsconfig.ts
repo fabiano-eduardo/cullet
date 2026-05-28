@@ -53,7 +53,7 @@ export interface TsconfigInspection {
 }
 
 export async function inspectTsconfig(
-  projectRoot: string
+  projectRoot: string,
 ): Promise<TsconfigInspection | null> {
   const loaded = await loadTsconfig(projectRoot);
   if (loaded === null) return null;
@@ -73,8 +73,8 @@ function parseTsconfig(rawContent: string): TsConfigJson {
   if (errors.length > 0) {
     throw new Error(
       `O tsconfig.json nao e um JSONC valido: ${printParseErrorCode(
-        errors[0].error
-      )}.`
+        errors[0].error,
+      )}.`,
     );
   }
 
@@ -87,7 +87,7 @@ function parseTsconfig(rawContent: string): TsConfigJson {
 
 function readObjectField(
   container: JsonObject,
-  key: string
+  key: string,
 ): JsonObject | undefined {
   const existing = container[key];
 
@@ -97,7 +97,7 @@ function readObjectField(
 
   if (!isJsonObject(existing)) {
     throw new Error(
-      `O campo "${key}" do tsconfig.json nao e um objeto valido.`
+      `O campo "${key}" do tsconfig.json nao e um objeto valido.`,
     );
   }
 
@@ -147,18 +147,18 @@ function applyJsoncEdit(
   rawContent: string,
   path: Array<string | number>,
   value: JsonValue | undefined,
-  formattingOptions: FormattingOptions
+  formattingOptions: FormattingOptions,
 ): string {
   return applyEdits(
     rawContent,
-    modify(rawContent, path, value, { formattingOptions })
+    modify(rawContent, path, value, { formattingOptions }),
   );
 }
 
 function normalizeTrailingNewline(
   rawContent: string,
   eol: string,
-  hadTrailingNewline: boolean
+  hadTrailingNewline: boolean,
 ): string {
   if (hadTrailingNewline) {
     return rawContent.endsWith(eol) ? rawContent : `${rawContent}${eol}`;
@@ -176,7 +176,7 @@ function normalizeTrailingNewline(
 }
 
 async function loadTsconfig(
-  projectRoot: string
+  projectRoot: string,
 ): Promise<LoadedTsConfig | null> {
   const tsconfigPath = join(projectRoot, "tsconfig.json");
 
@@ -218,7 +218,7 @@ export async function upsertPathAlias(
   projectRoot: string,
   alias: string,
   target: string,
-  options: UpsertPathAliasOptions = {}
+  options: UpsertPathAliasOptions = {},
 ): Promise<AliasUpdateResult> {
   const loadedTsconfig = await loadTsconfig(projectRoot);
 
@@ -232,7 +232,7 @@ export async function upsertPathAlias(
 
   const compilerOptions = readObjectField(
     loadedTsconfig.config,
-    "compilerOptions"
+    "compilerOptions",
   );
 
   if (
@@ -240,7 +240,7 @@ export async function upsertPathAlias(
     typeof compilerOptions.baseUrl !== "string"
   ) {
     throw new Error(
-      "O campo compilerOptions.baseUrl do tsconfig.json precisa ser uma string."
+      "O campo compilerOptions.baseUrl do tsconfig.json precisa ser uma string.",
     );
   }
 
@@ -280,7 +280,7 @@ export async function upsertPathAlias(
       nextContent,
       ["compilerOptions"],
       {},
-      loadedTsconfig.formattingOptions
+      loadedTsconfig.formattingOptions,
     );
   }
 
@@ -289,7 +289,7 @@ export async function upsertPathAlias(
       nextContent,
       ["compilerOptions", "baseUrl"],
       ".",
-      loadedTsconfig.formattingOptions
+      loadedTsconfig.formattingOptions,
     );
   }
 
@@ -298,7 +298,7 @@ export async function upsertPathAlias(
       nextContent,
       ["compilerOptions", "paths"],
       {},
-      loadedTsconfig.formattingOptions
+      loadedTsconfig.formattingOptions,
     );
   }
 
@@ -306,12 +306,12 @@ export async function upsertPathAlias(
     nextContent,
     ["compilerOptions", "paths", alias],
     [target],
-    loadedTsconfig.formattingOptions
+    loadedTsconfig.formattingOptions,
   );
   nextContent = normalizeTrailingNewline(
     nextContent,
     loadedTsconfig.formattingOptions.eol ?? "\n",
-    loadedTsconfig.hadTrailingNewline
+    loadedTsconfig.hadTrailingNewline,
   );
 
   if (!options.dryRun) {

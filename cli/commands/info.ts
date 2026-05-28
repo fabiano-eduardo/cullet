@@ -40,7 +40,7 @@ function summarizeBody(body: string, maxLines: number): string {
 }
 
 function printCompatibility(
-  meta: Awaited<ReturnType<typeof loadKitMeta>>
+  meta: Awaited<ReturnType<typeof loadKitMeta>>,
 ): void {
   const engines = meta?.compatibility?.engines;
   const dependencies = getDirectImportPeerDependencies(meta);
@@ -98,7 +98,7 @@ export function createInfoCommand(): Command {
     .argument("<kit>", "Nome do kit no formato nome ou nome@versao")
     .option(
       "--alias",
-      "Adiciona ou atualiza um path alias no tsconfig.json do projeto atual"
+      "Adiciona ou atualiza um path alias no tsconfig.json do projeto atual",
     )
     .option("--full", "Exibe o KIT_CONTEXT.md inteiro, sem resumir")
     .action(async (kit: string, options: InfoCommandOptions) => {
@@ -119,7 +119,7 @@ export function createInfoCommand(): Command {
           const importSpecifier = kitImportSpecifier(
             parsed.name,
             version,
-            isLatestImplicit
+            isLatestImplicit,
           );
           tracker.set("kit", parsed.name);
           tracker.set("resolvedVersion", version);
@@ -135,17 +135,17 @@ export function createInfoCommand(): Command {
           const deprecation = await loadKitDeprecation(
             import.meta.url,
             parsed.name,
-            version
+            version,
           );
           if (deprecation) {
             console.log(
               pc.yellow(
-                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`
-              )
+                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
+              ),
             );
             if (deprecation.successor) {
               for (const detail of describeKitSuccessor(
-                deprecation.successor
+                deprecation.successor,
               )) {
                 console.log(pc.yellow(detail));
               }
@@ -161,7 +161,7 @@ export function createInfoCommand(): Command {
           const context = await loadKitContext(
             import.meta.url,
             parsed.name,
-            version
+            version,
           );
 
           if (context !== null) {
@@ -172,14 +172,14 @@ export function createInfoCommand(): Command {
               console.log("");
               console.log(
                 pc.dim(
-                  `Resumo do KIT_CONTEXT.md. Use --full para ler integralmente.`
-                )
+                  `Resumo do KIT_CONTEXT.md. Use --full para ler integralmente.`,
+                ),
               );
             }
           } else {
             console.log("");
             console.log(
-              pc.dim("Este kit nao publicou um KIT_CONTEXT.md ainda.")
+              pc.dim("Este kit nao publicou um KIT_CONTEXT.md ainda."),
             );
           }
 
@@ -187,8 +187,8 @@ export function createInfoCommand(): Command {
             console.log("");
             console.log(
               pc.dim(
-                "Dica: use --alias se quiser registrar um path alias no tsconfig.json do projeto atual."
-              )
+                "Dica: use --alias se quiser registrar um path alias no tsconfig.json do projeto atual.",
+              ),
             );
             return;
           }
@@ -196,14 +196,14 @@ export function createInfoCommand(): Command {
           const aliasResult = await upsertPathAlias(
             process.cwd(),
             `cullet/${parsed.name}`,
-            kitNodeModulesEntry(parsed.name, version)
+            kitNodeModulesEntry(parsed.name, version),
           );
 
           if (aliasResult.status === "missing-tsconfig") {
             console.log(
               pc.yellow(
-                "Nenhum tsconfig.json foi encontrado no projeto atual. O alias nao foi criado."
-              )
+                "Nenhum tsconfig.json foi encontrado no projeto atual. O alias nao foi criado.",
+              ),
             );
             return;
           }
@@ -212,13 +212,13 @@ export function createInfoCommand(): Command {
             aliasResult.status === "created"
               ? "criado"
               : aliasResult.status === "updated"
-              ? "atualizado"
-              : "mantido";
+                ? "atualizado"
+                : "mantido";
 
           console.log(
             pc.green(
-              `Alias ${actionLabel}: cullet/${parsed.name} -> ${aliasResult.target}`
-            )
+              `Alias ${actionLabel}: cullet/${parsed.name} -> ${aliasResult.target}`,
+            ),
           );
         },
       });

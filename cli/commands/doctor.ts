@@ -329,8 +329,8 @@ function report(findings: Finding[]): void {
       finding.severity === "error"
         ? pc.red("error")
         : finding.severity === "warn"
-        ? pc.yellow("warn ")
-        : pc.cyan("info ");
+          ? pc.yellow("warn ")
+          : pc.cyan("info ");
     console.log("");
     console.log(`${tag} ${pc.bold(`[${finding.code}]`)} ${finding.message}`);
     if (finding.hint) {

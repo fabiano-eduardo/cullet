@@ -19,7 +19,7 @@ async function readPackageVersion(): Promise<string> {
 
   if (typeof parsed.version !== "string") {
     throw new Error(
-      "package.json do cullet nao contem um campo version valido."
+      "package.json do cullet nao contem um campo version valido.",
     );
   }
 
