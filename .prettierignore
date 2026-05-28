@@ -1,0 +1,7 @@
+coverage
+dist
+tmp
+docs/.astro
+docs/dist
+node_modules
+*.tgz

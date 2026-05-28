@@ -1,10 +1,13 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import { baseVitestConfig } from "./vitest.config.base";
 
-export default defineConfig({
-  test: {
-    include: ["tests/e2e/**/*.test.ts"],
-    environment: "node",
-    testTimeout: 120_000,
-    hookTimeout: 120_000,
-  },
-});
+export default mergeConfig(
+    baseVitestConfig,
+    defineConfig({
+        test: {
+            include: ["tests/e2e/**/*.test.ts"],
+            testTimeout: 120_000,
+            hookTimeout: 120_000,
+        },
+    })
+);
