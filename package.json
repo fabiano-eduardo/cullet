@@ -1,117 +1,118 @@
 {
-  "name": "cullet",
-  "version": "0.2.0",
-  "description": "Coleção de kits arquiteturais opinativos para TypeScript",
-  "type": "module",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fabiano-eduardo/cullet.git"
-  },
-  "bugs": {
-    "url": "https://github.com/fabiano-eduardo/cullet/issues"
-  },
-  "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
-  "keywords": [
-    "typescript",
-    "architecture",
-    "clean-architecture",
-    "ddd",
-    "cli",
-    "starter-kit"
-  ],
-  "bin": {
-    "cullet": "./cli/index.js"
-  },
-  "exports": {
-    "./registry": {
-      "types": "./dist/registry/index.d.ts",
-      "import": "./dist/registry/index.js",
-      "require": "./dist/esm-only-require.cjs",
-      "default": "./dist/registry/index.js"
+    "name": "cullet",
+    "version": "0.2.0",
+    "description": "Coleção de kits arquiteturais opinativos para TypeScript",
+    "type": "module",
+    "license": "MIT",
+    "author": "Fabiano Eduardo",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fabiano-eduardo/cullet.git"
     },
-    "./dummy-api": {
-      "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
-      "import": "./dist/kits/dummy-api/versions/1.0.0/index.js",
-      "require": "./dist/esm-only-require.cjs",
-      "default": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+    "bugs": {
+        "url": "https://github.com/fabiano-eduardo/cullet/issues"
     },
-    "./dummy-api/1.0.0": {
-      "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
-      "import": "./dist/kits/dummy-api/versions/1.0.0/index.js",
-      "require": "./dist/esm-only-require.cjs",
-      "default": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+    "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
+    "keywords": [
+        "typescript",
+        "architecture",
+        "clean-architecture",
+        "ddd",
+        "cli",
+        "starter-kit"
+    ],
+    "bin": {
+        "cullet": "./cli/index.js"
     },
-    "./erp-core": {
-      "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
-      "import": "./dist/kits/erp-core/versions/1.0.0/index.js",
-      "require": "./dist/esm-only-require.cjs",
-      "default": "./dist/kits/erp-core/versions/1.0.0/index.js"
+    "exports": {
+        "./registry": {
+            "types": "./dist/registry/index.d.ts",
+            "import": "./dist/registry/index.js",
+            "require": "./dist/esm-only-require.cjs",
+            "default": "./dist/registry/index.js"
+        },
+        "./dummy-api": {
+            "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
+            "import": "./dist/kits/dummy-api/versions/1.0.0/index.js",
+            "require": "./dist/esm-only-require.cjs",
+            "default": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+        },
+        "./dummy-api/1.0.0": {
+            "types": "./dist/kits/dummy-api/versions/1.0.0/index.d.ts",
+            "import": "./dist/kits/dummy-api/versions/1.0.0/index.js",
+            "require": "./dist/esm-only-require.cjs",
+            "default": "./dist/kits/dummy-api/versions/1.0.0/index.js"
+        },
+        "./erp-core": {
+            "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
+            "import": "./dist/kits/erp-core/versions/1.0.0/index.js",
+            "require": "./dist/esm-only-require.cjs",
+            "default": "./dist/kits/erp-core/versions/1.0.0/index.js"
+        },
+        "./erp-core/1.0.0": {
+            "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
+            "import": "./dist/kits/erp-core/versions/1.0.0/index.js",
+            "require": "./dist/esm-only-require.cjs",
+            "default": "./dist/kits/erp-core/versions/1.0.0/index.js"
+        }
     },
-    "./erp-core/1.0.0": {
-      "types": "./dist/kits/erp-core/versions/1.0.0/index.d.ts",
-      "import": "./dist/kits/erp-core/versions/1.0.0/index.js",
-      "require": "./dist/esm-only-require.cjs",
-      "default": "./dist/kits/erp-core/versions/1.0.0/index.js"
+    "files": [
+        "dist",
+        "cli/index.js",
+        "registry",
+        "README.md",
+        "CHANGELOG.md"
+    ],
+    "scripts": {
+        "changeset": "changeset",
+        "changeset:status": "changeset status --since=origin/main",
+        "sync-exports": "node ./scripts/sync-package-exports.mjs",
+        "sync-exports:check": "node ./scripts/sync-package-exports.mjs --check",
+        "validate-kits": "node ./scripts/validate-kit.mjs",
+        "new-kit": "node ./scripts/new-kit.mjs",
+        "prebuild": "npm run sync-exports",
+        "build": "tsdown --config tsdown.config.mjs",
+        "dev": "tsdown --config tsdown.config.mjs --watch",
+        "cli": "npm run build && node ./cli/index.js",
+        "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:e2e": "vitest run --config vitest.e2e.config.ts",
+        "docs:dev": "npm --prefix docs run dev",
+        "docs:build": "npm --prefix docs run build",
+        "release:dry-run": "npm run build && npm pack && node ./scripts/check-pack-contents.mjs",
+        "release": "npm run release:dry-run && changeset publish"
+    },
+    "dependencies": {
+        "commander": "^13.1.0",
+        "fs-extra": "^11.3.0",
+        "jsonc-parser": "^3.3.1",
+        "picocolors": "^1.1.1"
+    },
+    "peerDependencies": {
+        "pino": ">=8.0.0",
+        "zod": "^3.22.0"
+    },
+    "peerDependenciesMeta": {
+        "pino": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@changesets/cli": "^2.29.7",
+        "@types/fs-extra": "^11.0.4",
+        "@types/node": "^22.10.2",
+        "@vitest/coverage-v8": "^4.1.7",
+        "tsdown": "^0.12.9",
+        "typescript": "^5.7.3",
+        "vitest": "^4.1.7",
+        "zod": "^3.25.76"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "publishConfig": {
+        "access": "public"
     }
-  },
-  "files": [
-    "dist",
-    "cli/index.js",
-    "registry",
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  "scripts": {
-    "changeset": "changeset",
-    "changeset:status": "changeset status --since=origin/main",
-    "sync-exports": "node ./scripts/sync-package-exports.mjs",
-    "sync-exports:check": "node ./scripts/sync-package-exports.mjs --check",
-    "validate-kits": "node ./scripts/validate-kit.mjs",
-    "new-kit": "node ./scripts/new-kit.mjs",
-    "prebuild": "npm run sync-exports",
-    "build": "tsdown --config tsdown.config.mjs",
-    "dev": "tsdown --config tsdown.config.mjs --watch",
-    "cli": "npm run build && node ./cli/index.js",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "docs:dev": "npm --prefix docs run dev",
-    "docs:build": "npm --prefix docs run build",
-    "release:dry-run": "npm run build && npm pack && node ./scripts/check-pack-contents.mjs",
-    "release": "npm run release:dry-run && changeset publish"
-  },
-  "dependencies": {
-    "commander": "^13.1.0",
-    "fs-extra": "^11.3.0",
-    "jsonc-parser": "^3.3.1",
-    "picocolors": "^1.1.1"
-  },
-  "peerDependencies": {
-    "pino": ">=8.0.0",
-    "zod": "^3.22.0"
-  },
-  "peerDependenciesMeta": {
-    "pino": {
-      "optional": true
-    }
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.29.7",
-    "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.10.2",
-    "@vitest/coverage-v8": "^4.1.7",
-    "tsdown": "^0.12.9",
-    "typescript": "^5.7.3",
-    "vitest": "^4.1.7",
-    "zod": "^3.25.76"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "publishConfig": {
-    "access": "public"
-  }
 }
