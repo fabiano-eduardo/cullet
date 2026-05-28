@@ -48,9 +48,11 @@ npx cullet migrate erp-core@1.0.0 --apply
 
 Lê o caminho de migração codificado em `meta.json -> deprecated.successor`, imprime o sucessor recomendado e, quando existirem, o guia de migração e o codemod associado.
 
-- sem flags: só mostra o plano;
-- `--dry-run`: executa o codemod em simulação;
-- `--apply`: aplica o codemod no diretório atual ou no `--cwd` informado.
+-   sem flags: só mostra o plano;
+-   `--dry-run`: executa o codemod em simulação;
+-   `--apply`: aplica o codemod no diretório atual ou no `--cwd` informado.
+
+`--dry-run` e `--apply` carregam e executam o codemod publicado pelo kit no processo do CLI. Use essas flags apenas para kits e versões cuja origem você confia e revisou.
 
 ## `cullet doctor`
 
@@ -69,11 +71,11 @@ npx cullet telemetry enable --endpoint https://telemetry.example.dev/events
 npx cullet telemetry disable
 ```
 
-Telemetria do CLI é opt-in. Quando habilitada, cada comando grava um evento anônimo em log local e, opcionalmente, exporta o mesmo payload por HTTP `POST` para um endpoint configurado.
+Telemetria do CLI é opt-in. Quando habilitada, cada comando grava um evento anônimo em log local e, opcionalmente, exporta o mesmo payload por HTTPS `POST` para um endpoint configurado. Endpoints sem `https://` são rejeitados.
 
 O payload é intencionalmente mínimo:
 
-- comando executado;
-- kit e versão resolvida, quando houver;
-- duração e sucesso/falha;
-- plataforma, arquitetura, versão do Node e versão do CLI.
+-   comando executado;
+-   kit e versão resolvida, quando houver;
+-   duração e sucesso/falha;
+-   plataforma, arquitetura, versão do Node e versão do CLI.

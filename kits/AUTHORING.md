@@ -4,7 +4,7 @@ Este guia descreve o caminho completo do diretório vazio ao kit publicável. O 
 
 Use este documento junto com:
 
-- `CONTRIBUTING-KIT.md` para as regras de revisão humana e o gate de qualidade;
+- `CONTRIBUTING.md` para as regras de revisão humana e o gate de qualidade;
 - `kits/VERSIONING.md` para SemVer por kit e política de deprecação;
 - `templates/kit/` para ver o scaffold mínimo esperado.
 
