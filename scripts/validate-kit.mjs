@@ -4,24 +4,23 @@
 //
 // Saída: relatório agrupado por kit; exit code != 0 se houver erros (warnings não bloqueiam).
 
-import { readFile, readdir, stat } from "node:fs/promises";
+import fs from "fs-extra";
+import { readFile, readdir } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import pc from "picocolors";
 import ts from "typescript";
+import {
+  collectModuleSpecifiers,
+  parseTsSource,
+  walkFiles,
+} from "./source-analysis.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const here = dirname(scriptPath);
 const repoRoot = resolve(here, "..");
 const kitsRoot = resolve(repoRoot, "kits");
 const schemaPath = resolve(kitsRoot, "kit-spec.schema.json");
-
-const c = {
-  red: (s) => `\x1b[31m${s}\x1b[0m`,
-  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
-  green: (s) => `\x1b[32m${s}\x1b[0m`,
-  dim: (s) => `\x1b[2m${s}\x1b[0m`,
-  bold: (s) => `\x1b[1m${s}\x1b[0m`,
-};
 
 const DEFAULT_LINT = {
   nodenextImports: "error",
@@ -52,12 +51,7 @@ const REQUIRED_KIT_CONTEXT_SECTION_IDS = [
 ];
 
 async function exists(p) {
-  try {
-    await stat(p);
-    return true;
-  } catch {
-    return false;
-  }
+  return fs.pathExists(p);
 }
 
 function findDuplicateValues(values) {
@@ -88,7 +82,12 @@ async function findKitMetas() {
       const kitDir = join(versionsDir, v.name);
       const metaPath = join(kitDir, "meta.json");
       if (await exists(metaPath)) {
-        out.push({ kitName: k.name, version: v.name, kitDir, metaPath });
+        out.push({
+          kitName: k.name,
+          version: v.name,
+          kitDir,
+          metaPath,
+        });
       }
     }
   }
@@ -102,7 +101,7 @@ function validateAgainstSchema(data, schema, path = "$") {
 
   if (Array.isArray(schema.oneOf)) {
     const variantErrors = schema.oneOf.map((variant) =>
-      validateAgainstSchema(data, variant, path),
+      validateAgainstSchema(data, variant, path)
     );
     const matched = variantErrors.some((errs) => errs.length === 0);
     if (!matched) {
@@ -127,7 +126,7 @@ function validateAgainstSchema(data, schema, path = "$") {
     for (const [k, v] of Object.entries(data)) {
       if (schema.properties && k in schema.properties) {
         errors.push(
-          ...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`),
+          ...validateAgainstSchema(v, schema.properties[k], `${path}.${k}`)
         );
       } else if (schema.additionalProperties === false) {
         errors.push(`${path}: unknown field "${k}"`);
@@ -147,7 +146,7 @@ function validateAgainstSchema(data, schema, path = "$") {
     if (schema.items) {
       data.forEach((item, i) => {
         errors.push(
-          ...validateAgainstSchema(item, schema.items, `${path}[${i}]`),
+          ...validateAgainstSchema(item, schema.items, `${path}[${i}]`)
         );
       });
     }
@@ -173,40 +172,6 @@ function validateAgainstSchema(data, schema, path = "$") {
     errors.push(`${path}: must be one of ${JSON.stringify(schema.enum)}`);
   }
   return errors;
-}
-
-// --- File walker ---
-
-async function walkTs(dir, acc = []) {
-  for (const e of await readdir(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name.startsWith(".")) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) await walkTs(p, acc);
-    else if (e.isFile() && e.name.endsWith(".ts")) acc.push(p);
-  }
-  return acc;
-}
-
-async function walkFiles(dir, acc = []) {
-  for (const e of await readdir(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name.startsWith(".")) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) await walkFiles(p, acc);
-    else if (e.isFile()) acc.push(p);
-  }
-  return acc;
-}
-
-// --- Import extraction ---
-
-function parseTsSource(file, src) {
-  return ts.createSourceFile(
-    file,
-    src,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
 }
 
 function isModuleMockCallExpression(node) {
@@ -241,40 +206,6 @@ function visit(node, cb) {
   ts.forEachChild(node, (child) => visit(child, cb));
 }
 
-function extractImports(sourceFile) {
-  const out = [];
-
-  visit(sourceFile, (node) => {
-    if (
-      ts.isImportDeclaration(node) &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      out.push({ spec: node.moduleSpecifier.text, node, kind: "import" });
-      return;
-    }
-
-    if (
-      ts.isExportDeclaration(node) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      out.push({ spec: node.moduleSpecifier.text, node, kind: "export" });
-      return;
-    }
-
-    if (
-      ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteral(node.arguments[0])
-    ) {
-      out.push({ spec: node.arguments[0].text, node, kind: "dynamic-import" });
-    }
-  });
-
-  return out;
-}
-
 // --- Any-usage scanner (skips strings & comments roughly) ---
 
 function stripCommentsAndStrings(src) {
@@ -285,7 +216,7 @@ function stripCommentsAndStrings(src) {
   // Replace string literals (single, double, backtick) — keep length so line numbers stay
   s = s.replace(
     /(['"`])(?:\\.|(?!\1)[^\\])*\1/g,
-    (m) => m[0] + " ".repeat(m.length - 2) + m[0],
+    (m) => m[0] + " ".repeat(m.length - 2) + m[0]
   );
   return s;
 }
@@ -301,7 +232,7 @@ function findBareAny(src) {
     const lineEnd = src.indexOf("\n", m.index);
     const lineSrc = src.slice(
       upto.lastIndexOf("\n") + 1,
-      lineEnd === -1 ? src.length : lineEnd,
+      lineEnd === -1 ? src.length : lineEnd
     );
     // Justification: trailing "// any-ok: <reason>" on same line
     if (/\/\/\s*any-ok:/.test(lineSrc)) continue;
@@ -429,7 +360,7 @@ function collectExportNames(sourceFile) {
     ) {
       if (
         stmt.modifiers?.some(
-          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+          (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
         ) &&
         stmt.name
       ) {
@@ -441,7 +372,7 @@ function collectExportNames(sourceFile) {
     if (!ts.isVariableStatement(stmt)) continue;
     if (
       !stmt.modifiers?.some(
-        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
       )
     )
       continue;
@@ -455,7 +386,7 @@ function collectExportNames(sourceFile) {
 
 function getTypeParameterConstraintText(classDecl, sourceFile, typeParamName) {
   const typeParam = classDecl.typeParameters?.find(
-    (param) => param.name.text === typeParamName,
+    (param) => param.name.text === typeParamName
   );
   if (!typeParam?.constraint) return null;
   return typeParam.constraint.getText(sourceFile);
@@ -534,7 +465,7 @@ async function validateObservabilityPort(
   lint,
   relPath,
   contractName,
-  requiredPatterns,
+  requiredPatterns
 ) {
   const severity = level(lint, "observabilityPorts");
   if (severity === "off") return;
@@ -545,23 +476,23 @@ async function validateObservabilityPort(
       findings,
       severity,
       `missing observability contract at ${relPath}`,
-      relPath,
+      relPath
     );
     return;
   }
 
   const src = await readFile(filePath, "utf8");
   const sourceFile = parseTsSource(filePath, src);
-  const imports = extractImports(sourceFile);
+  const imports = collectModuleSpecifiers(sourceFile);
 
-  for (const { spec } of imports) {
+  for (const spec of imports) {
     if (!isBare(spec)) continue;
     if (isObservabilityRuntimeDep(bareRoot(spec))) {
       pushFinding(
         findings,
         severity,
         `${contractName} must not import observability runtime library "${spec}"`,
-        relPath,
+        relPath
       );
     }
   }
@@ -572,7 +503,7 @@ async function validateObservabilityPort(
         findings,
         severity,
         `${contractName} is missing required contract fragment ${pattern}`,
-        relPath,
+        relPath
       );
     }
   }
@@ -617,7 +548,10 @@ async function validateKit(kit, schema) {
     if (label !== "entryPoint") {
       const content = (await readFile(p, "utf8")).trim();
       if (content.length === 0)
-        findings.push({ severity: "error", msg: `${label}: file is empty` });
+        findings.push({
+          severity: "error",
+          msg: `${label}: file is empty`,
+        });
     }
   }
 
@@ -637,7 +571,9 @@ async function validateKit(kit, schema) {
   ];
   const compatibilityDependencySet = new Set(compatibilityDependencyNames);
 
-  const tsFiles = await walkTs(kit.kitDir);
+  const tsFiles = await walkFiles(kit.kitDir, {
+    extensions: new Set([".ts"]),
+  });
   const allFiles = await walkFiles(kit.kitDir);
   const kitDirResolved = resolve(kit.kitDir);
 
@@ -646,20 +582,20 @@ async function validateKit(kit, schema) {
       pushFinding(
         findings,
         "error",
-        `compatibility matrix is missing dependency \"${dependencyName}\" declared in philosophy.externalDeps`,
-        relative(kit.kitDir, kit.metaPath),
+        `compatibility matrix is missing dependency "${dependencyName}" declared in philosophy.externalDeps`,
+        relative(kit.kitDir, kit.metaPath)
       );
     }
   }
 
   for (const duplicateName of findDuplicateValues(
-    directImportDependencyNames,
+    directImportDependencyNames
   )) {
     pushFinding(
       findings,
       "error",
-      `compatibility.directImport.peerDependencies declares dependency \"${duplicateName}\" more than once`,
-      relative(kit.kitDir, kit.metaPath),
+      `compatibility.directImport.peerDependencies declares dependency "${duplicateName}" more than once`,
+      relative(kit.kitDir, kit.metaPath)
     );
   }
 
@@ -667,8 +603,8 @@ async function validateKit(kit, schema) {
     pushFinding(
       findings,
       "error",
-      `compatibility.fullControl.dependencies declares dependency \"${duplicateName}\" more than once`,
-      relative(kit.kitDir, kit.metaPath),
+      `compatibility.fullControl.dependencies declares dependency "${duplicateName}" more than once`,
+      relative(kit.kitDir, kit.metaPath)
     );
   }
 
@@ -694,7 +630,7 @@ async function validateKit(kit, schema) {
           findings,
           contextLint,
           `KIT_CONTEXT.md is missing required structured section [${sectionId}]`,
-          relative(kit.kitDir, contextPath),
+          relative(kit.kitDir, contextPath)
         );
       }
     }
@@ -704,12 +640,12 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md repeats structured section [${duplicateId}]`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.kitDir, contextPath)
       );
     }
 
     const unexpectedStructuredIds = headingIds.filter(
-      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId),
+      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId)
     );
 
     for (const unexpectedId of unexpectedStructuredIds) {
@@ -717,7 +653,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md uses unknown structured section [${unexpectedId}]`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.kitDir, contextPath)
       );
     }
 
@@ -726,7 +662,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         "KIT_CONTEXT.md requires structured headings in the form ## [section-id] Title",
-        relative(kit.kitDir, contextPath),
+        relative(kit.kitDir, contextPath)
       );
     }
 
@@ -735,7 +671,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md should stay between 200 and 400 tokens; found ${tokenCount}`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.kitDir, contextPath)
       );
     }
   }
@@ -750,7 +686,7 @@ async function validateKit(kit, schema) {
           findings,
           depthLint,
           `path exceeds maximum depth of 5 segments from kit root`,
-          rel,
+          rel
         );
       }
     }
@@ -773,12 +709,12 @@ async function validateKit(kit, schema) {
     const hasDomainSpec = tsFiles.some(
       (file) =>
         relative(kit.kitDir, file).startsWith("core/domain/") &&
-        file.endsWith(".spec.ts"),
+        file.endsWith(".spec.ts")
     );
     const hasApplicationSpec = tsFiles.some(
       (file) =>
         relative(kit.kitDir, file).startsWith("core/application/") &&
-        file.endsWith(".spec.ts"),
+        file.endsWith(".spec.ts")
     );
 
     if (hasDomainSource && !hasDomainSpec) {
@@ -786,7 +722,7 @@ async function validateKit(kit, schema) {
         findings,
         requiredCoreTestsLint,
         `core/domain requires at least one colocated .spec.ts test`,
-        "core/domain",
+        "core/domain"
       );
     }
     if (hasApplicationSource && !hasApplicationSpec) {
@@ -794,7 +730,7 @@ async function validateKit(kit, schema) {
         findings,
         requiredCoreTestsLint,
         `core/application requires at least one colocated .spec.ts test`,
-        "core/application",
+        "core/application"
       );
     }
   }
@@ -816,7 +752,7 @@ async function validateKit(kit, schema) {
           /\bwarn\s*\(/,
           /\berror\s*\(/,
           /Record<\s*string\s*,\s*unknown\s*>/,
-        ],
+        ]
       );
     }
     if (observabilityKinds.has("metric-port")) {
@@ -831,7 +767,7 @@ async function validateKit(kit, schema) {
           /\bcounter\s*\(/,
           /\bgauge\s*\(/,
           /\bhistogram\s*\(/,
-        ],
+        ]
       );
     }
     if (observabilityKinds.has("trace-port")) {
@@ -847,7 +783,7 @@ async function validateKit(kit, schema) {
           /\bsetAttribute\s*\(/,
           /\brecordException\s*\(/,
           /\bend\s*\(/,
-        ],
+        ]
       );
     }
   }
@@ -868,7 +804,7 @@ async function validateKit(kit, schema) {
             findings,
             packageLint,
             `package.json must not expose observability runtime dependency "${depName}" in ${section}`,
-            "package.json",
+            "package.json"
           );
         }
       }
@@ -880,7 +816,7 @@ async function validateKit(kit, schema) {
     const isSpec = isSpecFile(file);
     const src = await readFile(file, "utf8");
     const sourceFile = parseTsSource(file, src);
-    const imports = extractImports(sourceFile);
+    const imports = collectModuleSpecifiers(sourceFile);
 
     const fileSizeLint = level(lint, "fileSize");
     if (fileSizeLint !== "off") {
@@ -890,20 +826,20 @@ async function validateKit(kit, schema) {
           findings,
           hardSeverity(fileSizeLint),
           `file exceeds hard size limit of 600 lines (${lineCount})`,
-          rel,
+          rel
         );
       } else if (lineCount > 300) {
         pushFinding(
           findings,
           softSeverity(fileSizeLint),
           `file exceeds review threshold of 300 lines (${lineCount})`,
-          rel,
+          rel
         );
       }
     }
 
     // Imports
-    for (const { spec } of imports) {
+    for (const spec of imports) {
       if (isRelative(spec)) {
         // noUpwardImports
         const lvl = level(lint, "noUpwardImports");
@@ -950,13 +886,13 @@ async function validateKit(kit, schema) {
     const architectureLint = level(lint, "architectureLayers");
     if (architectureLint !== "off") {
       const sourceLayer = getCoreLayerFromPath(kit.kitDir, file);
-      for (const { spec } of imports) {
+      for (const spec of imports) {
         if (sourceLayer === "domain" && !isSpec && isBare(spec)) {
           pushFinding(
             findings,
             architectureLint,
             `domain must not import runtime modules from outside the kit: "${spec}"`,
-            rel,
+            rel
           );
           continue;
         }
@@ -972,7 +908,7 @@ async function validateKit(kit, schema) {
               findings,
               architectureLint,
               `domain may only import domain or exceptions; found "${spec}"`,
-              rel,
+              rel
             );
           }
         }
@@ -982,7 +918,7 @@ async function validateKit(kit, schema) {
             findings,
             architectureLint,
             `application must not import adapters directly`,
-            rel,
+            rel
           );
         }
 
@@ -991,7 +927,7 @@ async function validateKit(kit, schema) {
             findings,
             architectureLint,
             `adapters must not import application directly`,
-            rel,
+            rel
           );
         }
       }
@@ -1006,7 +942,7 @@ async function validateKit(kit, schema) {
             findings,
             portsLint,
             `ports must stay as pure contracts; found top-level ${kind}`,
-            rel,
+            rel
           );
         }
       }
@@ -1018,7 +954,7 @@ async function validateKit(kit, schema) {
             findings,
             portsLint,
             `ports must use type-only imports`,
-            rel,
+            rel
           );
         }
       }
@@ -1037,14 +973,14 @@ async function validateKit(kit, schema) {
         const constraint = getTypeParameterConstraintText(
           node,
           sourceFile,
-          "Output",
+          "Output"
         );
         if (!matchesResultConstraint(constraint)) {
           pushFinding(
             findings,
             applicationResultLint,
             `application class ${node.name.text} must constrain Output to Result<...>`,
-            rel,
+            rel
           );
         }
       });
@@ -1057,7 +993,7 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `tests must be colocated; __tests__/ is not allowed`,
-          rel,
+          rel
         );
       }
 
@@ -1066,7 +1002,7 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `test files must use the .spec.ts suffix`,
-          rel,
+          rel
         );
       }
 
@@ -1076,14 +1012,14 @@ async function validateKit(kit, schema) {
           findings,
           testLint,
           `spec file must declare at least one root describe() block`,
-          rel,
+          rel
         );
       } else if (rootDescribeTitles.some((title) => title == null)) {
         pushFinding(
           findings,
           testLint,
           `root describe() title must be a string literal`,
-          rel,
+          rel
         );
       } else if (rootDescribeTitles.length === 1) {
         const expected = normalizeLabel(baseNameWithoutSpec(rel));
@@ -1093,7 +1029,7 @@ async function validateKit(kit, schema) {
         if (targetPath && (await exists(targetPath))) {
           const targetSrc = await readFile(targetPath, "utf8");
           exportedNames = collectExportNames(
-            parseTsSource(targetPath, targetSrc),
+            parseTsSource(targetPath, targetSrc)
           ).map((name) => normalizeLabel(name));
         }
         const matchesTarget =
@@ -1102,14 +1038,14 @@ async function validateKit(kit, schema) {
           expected.includes(actual);
         const matchesExport = exportedNames.some(
           (name) =>
-            actual === name || actual.includes(name) || name.includes(actual),
+            actual === name || actual.includes(name) || name.includes(actual)
         );
         if (!matchesTarget && !matchesExport) {
           pushFinding(
             findings,
             testLint,
             `root describe() must match the tested unit name`,
-            rel,
+            rel
           );
         }
       }
@@ -1120,7 +1056,7 @@ async function validateKit(kit, schema) {
             findings,
             testLint,
             `it()/test() titles must be string literals`,
-            rel,
+            rel
           );
           continue;
         }
@@ -1128,8 +1064,8 @@ async function validateKit(kit, schema) {
           pushFinding(
             findings,
             testLint,
-            `it() descriptions must avoid \"should\"; use active voice`,
-            rel,
+            `it() descriptions must avoid "should"; use active voice`,
+            rel
           );
         }
       }
@@ -1146,7 +1082,7 @@ async function validateKit(kit, schema) {
         findings,
         noMocksLint,
         `core tests must use in-memory stubs instead of module mocks`,
-        rel,
+        rel
       );
     }
 
@@ -1170,7 +1106,7 @@ async function main() {
   const schema = JSON.parse(await readFile(schemaPath, "utf8"));
   const kits = await findKitMetas();
   if (kits.length === 0) {
-    console.error(c.red("no kits found under kits/*/versions/*/meta.json"));
+    console.error(pc.red("no kits found under kits/*/versions/*/meta.json"));
     process.exit(1);
   }
 
@@ -1187,34 +1123,34 @@ async function main() {
     const header = `${kit.kitName}@${kit.version}`;
     if (findings.length === 0) {
       console.log(
-        `${c.green("✓")} ${c.bold(header)} ${c.dim("(no findings)")}`,
+        `${pc.green("✓")} ${pc.bold(header)} ${pc.dim("(no findings)")}`
       );
       continue;
     }
-    const status = errs.length > 0 ? c.red("✗") : c.yellow("!");
+    const status = errs.length > 0 ? pc.red("✗") : pc.yellow("!");
     console.log(
-      `${status} ${c.bold(header)} — ${errs.length} error(s), ${
+      `${status} ${pc.bold(header)} — ${errs.length} error(s), ${
         warns.length
-      } warning(s)`,
+      } warning(s)`
     );
     for (const f of findings) {
-      const tag = f.severity === "error" ? c.red("error") : c.yellow("warn ");
-      const loc = f.file ? c.dim(` [${f.file}]`) : "";
+      const tag = f.severity === "error" ? pc.red("error") : pc.yellow("warn ");
+      const loc = f.file ? pc.dim(` [${f.file}]`) : "";
       console.log(`  ${tag} ${f.msg}${loc}`);
     }
   }
 
   console.log(
-    c.dim(
-      `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`,
-    ),
+    pc.dim(
+      `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`
+    )
   );
   process.exit(errors > 0 ? 1 : 0);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
   main().catch((err) => {
-    console.error(c.red("validate-kit crashed:"), err);
+    console.error(pc.red("validate-kit crashed:"), err);
     process.exit(2);
   });
 }

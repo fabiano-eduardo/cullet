@@ -7,24 +7,25 @@
 // dist publicado).
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  expectedTarballName,
+  readPackageManifest,
+} from "./package-tarball.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
 
-function readPackageManifest() {
-  return JSON.parse(readFileSync(resolve(repoRoot, "package.json"), "utf8"));
-}
+function findLatestTarball(dir) {
+  const candidates = readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".tgz"))
+    .map((entry) => resolve(dir, entry.name))
+    .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
 
-function expectedTarballName(name, version) {
-  const normalizedName = name.startsWith("@")
-    ? name.slice(1).replace(/\//g, "-")
-    : name.replace(/\//g, "-");
-
-  return `${normalizedName}-${version}.tgz`;
+  return candidates[0];
 }
 
 function resolveTarballPath(rawPath) {
@@ -32,34 +33,15 @@ function resolveTarballPath(rawPath) {
     return resolve(repoRoot, rawPath.trim());
   }
 
-  const pkg = readPackageManifest();
-  const expected = resolve(
-    repoRoot,
-    expectedTarballName(pkg.name, pkg.version),
-  );
+  const pkg = readPackageManifest(resolve(repoRoot, "package.json"));
+  const expected = resolve(repoRoot, expectedTarballName(pkg));
   if (existsSync(expected)) return expected;
 
-  const tarballs = spawnSync(
-    "find",
-    [repoRoot, "-maxdepth", "1", "-name", "*.tgz"],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-    },
-  );
-
-  if (tarballs.status === 0) {
-    const candidates = tarballs.stdout
-      .split(/\r?\n/)
-      .map((entry) => entry.trim())
-      .filter(Boolean)
-      .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
-
-    if (candidates.length > 0) return candidates[0];
-  }
+  const latestTarball = findLatestTarball(repoRoot);
+  if (latestTarball !== undefined) return latestTarball;
 
   throw new Error(
-    "Nenhum tarball .tgz encontrado. Rode `npm pack` antes de validar o conteudo.",
+    "Nenhum tarball .tgz encontrado. Rode `npm pack` antes de validar o conteudo."
   );
 }
 
@@ -90,7 +72,7 @@ const entries = result.stdout
 
 const registryRaw = await readFile(
   resolve(repoRoot, "registry", "index.json"),
-  "utf8",
+  "utf8"
 );
 const registry = JSON.parse(registryRaw);
 
@@ -114,14 +96,24 @@ for (const expected of required) {
   if (!entries.includes(expected)) missing.push(expected);
 }
 
+function isUnexpectedRootDistChunk(entry) {
+  return (
+    /^dist\/[^/]+\.js(?:\.map)?$/.test(entry) &&
+    entry !== "dist/esm-only-require.cjs"
+  );
+}
+
 // kits/ cru nao deve sair no tarball: o publish so leva dist/.
-// Tambem nao publicamos specs para reduzir ruido e peso do pacote.
+// Tambem nao publicamos fontes cruas de registry/, specs ou chunks JS
+// soltos na raiz de dist/ para reduzir ruido e peso do pacote.
 const forbidden = entries.filter(
   (entry) =>
     entry.startsWith("kits/") ||
     entry.startsWith("tests/") ||
+    (entry.startsWith("registry/") && entry !== "registry/index.json") ||
     /(^|\/)__tests__(\/|$)/.test(entry) ||
-    /\.(spec|test)\.ts$/.test(entry),
+    /\.(spec|test)\.ts$/.test(entry) ||
+    isUnexpectedRootDistChunk(entry)
 );
 
 if (missing.length > 0 || forbidden.length > 0) {
@@ -137,5 +129,7 @@ if (missing.length > 0 || forbidden.length > 0) {
 }
 
 console.log(
-  `Tarball OK (${basename(tarballPath)}): ${entries.length} arquivos, ${required.size} esperados verificados.`,
+  `Tarball OK (${basename(tarballPath)}): ${entries.length} arquivos, ${
+    required.size
+  } esperados verificados.`
 );
