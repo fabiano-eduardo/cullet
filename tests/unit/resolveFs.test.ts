@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadKitContext,
   loadKitDeprecation,
@@ -27,7 +27,7 @@ async function setupFakeCullet(
     context?: string | null;
     buildKitDist?: boolean;
     kitSrcEntry?: boolean;
-  } = {},
+  } = {}
 ): Promise<void> {
   await writeJson(join(root, "package.json"), {
     name: "cullet",
@@ -75,7 +75,7 @@ async function setupFakeCullet(
             ],
           },
         },
-      },
+      }
     );
   }
 
@@ -83,7 +83,7 @@ async function setupFakeCullet(
     await mkdir(srcDir, { recursive: true });
     await writeFile(
       join(srcDir, "KIT_CONTEXT.md"),
-      opts.context ?? "# Context\nHello",
+      opts.context ?? "# Context\nHello"
     );
   }
 
@@ -108,6 +108,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await rm(root, { recursive: true, force: true });
 });
 
@@ -161,14 +162,14 @@ describe("resolveBuiltKitDir", () => {
     await setupFakeCullet({ buildKitDist: true });
     const dir = await resolveBuiltKitDir(metaUrl, "erp-core", "1.0.0");
     expect(dir).toBe(
-      join(root, "dist", "kits", "erp-core", "versions", "1.0.0"),
+      join(root, "dist", "kits", "erp-core", "versions", "1.0.0")
     );
   });
 
   it("throws with a build hint when the dist artifact is missing", async () => {
     await setupFakeCullet();
     await expect(
-      resolveBuiltKitDir(metaUrl, "erp-core", "1.0.0"),
+      resolveBuiltKitDir(metaUrl, "erp-core", "1.0.0")
     ).rejects.toThrow(/npm run build/);
   });
 });
@@ -191,7 +192,7 @@ describe("resolveKitSourceDir", () => {
     });
     const dir = await resolveKitSourceDir(metaUrl, "erp-core", "1.0.0");
     expect(dir).toBe(
-      join(root, "dist", "kits", "erp-core", "versions", "1.0.0"),
+      join(root, "dist", "kits", "erp-core", "versions", "1.0.0")
     );
   });
 
@@ -202,7 +203,7 @@ describe("resolveKitSourceDir", () => {
       kitSrcEntry: false,
     });
     await expect(
-      resolveKitSourceDir(metaUrl, "erp-core", "1.0.0"),
+      resolveKitSourceDir(metaUrl, "erp-core", "1.0.0")
     ).rejects.toThrow(/nao foi encontrado/);
   });
 });
@@ -272,7 +273,7 @@ describe("loadKitContext", () => {
   it("returns the raw KIT_CONTEXT.md content", async () => {
     await setupFakeCullet({ context: "# Context\nHello" });
     expect(await loadKitContext(metaUrl, "erp-core", "1.0.0")).toBe(
-      "# Context\nHello",
+      "# Context\nHello"
     );
   });
 
@@ -331,7 +332,7 @@ describe("loadKitDeprecation", () => {
     });
 
     await expect(
-      loadKitDeprecation(metaUrl, "erp-core", "1.0.0"),
+      loadKitDeprecation(metaUrl, "erp-core", "1.0.0")
     ).resolves.toEqual({
       since: "2026-01-01",
       reason: "rewritten",
@@ -352,5 +353,51 @@ describe("loadKitDeprecation", () => {
       meta: { deprecated: { since: 1, reason: 2 } },
     });
     expect(await loadKitDeprecation(metaUrl, "erp-core", "1.0.0")).toBeNull();
+  });
+
+  it("warns when src and dist deprecation metadata diverge and keeps src precedence", async () => {
+    const emitWarningSpy = vi
+      .spyOn(process, "emitWarning")
+      .mockImplementation(() => undefined);
+
+    await setupFakeCullet({
+      buildKitDist: true,
+      meta: {
+        deprecated: {
+          since: "2026-01-01",
+          reason: "source metadata",
+        },
+      },
+    });
+    await writeJson(
+      join(root, "dist", "kits", "erp-core", "versions", "1.0.0", "meta.json"),
+      {
+        deprecated: {
+          since: "2025-12-01",
+          reason: "stale dist metadata",
+        },
+      }
+    );
+
+    await expect(
+      loadKitDeprecation(metaUrl, "erp-core", "1.0.0")
+    ).resolves.toEqual({
+      since: "2026-01-01",
+      reason: "source metadata",
+    });
+    await expect(
+      loadKitDeprecation(metaUrl, "erp-core", "1.0.0")
+    ).resolves.toEqual({
+      since: "2026-01-01",
+      reason: "source metadata",
+    });
+
+    expect(emitWarningSpy).toHaveBeenCalledTimes(1);
+    expect(emitWarningSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"erp-core@1.0.0"'),
+      expect.objectContaining({
+        code: "CULLET_DEPRECATION_META_DIVERGENCE",
+      })
+    );
   });
 });

@@ -5,6 +5,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import pc from "picocolors";
+import { formatDependency } from "../utils/formatDependency.js";
 import {
   kitFullControlAliasTarget,
   kitFullControlDir,
@@ -34,8 +35,8 @@ async function confirmOverwrite(destinationDir: string): Promise<boolean> {
   try {
     const answer = await readline.question(
       pc.yellow(
-        `O diretorio ${destinationDir} ja existe. Deseja sobrescrever? (y/N) `,
-      ),
+        `O diretorio ${destinationDir} ja existe. Deseja sobrescrever? (y/N) `
+      )
     );
 
     return /^(y|yes|s|sim)$/i.test(answer.trim());
@@ -44,21 +45,13 @@ async function confirmOverwrite(destinationDir: string): Promise<boolean> {
   }
 }
 
-function formatDependency(dependency: KitDependency): string {
-  const range = dependency.range.length > 0 ? ` (${dependency.range})` : "";
-  const optional = dependency.optional ? " [opcional]" : "";
-  const notes = dependency.notes ? ` - ${dependency.notes}` : "";
-
-  return `${dependency.name}${range}${optional}${notes}`;
-}
-
 function toInstallSpecifier(dependency: KitDependency): string {
   if (dependency.range.length === 0) {
     return dependency.name;
   }
 
   const specifier = `${dependency.name}@${dependency.range}`;
-  return /\s/u.test(dependency.range) ? `\"${specifier}\"` : specifier;
+  return /\s/u.test(dependency.range) ? `"${specifier}"` : specifier;
 }
 
 function printExternalDepsWarning(deps: KitDependency[]): void {
@@ -75,14 +68,14 @@ function printExternalDepsWarning(deps: KitDependency[]): void {
   console.log(pc.cyan(`   npm install ${installSpecifiers.join(" ")}`));
   console.log(
     pc.dim(
-      `As peerDependencies do pacote cullet nao se aplicam no modo full-control: depois da copia, o Node resolve imports pelo node_modules do seu projeto.`,
-    ),
+      `As peerDependencies do pacote cullet nao se aplicam no modo full-control: depois da copia, o Node resolve imports pelo node_modules do seu projeto.`
+    )
   );
 }
 
 function createTransactionalPath(
   destinationDir: string,
-  kind: "staging" | "backup",
+  kind: "staging" | "backup"
 ): string {
   const parentDir = dirname(destinationDir);
   const directoryName = basename(destinationDir);
@@ -101,7 +94,7 @@ function errorMessage(error: unknown): string {
 
 export async function copyDirectoryTransactional(
   sourceDir: string,
-  destinationDir: string,
+  destinationDir: string
 ): Promise<void> {
   const parentDir = dirname(destinationDir);
   const stagingDir = createTransactionalPath(destinationDir, "staging");
@@ -115,9 +108,7 @@ export async function copyDirectoryTransactional(
   } catch (error) {
     await removeIfExists(stagingDir);
     throw new Error(
-      `Falha ao preparar a copia para ${destinationDir}: ${errorMessage(
-        error,
-      )}`,
+      `Falha ao preparar a copia para ${destinationDir}: ${errorMessage(error)}`
     );
   }
 
@@ -129,8 +120,8 @@ export async function copyDirectoryTransactional(
       await removeIfExists(stagingDir);
       throw new Error(
         `Falha ao finalizar a copia para ${destinationDir}: ${errorMessage(
-          error,
-        )}`,
+          error
+        )}`
       );
     }
   }
@@ -150,16 +141,16 @@ export async function copyDirectoryTransactional(
       } catch (restoreError) {
         throw new Error(
           `Falha ao sobrescrever ${destinationDir}; o backup em ${backupDir} nao pode ser restaurado automaticamente. Erro original: ${errorMessage(
-            error,
-          )}. Erro ao restaurar: ${errorMessage(restoreError)}.`,
+            error
+          )}. Erro ao restaurar: ${errorMessage(restoreError)}.`
         );
       }
     }
 
     throw new Error(
       `Falha ao sobrescrever ${destinationDir}. O conteudo anterior foi preservado. Detalhe: ${errorMessage(
-        error,
-      )}.`,
+        error
+      )}.`
     );
   }
 
@@ -173,12 +164,12 @@ export async function copyDirectoryTransactional(
 export function createFullControlCommand(): Command {
   return new Command("fc")
     .description(
-      "Copia um kit para dentro do projeto atual e atualiza o alias local",
+      "Copia um kit para dentro do projeto atual e atualiza o alias local"
     )
     .argument("<kit>", "Nome do kit no formato nome ou nome@versao")
     .option(
       "--dry-run",
-      "Lista o que seria copiado e o alias resultante sem escrever nada",
+      "Lista o que seria copiado e o alias resultante sem escrever nada"
     )
     .action(async (kit: string, options: FullControlOptions) => {
       await runCommandWithTelemetry({
@@ -198,17 +189,17 @@ export function createFullControlCommand(): Command {
           const deprecation = await loadKitDeprecation(
             import.meta.url,
             parsed.name,
-            version,
+            version
           );
           if (deprecation) {
             console.log(
               pc.yellow(
-                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
-              ),
+                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`
+              )
             );
             if (deprecation.successor) {
               for (const detail of describeKitSuccessor(
-                deprecation.successor,
+                deprecation.successor
               )) {
                 console.log(pc.yellow(detail));
               }
@@ -218,27 +209,27 @@ export function createFullControlCommand(): Command {
           const sourceDir = await resolveKitSourceDir(
             import.meta.url,
             parsed.name,
-            version,
+            version
           );
           const destinationDir = kitFullControlDir(
             process.cwd(),
             parsed.name,
-            version,
+            version
           );
 
           const destinationExists = await fs.pathExists(destinationDir);
 
           if (options.dryRun) {
             console.log(
-              pc.bold(`[dry-run] full-control para ${parsed.name}@${version}`),
+              pc.bold(`[dry-run] full-control para ${parsed.name}@${version}`)
             );
             console.log(`Origem:  ${pc.cyan(sourceDir)}`);
             console.log(`Destino: ${pc.cyan(destinationDir)}`);
             if (destinationExists) {
               console.log(
                 pc.yellow(
-                  `O destino ja existe. Em execucao real, o CLI pedira confirmacao antes de sobrescrever.`,
-                ),
+                  `O destino ja existe. Em execucao real, o CLI pedira confirmacao antes de sobrescrever.`
+                )
               );
             }
 
@@ -257,7 +248,7 @@ export function createFullControlCommand(): Command {
               process.cwd(),
               `cullet/${parsed.name}`,
               kitFullControlAliasTarget(parsed.name, version),
-              { dryRun: true },
+              { dryRun: true }
             );
 
             printAliasOutcome(aliasPreview, { dryRun: true });
@@ -265,7 +256,7 @@ export function createFullControlCommand(): Command {
             const meta = await loadKitMeta(
               import.meta.url,
               parsed.name,
-              version,
+              version
             );
             const deps = getFullControlDependencies(meta);
             if (deps.length > 0) {
@@ -274,8 +265,8 @@ export function createFullControlCommand(): Command {
                 pc.dim(
                   `Apos a copia real, voce precisara instalar: ${deps
                     .map(formatDependency)
-                    .join(", ")}`,
-                ),
+                    .join(", ")}`
+                )
               );
             }
             return;
@@ -286,7 +277,7 @@ export function createFullControlCommand(): Command {
 
             if (!shouldOverwrite) {
               console.log(
-                pc.yellow("Operacao cancelada. Nenhum arquivo foi alterado."),
+                pc.yellow("Operacao cancelada. Nenhum arquivo foi alterado.")
               );
               tracker.set("cancelled", true);
               return;
@@ -298,13 +289,13 @@ export function createFullControlCommand(): Command {
           const aliasResult = await upsertPathAlias(
             process.cwd(),
             `cullet/${parsed.name}`,
-            kitFullControlAliasTarget(parsed.name, version),
+            kitFullControlAliasTarget(parsed.name, version)
           );
 
           console.log(
             pc.green(
-              `Kit ${parsed.name} copiado para ./cullet/${parsed.name}@${version}/`,
-            ),
+              `Kit ${parsed.name} copiado para ./cullet/${parsed.name}@${version}/`
+            )
           );
           console.log(`Origem: ${pc.cyan(sourceDir)}`);
           console.log(`Destino: ${pc.cyan(destinationDir)}`);
@@ -317,13 +308,11 @@ export function createFullControlCommand(): Command {
 
           console.log("");
           console.log(pc.bold("Como usar agora:"));
-          console.log(
-            pc.cyan(`import { ... } from \"cullet/${parsed.name}\";`),
-          );
+          console.log(pc.cyan(`import { ... } from "cullet/${parsed.name}";`));
           console.log(
             pc.dim(
-              "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
-            ),
+              "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto."
+            )
           );
         },
       });
@@ -332,7 +321,7 @@ export function createFullControlCommand(): Command {
 
 async function collectSampleFiles(
   root: string,
-  limit: number,
+  limit: number
 ): Promise<{ files: string[]; truncated: boolean }> {
   const files: string[] = [];
   let truncated = false;
@@ -369,15 +358,15 @@ async function collectSampleFiles(
 
 function printAliasOutcome(
   aliasResult: Awaited<ReturnType<typeof upsertPathAlias>>,
-  options: { dryRun: boolean },
+  options: { dryRun: boolean }
 ): void {
   const prefix = options.dryRun ? "[dry-run] " : "";
 
   if (aliasResult.status === "missing-tsconfig") {
     console.log(
       pc.yellow(
-        `${prefix}Nenhum tsconfig.json foi encontrado. O alias local nao sera registrado automaticamente.`,
-      ),
+        `${prefix}Nenhum tsconfig.json foi encontrado. O alias local nao sera registrado automaticamente.`
+      )
     );
     return;
   }
@@ -390,13 +379,13 @@ function printAliasOutcome(
     console.log("");
     console.log(
       pc.yellow(
-        `Aviso: compilerOptions.baseUrl do seu tsconfig esta como "${aliasResult.consumerBaseUrl}" (nao "."), e o paths foi adicionado mesmo assim.`,
-      ),
+        `Aviso: compilerOptions.baseUrl do seu tsconfig esta como "${aliasResult.consumerBaseUrl}" (nao "."), e o paths foi adicionado mesmo assim.`
+      )
     );
     console.log(
       pc.yellow(
-        `O TypeScript resolve "paths" relativos a baseUrl. O alias aponta para "${aliasResult.target}", entao confirme se o caminho relativo bate com a estrutura do seu projeto.`,
-      ),
+        `O TypeScript resolve "paths" relativos a baseUrl. O alias aponta para "${aliasResult.target}", entao confirme se o caminho relativo bate com a estrutura do seu projeto.`
+      )
     );
   }
 
@@ -414,7 +403,7 @@ function printAliasOutcome(
 
   console.log(
     pc.green(
-      `${prefix}Alias ${actionLabel}: ${aliasResult.alias} -> ${aliasResult.target}`,
-    ),
+      `${prefix}Alias ${actionLabel}: ${aliasResult.alias} -> ${aliasResult.target}`
+    )
   );
 }

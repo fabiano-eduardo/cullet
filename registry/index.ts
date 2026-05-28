@@ -13,13 +13,13 @@ import {
   type KitSuccessorCodemod,
   type Registry,
   type RegistryEntry,
-} from "../cli/utils/resolve.js";
+} from "./catalog.js";
 import {
   parseKitContextDocument,
   type KitContextDocument,
   type KitContextSection,
   type KitContextSectionId,
-} from "../cli/utils/kitContext.js";
+} from "./kit-context.js";
 
 export type {
   Registry,
@@ -79,7 +79,7 @@ export async function listKits(): Promise<CatalogKitSummary[]> {
 
 export async function loadKit(
   name: string,
-  requestedVersion?: string,
+  requestedVersion?: string
 ): Promise<CatalogKit> {
   const registry = await loadRegistry();
   const entry = resolveRegistryEntry(registry, name);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   findMissingKitContextSections,
   parseKitContextDocument,
-} from "../../cli/utils/kitContext.js";
+} from "../../cli/utils/kit-context.js";
 
 describe("parseKitContextDocument", () => {
   it("parses the explicit section schema used by KIT_CONTEXT.md", () => {
