@@ -21,10 +21,10 @@ function stripAnsi(text: string): string {
 }
 
 function setEnv(
-  next: Record<string, string | undefined>
+  next: Record<string, string | undefined>,
 ): Record<string, string | undefined> {
   const previous = Object.fromEntries(
-    Object.keys(next).map((key) => [key, process.env[key]])
+    Object.keys(next).map((key) => [key, process.env[key]]),
   ) as Record<string, string | undefined>;
 
   for (const [key, value] of Object.entries(next)) {
@@ -66,7 +66,7 @@ async function makeProject(
   options: {
     packageJson?: Record<string, unknown>;
     tsconfig?: Record<string, unknown> | null;
-  } = {}
+  } = {},
 ): Promise<string> {
   const projectDir = await mkdtemp(join(tempRoot, `${tag}-`));
 
@@ -76,7 +76,7 @@ async function makeProject(
       name: tag,
       type: "module",
       version: "0.0.0",
-    }
+    },
   );
 
   if (options.tsconfig !== null) {
@@ -90,7 +90,7 @@ async function makeProject(
           strict: true,
         },
         include: ["src/**/*"],
-      }
+      },
     );
   }
 
@@ -103,7 +103,7 @@ async function runCommand(
   options: {
     cwd?: string;
     env?: Record<string, string | undefined>;
-  } = {}
+  } = {},
 ): Promise<{ stdout: string; stderr: string; exitCode: number | undefined }> {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -165,7 +165,7 @@ async function createTemporaryMigrationFixture(): Promise<{
   const codemodPath = join(
     versionRoot,
     "codemods",
-    `${sourceVersion}-to-${targetVersion}.mjs`
+    `${sourceVersion}-to-${targetVersion}.mjs`,
   );
 
   await mkdir(join(versionRoot, "codemods"), { recursive: true });
@@ -205,7 +205,7 @@ async function createTemporaryMigrationFixture(): Promise<{
       "}",
       "",
     ].join("\n"),
-    "utf8"
+    "utf8",
   );
 
   const registry = JSON.parse(originalRegistry) as Record<string, unknown>;
@@ -217,7 +217,7 @@ async function createTemporaryMigrationFixture(): Promise<{
   await writeFile(
     registryPath,
     `${JSON.stringify(registry, null, 2)}\n`,
-    "utf8"
+    "utf8",
   );
 
   return {
@@ -260,7 +260,7 @@ describe.sequential("cli commands", () => {
         {
           cwd: projectDir,
           env: makeTelemetryEnv(tempRoot),
-        }
+        },
       );
 
       expect(result.exitCode).toBe(0);
@@ -269,7 +269,7 @@ describe.sequential("cli commands", () => {
       expect(result.stdout).toContain("Alias criado: cullet/erp-core");
 
       const tsconfig = JSON.parse(
-        await readFile(join(projectDir, "tsconfig.json"), "utf8")
+        await readFile(join(projectDir, "tsconfig.json"), "utf8"),
       ) as {
         compilerOptions?: { paths?: Record<string, string[]> };
       };
@@ -288,23 +288,23 @@ describe.sequential("cli commands", () => {
         {
           cwd: projectDir,
           env: makeTelemetryEnv(tempRoot),
-        }
+        },
       );
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain(
-        "Kit erp-core copiado para ./cullet/erp-core@1.0.0/"
+        "Kit erp-core copiado para ./cullet/erp-core@1.0.0/",
       );
 
       await expect(
         readFile(
           join(projectDir, "cullet", "erp-core@1.0.0", "index.ts"),
-          "utf8"
-        )
+          "utf8",
+        ),
       ).resolves.toContain("export");
 
       const tsconfig = JSON.parse(
-        await readFile(join(projectDir, "tsconfig.json"), "utf8")
+        await readFile(join(projectDir, "tsconfig.json"), "utf8"),
       ) as {
         compilerOptions?: { paths?: Record<string, string[]> };
       };
@@ -331,15 +331,15 @@ describe.sequential("cli commands", () => {
           {
             cwd: repoRoot,
             env: makeTelemetryEnv(tempRoot),
-          }
+          },
         );
 
         expect(result.exitCode).toBe(0);
         expect(result.stdout).toContain(
-          `Migracao codificada: ${fixture.kitName}@1.0.0 -> ${fixture.kitName}@2.0.0`
+          `Migracao codificada: ${fixture.kitName}@1.0.0 -> ${fixture.kitName}@2.0.0`,
         );
         expect(result.stdout).toContain(
-          `Codemod executado em modo simulacao para ${projectDir}.`
+          `Codemod executado em modo simulacao para ${projectDir}.`,
         );
         expect(result.stdout).toContain("migration-applied.txt");
       } finally {
@@ -357,20 +357,20 @@ describe.sequential("cli commands", () => {
           "--endpoint",
           "https://telemetry.example.dev/events",
         ],
-        { env }
+        { env },
       );
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Telemetria do CLI: habilitada");
       expect(result.stdout).toContain(
-        "Endpoint remoto: https://telemetry.example.dev/events"
+        "Endpoint remoto: https://telemetry.example.dev/events",
       );
 
       const config = JSON.parse(
         await readFile(
           join(env.CULLET_CONFIG_HOME, "cullet", "telemetry.json"),
-          "utf8"
-        )
+          "utf8",
+        ),
       ) as { enabled: boolean; endpoint: string };
 
       expect(config).toMatchObject({
@@ -399,7 +399,7 @@ describe.sequential("cli commands", () => {
         ["doctor", "--cwd", projectDir],
         {
           env: makeTelemetryEnv(tempRoot),
-        }
+        },
       );
 
       expect(result.exitCode).toBe(1);
@@ -414,8 +414,8 @@ describe.sequential("cli commands", () => {
           ["telemetry", "enable", "--endpoint", "http://127.0.0.1:4318/events"],
           {
             env: makeTelemetryEnv(tempRoot),
-          }
-        )
+          },
+        ),
       ).rejects.toThrow("HTTPS");
     });
   });
@@ -427,7 +427,7 @@ describe.sequential("cli commands", () => {
         ["telemetry", "status"],
         {
           env: makeTelemetryEnv(tempRoot),
-        }
+        },
       );
 
       expect(result.exitCode).toBe(0);

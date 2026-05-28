@@ -10,7 +10,7 @@ describe("hasModuleMockCall", () => {
         describe("x", () => {
           vi.mock("./dependency.js");
         });
-      `)
+      `),
     ).toBe(true);
   });
 
@@ -18,7 +18,7 @@ describe("hasModuleMockCall", () => {
     expect(
       hasModuleMockCall(`
         jest.mock("./dependency.js", () => ({ value: 1 }));
-      `)
+      `),
     ).toBe(true);
   });
 
@@ -29,7 +29,7 @@ describe("hasModuleMockCall", () => {
         const text = 'jest.mock("./dependency.js")';
         const template = \
           \`vi.mock("./dependency.js")\`;
-      `)
+      `),
     ).toBe(false);
   });
 });

@@ -27,7 +27,7 @@ describe("cli shim", () => {
       });
 
     const distEntryPath = fileURLToPath(
-      new URL("../../dist/cli/index.js", import.meta.url)
+      new URL("../../dist/cli/index.js", import.meta.url),
     );
     const distEntryBackupPath = `${distEntryPath}.bak-test`;
 

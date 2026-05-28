@@ -149,7 +149,7 @@ describe("cli index", () => {
 
     expect(process.exitCode).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Erro: boom")
+      expect.stringContaining("Erro: boom"),
     );
   });
 
@@ -195,8 +195,8 @@ describe("cli index", () => {
     expect(process.exitCode).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining(
-        "package.json do cullet nao contem um campo version valido"
-      )
+        "package.json do cullet nao contem um campo version valido",
+      ),
     );
   });
 });

@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 
 export const baseVitestConfig = defineConfig({
-    test: {
-        environment: "node",
-    },
+  test: {
+    environment: "node",
+  },
 });

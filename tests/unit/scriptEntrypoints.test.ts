@@ -24,7 +24,7 @@ async function importFresh(relativePath: string): Promise<void> {
 
 async function waitUntil(
   assertion: () => void | Promise<void>,
-  timeoutMs = 10_000
+  timeoutMs = 10_000,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
 
@@ -42,11 +42,11 @@ async function waitUntil(
 
 async function runScriptExpectExit(
   relativePath: string,
-  args: string[]
+  args: string[],
 ): Promise<number | undefined> {
   const previousArgv = [...process.argv];
   const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-    code?: number
+    code?: number,
   ) => {
     throw new ExitSignal(code);
   }) as never);
@@ -76,7 +76,7 @@ async function runValidateKitAsScript(): Promise<number[]> {
   const previousArgv = [...process.argv];
   const exitCodes: number[] = [];
   const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-    code?: number
+    code?: number,
   ) => {
     exitCodes.push(code ?? 0);
     return undefined as never;
@@ -117,7 +117,7 @@ describe.sequential("script entrypoints", () => {
 
     it("executes sync-package-exports --check when package.json is already synchronized", async () => {
       await expect(
-        runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"])
+        runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"]),
       ).resolves.toBe(0);
     });
 
@@ -152,17 +152,17 @@ describe.sequential("script entrypoints", () => {
 
         await waitUntil(async () => {
           const registry = JSON.parse(
-            await readFile(registryPath, "utf8")
+            await readFile(registryPath, "utf8"),
           ) as Record<string, { latest: string }>;
 
           expect(registry[kitName]).toMatchObject({ latest: "1.0.0" });
         });
 
         await expect(
-          readFile(join(kitDir, "versions", "1.0.0", "README.md"), "utf8")
+          readFile(join(kitDir, "versions", "1.0.0", "README.md"), "utf8"),
         ).resolves.toContain(kitName);
         await expect(
-          readFile(join(kitDir, "versions", "1.0.0", "meta.json"), "utf8")
+          readFile(join(kitDir, "versions", "1.0.0", "meta.json"), "utf8"),
         ).resolves.toContain(kitName);
       } finally {
         process.argv = previousArgv;
@@ -199,7 +199,7 @@ describe.sequential("script entrypoints", () => {
 
       try {
         await expect(
-          importFresh("scripts/check-pack-contents.mjs")
+          importFresh("scripts/check-pack-contents.mjs"),
         ).resolves.toBeUndefined();
       } finally {
         process.argv = previousArgv;
@@ -223,11 +223,11 @@ describe.sequential("script entrypoints", () => {
         await writeFile(
           packageJsonPath,
           `${JSON.stringify(packageJson, null, 2)}\n`,
-          "utf8"
+          "utf8",
         );
 
         await expect(
-          runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"])
+          runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"]),
         ).resolves.toBe(1);
       } finally {
         await writeFile(packageJsonPath, originalPackageJson, "utf8");
@@ -240,7 +240,7 @@ describe.sequential("script entrypoints", () => {
       await expect(
         runScriptExpectExit("scripts/check-pack-contents.mjs", [
           join(tempRoot, "missing.tgz"),
-        ])
+        ]),
       ).resolves.toBe(1);
     });
   });

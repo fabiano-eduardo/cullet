@@ -26,25 +26,25 @@ describe("copyDirectoryTransactional", () => {
 
     await writeTextFile(
       join(sourceDir, "index.ts"),
-      "export const version = 'new';\n"
+      "export const version = 'new';\n",
     );
     await writeTextFile(
       join(destinationDir, "index.ts"),
-      "export const version = 'old';\n"
+      "export const version = 'old';\n",
     );
     await writeTextFile(join(destinationDir, "__sentinel__"), "keep me\n");
 
     vi.spyOn(fs, "copy").mockRejectedValueOnce(new Error("copy failed"));
 
     await expect(
-      copyDirectoryTransactional(sourceDir, destinationDir)
+      copyDirectoryTransactional(sourceDir, destinationDir),
     ).rejects.toThrow(/Falha ao preparar a copia/);
 
     await expect(
-      readFile(join(destinationDir, "index.ts"), "utf8")
+      readFile(join(destinationDir, "index.ts"), "utf8"),
     ).resolves.toContain("old");
     await expect(
-      readFile(join(destinationDir, "__sentinel__"), "utf8")
+      readFile(join(destinationDir, "__sentinel__"), "utf8"),
     ).resolves.toContain("keep me");
     await expect(readdir(join(root, "cullet"))).resolves.toEqual([
       "erp-core@1.0.0",
@@ -58,11 +58,11 @@ describe("copyDirectoryTransactional", () => {
 
     await writeTextFile(
       join(sourceDir, "index.ts"),
-      "export const version = 'new';\n"
+      "export const version = 'new';\n",
     );
     await writeTextFile(
       join(destinationDir, "index.ts"),
-      "export const version = 'old';\n"
+      "export const version = 'old';\n",
     );
     await writeTextFile(join(destinationDir, "__sentinel__"), "keep me\n");
 
@@ -76,18 +76,18 @@ describe("copyDirectoryTransactional", () => {
           throw new Error("swap failed");
         }
         return actualMove(...args);
-      }
+      },
     );
 
     await expect(
-      copyDirectoryTransactional(sourceDir, destinationDir)
+      copyDirectoryTransactional(sourceDir, destinationDir),
     ).rejects.toThrow(/O conteudo anterior foi preservado/);
 
     await expect(
-      readFile(join(destinationDir, "index.ts"), "utf8")
+      readFile(join(destinationDir, "index.ts"), "utf8"),
     ).resolves.toContain("old");
     await expect(
-      readFile(join(destinationDir, "__sentinel__"), "utf8")
+      readFile(join(destinationDir, "__sentinel__"), "utf8"),
     ).resolves.toContain("keep me");
     await expect(readdir(join(root, "cullet"))).resolves.toEqual([
       "erp-core@1.0.0",

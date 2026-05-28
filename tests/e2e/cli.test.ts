@@ -34,7 +34,7 @@ interface TemporaryMigrationFixture {
 function runCli(
   args: string[],
   cwd: string,
-  options: { input?: string; env?: NodeJS.ProcessEnv } = {}
+  options: { input?: string; env?: NodeJS.ProcessEnv } = {},
 ): Promise<RunResult> {
   return new Promise((resolvePromise, rejectPromise) => {
     const spawnOptions: SpawnOptions = {
@@ -75,7 +75,7 @@ function ensureBuilt(): void {
   });
   if (result.status !== 0) {
     throw new Error(
-      `npm run build failed with status ${result.status}; cannot run e2e tests`
+      `npm run build failed with status ${result.status}; cannot run e2e tests`,
     );
   }
 }
@@ -108,12 +108,12 @@ function makeProject(tag: string): string {
         include: ["src/**/*"],
       },
       null,
-      2
-    )
+      2,
+    ),
   );
   writeFileSync(
     join(dir, "package.json"),
-    JSON.stringify({ name: tag, type: "module", version: "0.0.0" }, null, 2)
+    JSON.stringify({ name: tag, type: "module", version: "0.0.0" }, null, 2),
   );
   return dir;
 }
@@ -130,7 +130,7 @@ function createTemporaryMigrationFixture(): TemporaryMigrationFixture {
   const codemodPath = join(
     versionRoot,
     "codemods",
-    `${sourceVersion}-to-${targetVersion}.mjs`
+    `${sourceVersion}-to-${targetVersion}.mjs`,
   );
 
   rmSync(kitRoot, { recursive: true, force: true });
@@ -157,8 +157,8 @@ function createTemporaryMigrationFixture(): TemporaryMigrationFixture {
         },
       },
       null,
-      2
-    )
+      2,
+    ),
   );
   writeFileSync(
     codemodPath,
@@ -175,7 +175,7 @@ function createTemporaryMigrationFixture(): TemporaryMigrationFixture {
       "  };",
       "}",
       "",
-    ].join("\n")
+    ].join("\n"),
   );
 
   const registry = JSON.parse(originalRegistry) as Record<string, unknown>;
@@ -210,7 +210,7 @@ describe("cullet CLI e2e", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/Kit validado: erp-core@/);
     expect(result.stdout).toMatch(
-      /import \{ \.\.\. \} from "cullet\/erp-core"/
+      /import \{ \.\.\. \} from "cullet\/erp-core"/,
     );
   });
 
@@ -226,7 +226,7 @@ describe("cullet CLI e2e", () => {
     expect(existsSync(join(kitDir, "index.ts"))).toBe(true);
 
     const tsconfig = JSON.parse(
-      readFileSync(join(project, "tsconfig.json"), "utf8")
+      readFileSync(join(project, "tsconfig.json"), "utf8"),
     ) as { compilerOptions?: { paths?: Record<string, unknown> } };
     expect(tsconfig.compilerOptions?.paths).toBeDefined();
     expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
@@ -258,7 +258,7 @@ describe("cullet CLI e2e", () => {
 
     // Alias should still resolve to the same target.
     const tsconfig = JSON.parse(
-      readFileSync(join(project, "tsconfig.json"), "utf8")
+      readFileSync(join(project, "tsconfig.json"), "utf8"),
     ) as { compilerOptions?: { paths?: Record<string, unknown> } };
     expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
       `./cullet/erp-core@1.0.0/index.ts`,
@@ -286,20 +286,20 @@ describe("cullet CLI e2e", () => {
     try {
       const result = await runCli(
         ["migrate", `${fixture.kitName}@${fixture.sourceVersion}`, "--apply"],
-        project
+        project,
       );
 
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(
         new RegExp(
-          `Migracao codificada: ${fixture.kitName}@${fixture.sourceVersion} -> ${fixture.kitName}@${fixture.targetVersion}`
-        )
+          `Migracao codificada: ${fixture.kitName}@${fixture.sourceVersion} -> ${fixture.kitName}@${fixture.targetVersion}`,
+        ),
       );
       expect(result.stdout).toMatch(/Codemod aplicado em /);
       expect(result.stdout).toMatch(/Arquivos afetados:/);
       expect(result.stdout).toContain(fixture.changedFile);
       expect(readFileSync(join(project, fixture.changedFile), "utf8")).toBe(
-        "migrated\n"
+        "migrated\n",
       );
     } finally {
       fixture.cleanup();

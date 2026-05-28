@@ -44,5 +44,5 @@ export default tseslint.config(
       "no-console": "off",
     },
   },
-  eslintConfigPrettier
+  eslintConfigPrettier,
 );

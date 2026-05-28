@@ -12,7 +12,7 @@ import {
 const kitsRoot = resolve("kits");
 const ESM_ONLY_REQUIRE_STUB_SOURCE_PATH = resolve(
   "scripts",
-  "esm-only-require.cjs"
+  "esm-only-require.cjs",
 );
 const ESM_ONLY_REQUIRE_STUB_FILENAME = "esm-only-require.cjs";
 const KIT_SOURCE_SCAN_OPTIONS = {
@@ -67,7 +67,7 @@ async function syncKitSources(): Promise<void> {
 export async function syncRuntimeAssets(outDir = "dist"): Promise<void> {
   await cp(
     ESM_ONLY_REQUIRE_STUB_SOURCE_PATH,
-    join(resolve(outDir), ESM_ONLY_REQUIRE_STUB_FILENAME)
+    join(resolve(outDir), ESM_ONLY_REQUIRE_STUB_FILENAME),
   );
 }
 
@@ -90,10 +90,10 @@ function isTestOnlyPath(pathLike: string): boolean {
 }
 
 function formatTestOnlyImportViolations(
-  violations: KitImportViolation[]
+  violations: KitImportViolation[],
 ): string {
   const lines = violations.map(
-    ({ importer, specifier }) => `- ${importer} -> ${specifier}`
+    ({ importer, specifier }) => `- ${importer} -> ${specifier}`,
   );
 
   return [
