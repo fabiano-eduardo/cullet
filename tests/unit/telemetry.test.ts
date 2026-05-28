@@ -21,6 +21,29 @@ import {
 
 let homeDir: string;
 
+function makeMockResponse(options: {
+  status: number;
+  body?: string;
+  onReadOk?: () => void;
+  onReadText?: () => void;
+}): Response {
+  class MockResponse extends Response {
+    override get ok(): boolean {
+      options.onReadOk?.();
+      return super.ok;
+    }
+
+    override async text(): Promise<string> {
+      options.onReadText?.();
+      return await super.text();
+    }
+  }
+
+  return new MockResponse(options.body ?? null, {
+    status: options.status,
+  });
+}
+
 async function readLoggedEvents(env: NodeJS.ProcessEnv): Promise<unknown[]> {
   const contents = await readFile(resolveTelemetryLogPath(env), "utf8");
   return contents
@@ -77,7 +100,7 @@ describe("telemetry config", () => {
       enableTelemetry({
         env,
         endpoint: "http://127.0.0.1:4318/events",
-      })
+      }),
     ).rejects.toThrow("HTTPS");
   });
 
@@ -106,17 +129,15 @@ describe("emitTelemetryIfEnabled", () => {
           receivedBodies.push(init.body);
         }
 
-        return {
-          get ok() {
-            inspectedOk = true;
-            return true;
-          },
+        return makeMockResponse({
           status: 204,
-          text: vi.fn().mockImplementation(async () => {
+          onReadOk: () => {
+            inspectedOk = true;
+          },
+          onReadText: () => {
             consumedBody = true;
-            return "";
-          }),
-        } as Response;
+          },
+        });
       });
 
     await enableTelemetry({
@@ -136,8 +157,8 @@ describe("emitTelemetryIfEnabled", () => {
             resolvedVersion: "1.0.0",
           },
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     const logContents = await readFile(resolveTelemetryLogPath(env), "utf8");
@@ -155,7 +176,7 @@ describe("emitTelemetryIfEnabled", () => {
         headers: {
           "content-type": "application/json",
         },
-      })
+      }),
     );
     expect(inspectedOk).toBe(true);
     expect(consumedBody).toBe(true);
@@ -180,14 +201,14 @@ describe("emitTelemetryIfEnabled", () => {
           endpoint: "http://127.0.0.1:4318/events",
         },
         null,
-        2
+        2,
       )}\n`,
-      "utf8"
+      "utf8",
     );
 
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue({ ok: true, status: 204 } as Response);
+      .mockResolvedValue(makeMockResponse({ status: 204 }));
 
     await expect(
       emitTelemetryIfEnabled(
@@ -197,8 +218,8 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 5,
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -219,7 +240,7 @@ describe("emitTelemetryIfEnabled", () => {
         success: true,
         durationMs: 1,
       },
-      { env }
+      { env },
     );
 
     const logMode = (await stat(resolveTelemetryLogPath(env))).mode & 0o777;
@@ -243,8 +264,8 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 1,
         },
-        { env }
-      )
+        { env },
+      ),
     ).rejects.toThrow("HOME nao esta definido");
   });
 
@@ -263,18 +284,19 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 1,
         },
-        { env }
-      )
+        { env },
+      ),
     ).rejects.toThrow();
   });
 
   it("keeps the local event when the remote endpoint rejects the payload with 400", async () => {
     const env = makeEnv();
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 400,
-      text: vi.fn().mockResolvedValue('{"error":"payload rejected"}'),
-    } as Response);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      makeMockResponse({
+        status: 400,
+        body: '{"error":"payload rejected"}',
+      }),
+    );
 
     await enableTelemetry({
       env,
@@ -289,8 +311,8 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 7,
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -304,14 +326,15 @@ describe("emitTelemetryIfEnabled", () => {
       .mockImplementation(() => true);
     let consumedBody = false;
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 400,
-      text: vi.fn().mockImplementation(async () => {
-        consumedBody = true;
-        return '{"error":"payload rejected"}';
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      makeMockResponse({
+        status: 400,
+        body: '{"error":"payload rejected"}',
+        onReadText: () => {
+          consumedBody = true;
+        },
       }),
-    } as Response);
+    );
 
     await enableTelemetry({
       env,
@@ -326,16 +349,16 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 7,
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     expect(consumedBody).toBe(true);
     expect(
-      stderrSpy.mock.calls.map(([value]) => String(value)).join("")
+      stderrSpy.mock.calls.map(([value]) => String(value)).join(""),
     ).toContain("status 400");
     expect(
-      stderrSpy.mock.calls.map(([value]) => String(value)).join("")
+      stderrSpy.mock.calls.map(([value]) => String(value)).join(""),
     ).toContain("payload rejected");
     await expect(readLoggedEvents(env)).resolves.toHaveLength(1);
   });
@@ -344,7 +367,7 @@ describe("emitTelemetryIfEnabled", () => {
     const env = makeEnv();
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue({ ok: false, status: 503 } as Response);
+      .mockResolvedValue(makeMockResponse({ status: 503 }));
 
     await enableTelemetry({
       env,
@@ -359,8 +382,8 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 3,
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -374,7 +397,7 @@ describe("emitTelemetryIfEnabled", () => {
       .mockImplementation(() => true);
 
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new Error("socket hang up")
+      new Error("socket hang up"),
     );
 
     await enableTelemetry({
@@ -390,12 +413,12 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 11,
         },
-        { env }
-      )
+        { env },
+      ),
     ).resolves.toBe(true);
 
     expect(
-      stderrSpy.mock.calls.map(([value]) => String(value)).join("")
+      stderrSpy.mock.calls.map(([value]) => String(value)).join(""),
     ).toContain("socket hang up");
     await expect(readLoggedEvents(env)).resolves.toHaveLength(1);
   });
@@ -421,7 +444,7 @@ describe("emitTelemetryIfEnabled", () => {
                 aborted = true;
                 reject(new Error("aborted"));
               },
-              { once: true }
+              { once: true },
             );
           });
         });
@@ -438,7 +461,7 @@ describe("emitTelemetryIfEnabled", () => {
           success: true,
           durationMs: 11,
         },
-        { env }
+        { env },
       );
 
       await fetchStarted;
@@ -482,7 +505,7 @@ describe("runCommandWithTelemetry", () => {
           tracker.set("kit", "erp-core");
           throw new TypeError("boom");
         },
-      })
+      }),
     ).rejects.toThrow("boom");
 
     const lines = (await readFile(resolveTelemetryLogPath(env), "utf8"))
@@ -494,7 +517,7 @@ describe("runCommandWithTelemetry", () => {
             command: string;
             success: boolean;
             properties: Record<string, string>;
-          }
+          },
       );
 
     expect(lines).toHaveLength(2);
