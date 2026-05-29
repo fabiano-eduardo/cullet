@@ -2,7 +2,7 @@
   "schemaVersion": "2",
   "name": "erp-core",
   "version": "1.0.0",
-  "description": "Core ERP com clean architecture, temporalidade, policies e rule sets.",
+  "description": "Core ERP com clean architecture, policies, erros e services de aplicação.",
   "compatibility": {
     "engines": {
       "node": ">=18",
@@ -46,16 +46,18 @@
   "exports": [
     "Entity",
     "ValueObject",
-    "Rule",
-    "RuleSet",
-    "RuleSetError",
-    "ValidationResult",
-    "Policy",
+    "AppError",
+    "ValidationError",
+    "NotFoundError",
+    "ConflictError",
+    "AuthorizationError",
+    "IntegrationError",
+    "PolicyCatalog",
+    "PolicyDefinition",
     "PolicyDecision",
-    "Timeline",
-    "TimelineEntry",
-    "allow",
-    "deny"
+    "PolicyResolver",
+    "PolicyService",
+    "mapPolicyEvaluationError"
   ],
   "changelog": [
     "1.0.0 - Registro inicial do boilerplate com primitives tipadas para import direto, CLI e fluxo full-control."

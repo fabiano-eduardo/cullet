@@ -1,6 +1,6 @@
 # erp-core
 
-Núcleo arquitetural para sistemas ERP e domínios transacionais com temporalidade. Primitives tipadas (entidades, value objects, rule sets, policies, timeline) com clean architecture pronta para receber adapters.
+Núcleo arquitetural para sistemas ERP e domínios transacionais. Primitives tipadas para domínio, policies, erros e application services com clean architecture pronta para receber adapters.
 
 Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../../../PHILOSOPHY.md).
 
@@ -8,12 +8,12 @@ Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para 
 
 ## O que entrega
 
-- **Domínio** — `Entity`, `ValueObject`, `RuleSet`, `Timeline` (temporalidade nativa).
+- **Domínio** — `Entity`, `ValueObject`.
 - **Exceções de domínio** — `DomainException`, `InvariantViolationException`, `InvalidStateTransitionException`, `ValidationException`, `BusinessRuleViolationException`, `EntityNotFoundException`.
 - **Erros de aplicação** — `AppError` discriminada por `code`: `ValidationError`, `NotFoundError`, `ConflictError`, `AuthorizationError`, `IntegrationError`.
 - **Result** — `Result<T, E>` e `Outcome` para retorno tipado da aplicação.
-- **Policies** — engine declarativa (`allow`/`deny`) com schema de condições, composta e serializável.
-- **Application** — `UseCase` base, slots para `commands/`, `queries/`, `ports/`.
+- **Policies** — `PolicyCatalog`, `PolicyDefinition`, `PolicyResolver`, `PolicyService` e tipos associados para avaliação declarativa.
+- **Application** — portas de observabilidade (`LoggerPort`, `MetricsPort`, `TracerPort`) e `mapPolicyEvaluationError` para integrar a camada de aplicação.
 
 ## Como começa
 
@@ -23,18 +23,17 @@ Import direto (sempre a versão `latest` exportada pelo pacote):
 import {
   Entity,
   ValueObject,
-  RuleSet,
-  Timeline,
-  allow,
-  deny,
-  type Policy,
+  PolicyCatalog,
+  PolicyService,
+  mapPolicyEvaluationError,
+  type PolicyDecision,
 } from "cullet/erp-core";
 ```
 
 Pinado em uma versão (recomendado em produção):
 
 ```ts
-import { Timeline } from "cullet/erp-core/1.0.0";
+import { PolicyResolver } from "cullet/erp-core/1.0.0";
 ```
 
 Full-control (kit copiado para dentro do projeto, livre para editar):
@@ -46,8 +45,8 @@ npx cullet fc erp-core@1.0.0
 ## Decisões tomadas
 
 - **Modelo de erro `mixed`**: domínio lança `DomainException`, aplicação retorna `Result<T, AppError>`, infra traduz para `Result`. Não cruze a fronteira.
-- **Temporalidade nativa**: variação de valor no tempo modelada por `Timeline<T>` — sem campos soltos `validFrom`/`validTo`.
-- **Policies como dados**: avaliáveis, compostas, serializáveis. Não são `if`s espalhados pela aplicação.
+- **Temporalidade interna ao kit**: o suporte temporal continua no código do kit, mas a API pública principal não expõe um container `Timeline<T>` nem helpers temporais dedicados no barrel raiz.
+- **Policies como dados**: catalogadas, resolvidas e avaliadas por `PolicyCatalog`, `PolicyResolver` e `PolicyService`. Não são `if`s espalhados pela aplicação.
 - **Observabilidade só via portas**: `LoggerPort`, `MetricsPort`, `TracerPort` em `core/application/ports/`. Sem dependência runtime de `pino`, `winston`, OpenTelemetry no kit.
 - **Dependência runtime declarada**: `zod` (validação tipada). Em modo full-control, instale manualmente — o `cullet doctor` e o `cullet fc` te avisam.
 
