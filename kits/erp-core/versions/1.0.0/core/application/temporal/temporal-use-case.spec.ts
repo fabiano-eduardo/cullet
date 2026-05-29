@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ContextSeed } from "../../policies";
+import { asSchoolId, asTenantId, type ContextSeed } from "../../policies";
 import { Result } from "../../result/result";
 
 import {
@@ -32,8 +32,8 @@ class InspectTemporalUseCase extends TemporalUseCase<
     const temporalContext = this.resolveTemporalContext(input);
     const seed = this.buildPolicySeed(
       {
-        tenantId: input.tenantId,
-        schoolId: input.schoolId,
+        tenantId: asTenantId(input.tenantId),
+        schoolId: asSchoolId(input.schoolId),
         fields: {},
       },
       temporalContext,
@@ -95,8 +95,8 @@ describe("temporal-use-case", () => {
     const originalNow = new Date("2026-04-01T00:00:00.000Z");
     const seed = useCase.inspectSeed(
       {
-        tenantId: "tenant-001",
-        schoolId: "school-001",
+        tenantId: asTenantId("tenant-001"),
+        schoolId: asSchoolId("school-001"),
         fields: { now: originalNow },
       },
       temporalContext,
