@@ -1,4 +1,4 @@
 export {
-	assertJsonSafeMetadata,
-	NON_SERIALIZABLE_PLACEHOLDER,
-} from './json-safe';
+  assertJsonSafeMetadata,
+  NON_SERIALIZABLE_PLACEHOLDER,
+} from "./json-safe";

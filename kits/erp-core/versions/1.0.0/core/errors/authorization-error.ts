@@ -1,4 +1,5 @@
 import { AppError } from "./app-error";
+import { ErrorCodes } from "./error-codes";
 import type { AppErrorOptions, ErrorSeverity } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ class AuthorizationError extends AppError {
   ): AuthorizationError {
     return new AuthorizationError({
       message: "Action not allowed",
-      code: "sec.authz.forbidden",
+      code: ErrorCodes.authorization.forbidden,
       reason: "forbidden",
       metadata: { reason: "forbidden", ...extractMetadataOnly(input) },
       ...extractAppErrorOptions(input),
@@ -118,7 +119,7 @@ class AuthorizationError extends AppError {
   ): AuthorizationError {
     return new AuthorizationError({
       message: "Action denied by policy",
-      code: "sec.authz.policy_denied",
+      code: ErrorCodes.authorization.policyDenied,
       reason: "policy_denied",
       metadata: {
         reason: "policy_denied",
@@ -136,7 +137,7 @@ class AuthorizationError extends AppError {
   ): AuthorizationError {
     return new AuthorizationError({
       message: "Insufficient capability to perform the action",
-      code: "sec.authz.missing_capability",
+      code: ErrorCodes.authorization.missingCapability,
       reason: "missing_capability",
       metadata: {
         reason: "missing_capability",
@@ -153,7 +154,7 @@ class AuthorizationError extends AppError {
   ): AuthorizationError {
     return new AuthorizationError({
       message: "Action outside the allowed scope",
-      code: "sec.authz.out_of_scope",
+      code: ErrorCodes.authorization.outOfScope,
       reason: "out_of_scope",
       metadata: { reason: "out_of_scope", ...extractMetadataOnly(input) },
       ...extractAppErrorOptions(input),
