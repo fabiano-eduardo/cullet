@@ -5,8 +5,12 @@ export default mergeConfig(
   baseVitestConfig,
   defineConfig({
     test: {
+      // Repo suite only. Kit specs (`kits/**/*.spec.ts`) run in their own
+      // invocation via `npm run test:kits` (see vitest.kits.config.ts) to keep
+      // this fast unit suite isolated from kit-level global state and worker
+      // contention.
       include: ["tests/**/*.test.ts"],
-      exclude: ["tests/e2e/**", "node_modules", "dist"],
+      exclude: ["tests/e2e/**", "kits/**", "node_modules", "dist"],
       testTimeout: 15_000,
       coverage: {
         provider: "v8",

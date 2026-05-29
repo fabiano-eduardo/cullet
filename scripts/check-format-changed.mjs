@@ -27,6 +27,7 @@ const explicitFiles = new Set([
   "vitest.config.base.ts",
   "vitest.config.ts",
   "vitest.e2e.config.ts",
+  "vitest.kits.config.ts",
   ".github/workflows/ci.yml",
 ]);
 
