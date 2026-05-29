@@ -49,6 +49,9 @@ jobs:
       - name: E2E smoke tests
         run: npm run test:e2e
 
+      - name: Kit unit tests
+        run: npm run test:kits
+
       - name: Build
         run: npm run build
 

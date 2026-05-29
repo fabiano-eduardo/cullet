@@ -82,6 +82,23 @@ jobs:
       - name: E2E smoke tests
         run: npm run test:e2e
 
+  test-kits:
+    name: Kit unit tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Kit unit tests (kits/**/*.spec.ts)
+        run: npm run test:kits
+
   pack:
     name: Release dry run
     needs: lint
