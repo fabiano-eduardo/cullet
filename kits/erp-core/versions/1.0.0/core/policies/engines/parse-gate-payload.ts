@@ -34,20 +34,35 @@ export class GatePayloadParserRegistry {
 
 export class GatePayloadParsers {
 	private static readonly registry = new GatePayloadParserRegistry();
+	private static defaultsRegistered = false;
+
+	// Registers the built-in v1 parser lazily, the first time the default
+	// dispatcher is touched. Done here — rather than as a top-level module
+	// statement — so the package's `"sideEffects": false` flag stays honest and
+	// a tree-shaking bundler cannot drop the v1 registration and leave the gate
+	// engine unable to parse v1 payloads at runtime.
+	private static ensureDefaults(): void {
+		if (GatePayloadParsers.defaultsRegistered) {
+			return;
+		}
+		GatePayloadParsers.defaultsRegistered = true;
+		GatePayloadParsers.registry.register(1, GatePayloadSchemaV1.parse);
+	}
 
 	static register(engineVersion: number, parser: GatePayloadParser): void {
+		GatePayloadParsers.ensureDefaults();
 		GatePayloadParsers.registry.register(engineVersion, parser);
 	}
 
 	static get(engineVersion: number): GatePayloadParser | undefined {
+		GatePayloadParsers.ensureDefaults();
 		return GatePayloadParsers.registry.get(engineVersion);
 	}
 
 	static parse(engineVersion: number, payload: unknown) {
+		GatePayloadParsers.ensureDefaults();
 		return GatePayloadParsers.registry.parse(engineVersion, payload);
 	}
 }
-
-GatePayloadParsers.register(1, GatePayloadSchemaV1.parse);
 
 export type { GatePayload };

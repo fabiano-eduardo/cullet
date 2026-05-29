@@ -34,26 +34,41 @@ export class ComputePayloadParserRegistry {
 
 export class ComputePayloadParsers {
 	private static readonly registry = new ComputePayloadParserRegistry();
+	private static defaultsRegistered = false;
+
+	// Registers the built-in v1 parser lazily, the first time the default
+	// dispatcher is touched. Done here — rather than as a top-level module
+	// statement — so the package's `"sideEffects": false` flag stays honest and
+	// a tree-shaking bundler cannot drop the v1 registration and leave the
+	// compute engine unable to parse v1 payloads at runtime.
+	private static ensureDefaults(): void {
+		if (ComputePayloadParsers.defaultsRegistered) {
+			return;
+		}
+		ComputePayloadParsers.defaultsRegistered = true;
+		ComputePayloadParsers.registry.register(1, ComputePayloadSchemaV1.parse);
+	}
 
 	static register(
 		payloadSchemaVersion: number,
 		parser: ComputePayloadParser
 	): void {
+		ComputePayloadParsers.ensureDefaults();
 		ComputePayloadParsers.registry.register(payloadSchemaVersion, parser);
 	}
 
 	static get(payloadSchemaVersion: number): ComputePayloadParser | undefined {
+		ComputePayloadParsers.ensureDefaults();
 		return ComputePayloadParsers.registry.get(payloadSchemaVersion);
 	}
 
 	static parse(payloadSchemaVersion: number, payload: unknown) {
+		ComputePayloadParsers.ensureDefaults();
 		return ComputePayloadParsers.registry.parse(
 			payloadSchemaVersion,
 			payload
 		);
 	}
 }
-
-ComputePayloadParsers.register(1, ComputePayloadSchemaV1.parse);
 
 export type { ComputePayload };

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { AppError } from './app-error';
 
 export type IdempotencyFailureKind =
@@ -362,8 +364,7 @@ function resolveKeyIdentity(
 }
 
 function sha256Hex(value: string): string {
-	const crypto = require('crypto') as typeof import('crypto');
-	return crypto.createHash('sha256').update(value).digest('hex');
+	return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 function stableStringify(value: unknown): string {
