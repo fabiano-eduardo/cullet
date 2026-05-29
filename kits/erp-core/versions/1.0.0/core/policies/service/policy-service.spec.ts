@@ -4,6 +4,12 @@ import { PolicyCatalog, PolicyCatalogEntry, PolicyKey } from "../catalog";
 import { ContextResolverRegistry, PolicyContextBuilder } from "../context";
 import { InMemoryPolicyDefinitionRepository, PolicyDefinition } from "../defs";
 import {
+  asPolicyDecisionId,
+  asPolicyDefinitionId,
+  asSchoolId,
+  asTenantId,
+} from "../policy-ids";
+import {
   ComputeRegistry,
   GateEngineRegistry,
   GatePayloadParsers,
@@ -32,11 +38,25 @@ const passthroughComputePayloadParser: ComputePayloadParser = () =>
     },
   });
 
+function makeSeed(
+  fields: Record<string, unknown>,
+  params?: {
+    readonly tenantId?: string;
+    readonly schoolId?: string;
+  },
+) {
+  return {
+    tenantId: asTenantId(params?.tenantId ?? "tenant-1"),
+    schoolId: asSchoolId(params?.schoolId ?? "school-1"),
+    fields,
+  };
+}
+
 function makeGateDefinition(
   gateEngineVersion: number,
 ): PolicyDefinition<"financial.charges.charge_eligibility"> {
   return PolicyDefinition.gate({
-    id: `gate-definition-v${gateEngineVersion}`,
+    id: asPolicyDefinitionId(`gate-definition-v${gateEngineVersion}`),
     policyKey: "financial.charges.charge_eligibility",
     policyVersion: `${gateEngineVersion}.0.0`,
     gateEngineVersion,
@@ -147,8 +167,10 @@ function makeComputeDefinition(params?: {
   readonly priority?: number;
   readonly publishedAt?: Date;
 }): PolicyDefinition<"financial.billing.psp_selection"> {
+  const id = params?.id ?? "compute-definition-v1";
+
   return PolicyDefinition.compute({
-    id: params?.id ?? "compute-definition-v1",
+    id: asPolicyDefinitionId(id),
     policyKey: "financial.billing.psp_selection",
     policyVersion: "1.0.0",
     computeEngineVersion: 1,
@@ -166,7 +188,7 @@ function makeComputeDefinition(params?: {
         selectedPsp: "premium",
       },
     },
-    payloadHash: `${params?.id ?? "compute-definition-v1"}-hash`,
+    payloadHash: `${id}-hash`,
     createdAt: new Date("2024-01-01T00:00:00Z"),
     publishedAt: params?.publishedAt ?? new Date("2024-01-01T00:00:00Z"),
   });
@@ -251,20 +273,16 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(2), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-1",
+      decisionId: asPolicyDecisionId("decision-1"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          charge: {
-            amountCents: 250000,
-          },
-          now: new Date("2026-01-01T00:00:00Z"),
+      seed: makeSeed({
+        charge: {
+          amountCents: 250000,
         },
-      },
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isOk()).toBe(true);
@@ -280,17 +298,13 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(2), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-2",
+      decisionId: asPolicyDecisionId("decision-2"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isErr()).toBe(true);
@@ -322,15 +336,11 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(1), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-null-error",
+      decisionId: asPolicyDecisionId("decision-null-error"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {},
-      },
+      seed: makeSeed({}),
     });
 
     expect(result.isErr()).toBe(true);
@@ -351,15 +361,11 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(1), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-3",
+      decisionId: asPolicyDecisionId("decision-3"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "   ",
-        schoolId: "school-1",
-        fields: {},
-      },
+      seed: makeSeed({}, { tenantId: "   " }),
     });
 
     expect(result.isErr()).toBe(true);
@@ -377,17 +383,13 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(1), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-invalid-now",
+      decisionId: asPolicyDecisionId("decision-invalid-now"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: "2026-01-01",
-        },
-      },
+      seed: makeSeed({
+        now: "2026-01-01",
+      }),
     });
 
     expect(result.isErr()).toBe(true);
@@ -431,18 +433,14 @@ describe("PolicyService", () => {
     );
 
     const result = await service.evaluate({
-      decisionId: "decision-custom-asof-window",
+      decisionId: asPolicyDecisionId("decision-custom-asof-window"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-          asOf: new Date("2041-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+        asOf: new Date("2041-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isOk()).toBe(true);
@@ -457,17 +455,13 @@ describe("PolicyService", () => {
 
     const service = buildService(makeGateDefinition(1), gateEngines);
     const result = await service.evaluate({
-      decisionId: "decision-unknown-policy",
+      decisionId: asPolicyDecisionId("decision-unknown-policy"),
       policyKey: "financial.charges.missing_policy",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isErr()).toBe(true);
@@ -511,17 +505,13 @@ describe("PolicyService", () => {
     ]);
 
     const result = await service.evaluate({
-      decisionId: "decision-4",
+      decisionId: asPolicyDecisionId("decision-4"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isOk()).toBe(true);
@@ -559,17 +549,13 @@ describe("PolicyService", () => {
     });
 
     const result = await service.evaluate({
-      decisionId: "decision-single-versioned-lookup",
+      decisionId: asPolicyDecisionId("decision-single-versioned-lookup"),
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isOk()).toBe(true);
@@ -620,17 +606,13 @@ describe("PolicyService", () => {
     });
 
     const result = await service.evaluate({
-      decisionId: "decision-compute-1",
+      decisionId: asPolicyDecisionId("decision-compute-1"),
       policyKey: "financial.billing.psp_selection",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isOk()).toBe(true);
@@ -684,17 +666,13 @@ describe("PolicyService", () => {
     });
 
     const result = await service.evaluate({
-      decisionId: "decision-compute-variant-mismatch",
+      decisionId: asPolicyDecisionId("decision-compute-variant-mismatch"),
       policyKey: "financial.billing.psp_selection",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: {
-        tenantId: "tenant-1",
-        schoolId: "school-1",
-        fields: {
-          now: new Date("2026-01-01T00:00:00Z"),
-        },
-      },
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
     });
 
     expect(result.isErr()).toBe(true);
