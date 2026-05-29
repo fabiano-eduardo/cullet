@@ -20,6 +20,8 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 - **Sem lib de log/observabilidade no runtime.** Portas vivem em `application/ports/`; adapters são opt-in.
 - **Temporalidade interna ao kit** — o kit mantém suporte temporal no código-base, mas a API pública principal nao publica um `Timeline<T>` nem helpers temporais dedicados no barrel raiz.
 - **Policies como dados**, não como if-statements: avaliáveis, compostas, serializáveis.
+- **Policies permitem disable sem remover código**: `PolicyDefinition` aceita `enabled: false` e o repositório ignora definições desabilitadas.
+- **Composição isolada é de primeira classe**: use `new CoreConfig()`, `new ContextResolverRegistry()` e `registerNamespacedContextResolversIn(...)` quando precisar evitar singletons compartilhados.
 
 ## [extension-points] Pontos de extensão
 

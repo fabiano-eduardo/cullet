@@ -1,6 +1,6 @@
-import type { PolicyCatalogEntryProps } from '../catalog';
-import type { PolicyDefinition } from '../defs';
-import type { ComputeEvaluatorRegistration } from '../engines';
+import type { PolicyCatalogEntryProps } from "../catalog";
+import type { PolicyDefinition } from "../defs";
+import type { ComputeEvaluatorRegistration } from "../engines";
 
 /**
  * Protocol of contribution: a module declares what it wants to add to the
@@ -11,7 +11,7 @@ import type { ComputeEvaluatorRegistration } from '../engines';
  * - evaluators:    compute evaluator registrations keyed by policy/version.
  */
 export interface PolicyPackage {
-	readonly catalogEntries: readonly PolicyCatalogEntryProps[];
-	readonly definitions: readonly PolicyDefinition[];
-	readonly evaluators: readonly ComputeEvaluatorRegistration[];
+  readonly catalogEntries: readonly PolicyCatalogEntryProps[];
+  readonly definitions: readonly PolicyDefinition[];
+  readonly evaluators: readonly ComputeEvaluatorRegistration[];
 }

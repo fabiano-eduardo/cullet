@@ -218,6 +218,30 @@ describe("ConditionEvaluatorV1.evaluate", () => {
     expect(result.getOrNull()).toBe(true);
   });
 
+  it("evaluates the last AND branch only once", () => {
+    let amountReads = 0;
+    const context = {
+      status: "ACTIVE",
+      get amount() {
+        amountReads += 1;
+        return 120;
+      },
+    } as PolicyContext;
+
+    const node = {
+      and: [
+        { field: "status", op: "eq", value: "ACTIVE" },
+        { field: "amount", op: "gte", value: 100 },
+      ],
+    } as const;
+
+    const result = evaluateCondition(node, context, options);
+
+    expect(result.isOk()).toBe(true);
+    expect(result.getOrNull()).toBe(true);
+    expect(amountReads).toBe(1);
+  });
+
   it("evaluates OR", () => {
     const context: PolicyContext = {
       status: "PENDING",
@@ -235,6 +259,15 @@ describe("ConditionEvaluatorV1.evaluate", () => {
 
     expect(result.isOk()).toBe(true);
     expect(result.getOrNull()).toBe(true);
+  });
+
+  it("returns Result.err when OR receives no children", () => {
+    const result = evaluateCondition({ or: [] }, {}, options);
+
+    expect(result.isErr()).toBe(true);
+    expect(result.errorOrNull()).toBe(
+      "EMPTY_OR_CONDITION: OR nodes must contain at least one child condition",
+    );
   });
 
   it("evaluates NOT", () => {

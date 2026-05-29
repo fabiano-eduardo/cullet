@@ -1,16 +1,16 @@
-import type { Outcome } from '../../result/outcome';
-import type { Result } from '../../result/result';
+import type { Outcome } from "../../result/outcome";
+import type { Result } from "../../result/result";
 
-import type { ComputePayload } from './compute-payload';
-import type { PolicyContext, PolicyViolation } from './gate-types';
+import type { ComputePayload } from "./compute-payload";
+import type { PolicyContext, PolicyViolation } from "./gate-types";
 
 // ─── Compute outcome (business decision) ────────────────────────────────────
 
-export type ComputeStatus = 'OK' | 'NOT_APPLICABLE' | 'ERROR';
+export type ComputeStatus = "OK" | "NOT_APPLICABLE" | "ERROR";
 
 export interface ComputeOutcomeData {
-	readonly values: unknown | null;
-	readonly violations: readonly PolicyViolation[];
+  readonly values: unknown | null;
+  readonly violations: readonly PolicyViolation[];
 }
 
 /** Semantic outcome of a COMPUTE policy evaluation. */
@@ -29,23 +29,23 @@ export type ComputeOutcome = Outcome<ComputeStatus, ComputeOutcomeData>;
  * Outcome carries the semantic business decision.
  */
 export interface ComputeEvaluator {
-	evaluate(
-		resolvedValue: unknown,
-		context: Record<string, unknown>
-	): Result<ComputeOutcome, string>;
+  evaluate(
+    resolvedValue: unknown,
+    context: Record<string, unknown>,
+  ): Result<ComputeOutcome, string>;
 }
 
 export interface ComputeEvaluatorRegistration {
-	readonly policyKey: string;
-	readonly version: number;
-	readonly evaluator: ComputeEvaluator;
+  readonly policyKey: string;
+  readonly version: number;
+  readonly evaluator: ComputeEvaluator;
 }
 
 export interface VersionedComputeEngine {
-	readonly version: number;
-	evaluate(
-		payload: ComputePayload,
-		context: PolicyContext,
-		evaluator: ComputeEvaluator
-	): Result<ComputeOutcome, string>;
+  readonly version: number;
+  evaluate(
+    payload: ComputePayload,
+    context: PolicyContext,
+    evaluator: ComputeEvaluator,
+  ): Result<ComputeOutcome, string>;
 }

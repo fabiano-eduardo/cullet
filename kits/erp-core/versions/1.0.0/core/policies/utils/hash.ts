@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { sha256Hex, stableStringify } from "../../shared/hashing";
+import { isValidDate } from "../../shared/temporal-guards";
 
 /**
  * Produces a deterministic SHA-256 hex digest of a canonical JSON representation.
@@ -11,95 +12,79 @@ import { createHash } from 'node:crypto';
  * prevent semantically different payloads from collapsing to the same hash.
  */
 export class PolicyHashing {
-	static sha256(input: string): string {
-		return createHash('sha256').update(input, 'utf8').digest('hex');
-	}
+  static sha256(input: string): string {
+    return sha256Hex(input);
+  }
 
-	private static assertHashable(value: unknown, path: string): void {
-		if (value === null) {
-			return;
-		}
+  private static assertHashable(value: unknown, path: string): void {
+    if (value === null) {
+      return;
+    }
 
-		const type = typeof value;
+    const type = typeof value;
 
-		if (type === 'undefined') {
-			throw new TypeError(
-				`canonicalJson does not accept undefined values (at ${path})`
-			);
-		}
+    if (type === "undefined") {
+      throw new TypeError(
+        `canonicalJson does not accept undefined values (at ${path})`,
+      );
+    }
 
-		if (type === 'number' && !Number.isFinite(value)) {
-			throw new TypeError(
-				`canonicalJson does not accept non-finite numbers (at ${path}, value: ${String(value)})`
-			);
-		}
+    if (type === "number" && !Number.isFinite(value)) {
+      throw new TypeError(
+        `canonicalJson does not accept non-finite numbers (at ${path}, value: ${String(value)})`,
+      );
+    }
 
-		if (type === 'bigint' || type === 'function' || type === 'symbol') {
-			throw new TypeError(
-				`canonicalJson does not accept ${type} values (at ${path})`
-			);
-		}
+    if (type === "bigint" || type === "function" || type === "symbol") {
+      throw new TypeError(
+        `canonicalJson does not accept ${type} values (at ${path})`,
+      );
+    }
 
-		if (type !== 'object') {
-			return;
-		}
+    if (type !== "object") {
+      return;
+    }
 
-		if (value instanceof Date) {
-			if (Number.isNaN(value.getTime())) {
-				throw new TypeError(
-					`canonicalJson does not accept Invalid Date (at ${path})`
-				);
-			}
-			return;
-		}
+    if (value instanceof Date) {
+      if (!isValidDate(value)) {
+        throw new TypeError(
+          `canonicalJson does not accept Invalid Date (at ${path})`,
+        );
+      }
+      return;
+    }
 
-		if (Array.isArray(value)) {
-			value.forEach((item, index) => {
-				PolicyHashing.assertHashable(item, `${path}[${index}]`);
-			});
-			return;
-		}
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        PolicyHashing.assertHashable(item, `${path}[${index}]`);
+      });
+      return;
+    }
 
-		for (const [key, nested] of Object.entries(
-			value as Record<string, unknown>
-		)) {
-			PolicyHashing.assertHashable(nested, `${path}.${key}`);
-		}
-	}
+    for (const [key, nested] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      PolicyHashing.assertHashable(nested, `${path}.${key}`);
+    }
+  }
 
-	static canonicalJson(value: unknown): string {
-		PolicyHashing.assertHashable(value, '$');
+  static canonicalJson(value: unknown): string {
+    PolicyHashing.assertHashable(value, "$");
 
-		return JSON.stringify(value, (_key, val) => {
-			if (
-				val &&
-				typeof val === 'object' &&
-				!Array.isArray(val) &&
-				!(val instanceof Date)
-			) {
-				return Object.keys(val)
-					.sort()
-					.reduce<Record<string, unknown>>((acc, key) => {
-						acc[key] = (val as Record<string, unknown>)[key];
-						return acc;
-					}, {});
-			}
+    return stableStringify(value);
+  }
 
-			return val;
-		});
-	}
+  static computePayloadHash(
+    payload: unknown,
+    policyKey: string,
+    policyVersion: string,
+  ): string {
+    const canonical = PolicyHashing.canonicalJson({
+      policyKey,
+      policyVersion,
+      payload,
+    });
 
-	static computePayloadHash(
-		payload: unknown,
-		policyKey: string,
-		policyVersion: string
-	): string {
-		const canonical = PolicyHashing.canonicalJson({
-			policyKey,
-			policyVersion,
-			payload,
-		});
-
-		return PolicyHashing.sha256(canonical);
-	}
+    return PolicyHashing.sha256(canonical);
+  }
 }

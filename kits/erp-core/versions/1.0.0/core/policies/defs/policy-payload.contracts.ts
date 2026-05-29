@@ -1,7 +1,4 @@
-import type {
-	ComputePayload,
-	GatePayload,
-} from '../engines';
+import type { ComputePayload, GatePayload } from "../engines";
 
 export type AnyPolicyPayload = GatePayload | ComputePayload;
 
