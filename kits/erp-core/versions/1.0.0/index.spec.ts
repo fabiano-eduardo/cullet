@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import packageMetadata from "./package.json" assert { type: "json" };
+import packageMetadata from "./package.json" with { type: "json" };
 
 import { ERP_CORE_NAME, ERP_CORE_VERSION, erpCoreRelease } from "./index";
 
