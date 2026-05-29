@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { Result } from "../../result/result";
+import { asSchoolId, asTenantId } from "../policy-ids";
 
 import { PolicyContextBuilder } from "./context-builder";
 import { ContextResolverRegistry } from "./context-registry";
@@ -8,8 +9,8 @@ import type { ContextValueResolver } from "./context-resolver";
 import type { ContextSeed } from "./context-seed";
 
 const seed: ContextSeed = {
-  tenantId: "tenant-1",
-  schoolId: "school-1",
+  tenantId: asTenantId("tenant-1"),
+  schoolId: asSchoolId("school-1"),
   fields: {},
 };
 

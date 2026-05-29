@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Result } from "../../result/result";
+import { asSchoolId, asTenantId } from "../policy-ids";
 
 import {
   ContextResolverRegistry,
@@ -68,8 +69,8 @@ describe("ContextResolverRegistry", () => {
 
     const resolver = registry.get("student.status");
     const result = await resolver?.resolve({
-      tenantId: "tenant-1",
-      schoolId: "school-1",
+      tenantId: asTenantId("tenant-1"),
+      schoolId: asSchoolId("school-1"),
       fields: {},
     });
 
@@ -100,8 +101,8 @@ describe("ContextResolverRegistry", () => {
 
     const resolver = registry.get("student.balanceCents");
     const result = await resolver?.resolve({
-      tenantId: "tenant-1",
-      schoolId: "school-1",
+      tenantId: asTenantId("tenant-1"),
+      schoolId: asSchoolId("school-1"),
       fields: {},
     });
 
