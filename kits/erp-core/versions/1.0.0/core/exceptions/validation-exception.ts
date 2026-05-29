@@ -2,7 +2,7 @@ import { DomainException } from "./domain-exception";
 import { ValidationCode } from "./validation-code";
 import { ValidationField } from "./validation-field";
 
-interface ValidationViolation {
+export interface ValidationViolation {
   readonly field: ValidationField;
   readonly code: ValidationCode;
   readonly message: string;
@@ -36,5 +36,4 @@ export {
   InvalidValueException,
   MultipleValidationException,
   ValidationException,
-  ValidationViolation,
 };

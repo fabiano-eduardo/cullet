@@ -7,7 +7,7 @@ import {
 } from "../../../../config";
 
 import { GateEngineV1 } from "./gate-engine-v1";
-import { GatePayloadV1 } from "./gate-types-v1";
+import type { GatePayloadV1 } from "./gate-types-v1";
 
 function makeCoreConfig(reporter: PolicyReporter): CoreConfig {
   return new CoreConfig({
