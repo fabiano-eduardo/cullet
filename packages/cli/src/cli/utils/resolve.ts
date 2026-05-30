@@ -1,6 +1,7 @@
-import { constants } from "node:fs";
+import { constants, readFileSync } from "node:fs";
 import { access } from "node:fs/promises";
-import { kitDistDir, kitSrcDir } from "./paths.js";
+import { join } from "node:path";
+import { resolveKitPackageRoot } from "./paths.js";
 import {
   describeKitSuccessor,
   findCulletPackageRoot,
@@ -90,27 +91,53 @@ export async function resolveBuiltKitDir(
   return resolveSharedBuiltKitDir(fromMetaUrl, name, version);
 }
 
+/**
+ * Locate the kit source to copy in full-control mode. Resolves the kit package
+ * (`npmName`) from the **consumer's** node_modules (it must already be
+ * installed) and returns its `src/` directory, falling back to `dist/` when the
+ * package was published without sources.
+ */
+/**
+ * Returns the version of `npmName` currently installed in the consumer's
+ * node_modules, or `null` when the package cannot be resolved. Used by
+ * full-control to decide whether the requested version still needs to be
+ * installed before copying.
+ */
+export function resolveInstalledKitVersion(
+  consumerCwd: string,
+  npmName: string,
+): string | null {
+  try {
+    const packageRoot = resolveKitPackageRoot(consumerCwd, npmName);
+    const manifest = JSON.parse(
+      readFileSync(join(packageRoot, "package.json"), "utf8"),
+    ) as { version?: unknown };
+    return typeof manifest.version === "string" ? manifest.version : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveKitSourceDir(
-  fromMetaUrl: string,
-  name: string,
-  version: string,
+  consumerCwd: string,
+  npmName: string,
 ): Promise<string> {
-  const packageRoot = findCulletPackageRoot(fromMetaUrl);
-  const sourceDir = kitSrcDir(packageRoot, name, version);
+  const packageRoot = resolveKitPackageRoot(consumerCwd, npmName);
+  const sourceDir = join(packageRoot, "src");
 
   try {
     await access(sourceDir, constants.F_OK);
     return sourceDir;
   } catch {
-    // Fallback: pacotes publicados podem conter apenas dist/kits com o fonte copiado.
-    const distDir = kitDistDir(packageRoot, name, version);
+    // Fallback: pacotes publicados sem `src/` ainda trazem o build em `dist/`.
+    const distDir = join(packageRoot, "dist");
 
     try {
       await access(distDir, constants.F_OK);
       return distDir;
     } catch {
       throw new Error(
-        `O fonte do kit "${name}@${version}" nao foi encontrado em ${sourceDir} nem em ${distDir}.`,
+        `O fonte do pacote "${npmName}" nao foi encontrado em ${sourceDir} nem em ${distDir}.`,
       );
     }
   }

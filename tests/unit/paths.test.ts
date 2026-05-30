@@ -1,4 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DIST_DIR,
   DIST_KITS_DIR,
@@ -7,9 +11,9 @@ import {
   kitDistEntryRelative,
   kitFullControlAliasTarget,
   kitFullControlDir,
-  kitImportSpecifier,
   kitNodeModulesEntry,
   kitSrcDir,
+  resolveKitPackageRoot,
 } from "../../packages/cli/src/cli/utils/paths.js";
 
 describe("paths", () => {
@@ -52,9 +56,9 @@ describe("paths", () => {
     );
   });
 
-  it("renders the published node_modules entry", () => {
-    expect(kitNodeModulesEntry("erp-core", "1.0.0")).toBe(
-      "./node_modules/cullet/dist/kits/erp-core/versions/1.0.0/index.js",
+  it("renders the published node_modules entry for the scoped package", () => {
+    expect(kitNodeModulesEntry("@cullet/erp-core")).toBe(
+      "./node_modules/@cullet/erp-core/dist/index.js",
     );
   });
 
@@ -70,15 +74,38 @@ describe("paths", () => {
     );
   });
 
-  it("renders the import specifier without version when latest is implicit", () => {
-    expect(kitImportSpecifier("erp-core", "1.0.0", true)).toBe(
-      "cullet/erp-core",
-    );
+});
+
+describe("resolveKitPackageRoot", () => {
+  let consumer: string;
+
+  beforeEach(async () => {
+    consumer = await mkdtemp(join(tmpdir(), "cullet-consumer-"));
   });
 
-  it("renders the import specifier with version when latest is not implicit", () => {
-    expect(kitImportSpecifier("erp-core", "1.0.0", false)).toBe(
-      "cullet/erp-core/1.0.0",
+  afterEach(async () => {
+    await rm(consumer, { recursive: true, force: true });
+  });
+
+  it("resolves the installed kit package root from the consumer node_modules", async () => {
+    const packageRoot = join(consumer, "node_modules", "@cullet", "erp-core");
+    await mkdir(packageRoot, { recursive: true });
+    await writeFile(
+      join(packageRoot, "package.json"),
+      JSON.stringify({ name: "@cullet/erp-core", version: "1.0.0" }),
     );
+
+    const resolved = resolveKitPackageRoot(consumer, "@cullet/erp-core");
+
+    expect(resolved).toMatch(
+      /node_modules[\\/]+@cullet[\\/]+erp-core$/,
+    );
+    expect(existsSync(join(resolved, "package.json"))).toBe(true);
+  });
+
+  it("throws a descriptive error when the kit is not installed", () => {
+    expect(() =>
+      resolveKitPackageRoot(consumer, "@cullet/erp-core"),
+    ).toThrow(/Nao foi possivel resolver o pacote "@cullet\/erp-core"/);
   });
 });

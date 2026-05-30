@@ -1,9 +1,38 @@
-import { join } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { resolveRepoRoot } from "../../shared/repo-root.js";
 
 export const KITS_DIR = "kits";
 export const DIST_DIR = "dist";
 export const DIST_KITS_DIR = "dist/kits";
+
+/**
+ * Resolve the installed kit package root in the **consumer** project, using the
+ * consumer's Node module resolution. Unlike {@link kitSrcDir}/{@link kitDistDir}
+ * — which point inside the `cullet` CLI package itself — this walks the
+ * consumer's `node_modules` to find `<npmName>/package.json` (e.g.
+ * `node_modules/@cullet/erp-core`). The kit must already be installed.
+ */
+export function resolveKitPackageRoot(
+  consumerCwd: string,
+  npmName: string,
+): string {
+  // Anchor resolution at the consumer cwd. The anchor file need not exist;
+  // createRequire only uses it to derive the starting directory for the
+  // node_modules walk.
+  const requireFromConsumer = createRequire(join(consumerCwd, "package.json"));
+
+  try {
+    const packageJsonPath = requireFromConsumer.resolve(
+      `${npmName}/package.json`,
+    );
+    return dirname(packageJsonPath);
+  } catch {
+    throw new Error(
+      `Nao foi possivel resolver o pacote "${npmName}" a partir de ${consumerCwd}. Instale-o (ex.: npm install ${npmName}) antes de usar full-control.`,
+    );
+  }
+}
 
 export function kitSrcDir(
   packageRoot: string,
@@ -42,8 +71,8 @@ export function kitDistEntryRelative(
   return `./${DIST_DIR}/kits/${name}/versions/${version}/index.${ext}`;
 }
 
-export function kitNodeModulesEntry(name: string, version: string): string {
-  return `./node_modules/cullet/${DIST_DIR}/kits/${name}/versions/${version}/index.js`;
+export function kitNodeModulesEntry(npmName: string): string {
+  return `./node_modules/${npmName}/${DIST_DIR}/index.js`;
 }
 
 export function kitFullControlDir(
@@ -59,12 +88,4 @@ export function kitFullControlAliasTarget(
   version: string,
 ): string {
   return `./cullet/${name}@${version}/index.ts`;
-}
-
-export function kitImportSpecifier(
-  name: string,
-  version: string,
-  isLatest: boolean,
-): string {
-  return isLatest ? `cullet/${name}` : `cullet/${name}/${version}`;
 }

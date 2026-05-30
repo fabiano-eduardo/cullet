@@ -176,36 +176,62 @@ describe("resolveBuiltKitDir", () => {
 });
 
 describe("resolveKitSourceDir", () => {
-  it("returns the src kit directory when available", async () => {
-    await setupFakeCullet();
-    const dir = await resolveKitSourceDir(metaUrl, "erp-core", "1.0.0");
-    expect(dir).toBe(join(root, "kits", "erp-core", "versions", "1.0.0"));
+  let consumer = "";
+  let installedKitRoot: string;
+
+  afterEach(async () => {
+    if (consumer) {
+      await rm(consumer, { recursive: true, force: true });
+      consumer = "";
+    }
   });
 
-  it("falls back to the dist kit directory when the source is missing", async () => {
-    // Drop src and write dist only — mirrors a published-only checkout where
-    // kits/ has been pruned but dist/ still carries the copied sources.
-    await setupFakeCullet({
-      meta: null,
-      context: null,
-      kitSrcEntry: false,
-      buildKitDist: true,
-    });
-    const dir = await resolveKitSourceDir(metaUrl, "erp-core", "1.0.0");
-    expect(dir).toBe(
-      join(root, "dist", "kits", "erp-core", "versions", "1.0.0"),
+  async function installKit(
+    opts: { src?: boolean; dist?: boolean } = {},
+  ): Promise<void> {
+    consumer = await mkdtemp(join(tmpdir(), "cullet-consumer-"));
+    installedKitRoot = join(consumer, "node_modules", "@cullet", "erp-core");
+    await mkdir(installedKitRoot, { recursive: true });
+    await writeFile(
+      join(installedKitRoot, "package.json"),
+      JSON.stringify({ name: "@cullet/erp-core", version: "1.0.0" }),
     );
+
+    if (opts.src ?? true) {
+      await mkdir(join(installedKitRoot, "src"), { recursive: true });
+      await writeFile(join(installedKitRoot, "src", "index.ts"), "export {};");
+    }
+    if (opts.dist ?? false) {
+      await mkdir(join(installedKitRoot, "dist"), { recursive: true });
+      await writeFile(join(installedKitRoot, "dist", "index.js"), "");
+    }
+  }
+
+  it("returns the src directory of the kit installed in the consumer", async () => {
+    await installKit({ src: true });
+    const dir = await resolveKitSourceDir(consumer, "@cullet/erp-core");
+    expect(dir).toBe(join(installedKitRoot, "src"));
   });
 
-  it("throws when neither src nor dist are present", async () => {
-    await setupFakeCullet({
-      meta: null,
-      context: null,
-      kitSrcEntry: false,
-    });
+  it("falls back to dist when the package was published without src", async () => {
+    await installKit({ src: false, dist: true });
+    const dir = await resolveKitSourceDir(consumer, "@cullet/erp-core");
+    expect(dir).toBe(join(installedKitRoot, "dist"));
+  });
+
+  it("throws when neither src nor dist are present in the installed package", async () => {
+    await installKit({ src: false, dist: false });
     await expect(
-      resolveKitSourceDir(metaUrl, "erp-core", "1.0.0"),
+      resolveKitSourceDir(consumer, "@cullet/erp-core"),
     ).rejects.toThrow(/nao foi encontrado/);
+  });
+
+  it("throws when the kit is not installed in the consumer", async () => {
+    const empty = await mkdtemp(join(tmpdir(), "cullet-consumer-"));
+    await expect(
+      resolveKitSourceDir(empty, "@cullet/erp-core"),
+    ).rejects.toThrow(/Nao foi possivel resolver o pacote/);
+    await rm(empty, { recursive: true, force: true });
   });
 });
 
