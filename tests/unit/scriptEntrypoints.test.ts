@@ -72,7 +72,7 @@ async function runScriptExpectExit(
   throw new Error(`${relativePath} did not call process.exit()`);
 }
 
-async function runValidateKitAsScript(): Promise<number[]> {
+async function runValidateKitAsScript(args: string[] = []): Promise<number[]> {
   const previousArgv = [...process.argv];
   const exitCodes: number[] = [];
   const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
@@ -84,7 +84,11 @@ async function runValidateKitAsScript(): Promise<number[]> {
   const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-  process.argv = ["node", join(repoRoot, "scripts", "validate-kit.mjs")];
+  process.argv = [
+    "node",
+    join(repoRoot, "scripts", "validate-kit.mjs"),
+    ...args,
+  ];
 
   try {
     await importFresh("scripts/validate-kit.mjs");
@@ -113,6 +117,15 @@ describe.sequential("script entrypoints", () => {
   describe("happy path", () => {
     it("executes validate-kit against the current repository", async () => {
       await expect(runValidateKitAsScript()).resolves.toEqual([0]);
+    });
+
+    it("validates an individual workspace kit via --package", async () => {
+      await expect(
+        runValidateKitAsScript([
+          "--package",
+          join(repoRoot, "packages", "erp-core"),
+        ]),
+      ).resolves.toEqual([0]);
     });
 
     it("scaffolds a new kit from the repository templates", async () => {
@@ -255,6 +268,15 @@ describe.sequential("script entrypoints", () => {
   });
 
   describe("edge cases", () => {
+    it("fails validate-kit when --package does not point to a kit package", async () => {
+      await expect(
+        runValidateKitAsScript([
+          "--package",
+          join(repoRoot, "packages", "cli"),
+        ]),
+      ).resolves.toEqual([1]);
+    });
+
     it("fails check-pack-contents early when the tarball path does not exist", async () => {
       await expect(
         runScriptExpectExit("scripts/check-pack-contents.mjs", [

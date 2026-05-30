@@ -1217,6 +1217,7 @@ async function resolveEntryPointPath(kit, entryPoint) {
 
 async function main(argv = process.argv.slice(2)) {
   let options;
+  let kits;
 
   try {
     options = parseArgs(argv);
@@ -1226,7 +1227,13 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   const schema = JSON.parse(await readFile(schemaPath, "utf8"));
-  const kits = await findKitMetas(options);
+  try {
+    kits = await findKitMetas(options);
+  } catch (err) {
+    console.error(pc.red(`validate-kit: ${err.message}`));
+    return 1;
+  }
+
   if (kits.length === 0) {
     const target = options.packageDir
       ? relative(repoRoot, resolve(process.cwd(), options.packageDir))
