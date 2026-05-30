@@ -11,6 +11,16 @@ function makeMockReporter(): PolicyReporter & {
   return { report: vi.fn<(event: PolicyEvent) => void>() };
 }
 
+function makeThrowingReporter(error: Error): PolicyReporter & {
+  report: ReturnType<typeof vi.fn>;
+} {
+  return {
+    report: vi.fn<(event: PolicyEvent) => void>(() => {
+      throw error;
+    }),
+  };
+}
+
 describe("CoreConfig", () => {
   it("shares a configured reporter with core engines", () => {
     const reporter = makeMockReporter();
@@ -42,6 +52,30 @@ describe("CoreConfig", () => {
       level: "warn",
     });
     expect(errorCalls).toHaveLength(0);
+  });
+
+  it("keeps engine evaluation running when the reporter throws", () => {
+    const reporter = makeThrowingReporter(new Error("reporter exploded"));
+    const config = new CoreConfig({
+      observability: {
+        reporter,
+      },
+    });
+    const engine = new GateEngineV1({ coreConfig: config });
+
+    const result = engine.evaluate(
+      {
+        condition: {
+          field: "student.flags.financialHold",
+          op: "eq",
+          value: true,
+        },
+      },
+      {},
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(reporter.report).toHaveBeenCalledOnce();
   });
 
   it("allows reconfiguring the same instance without recreating the engine", () => {

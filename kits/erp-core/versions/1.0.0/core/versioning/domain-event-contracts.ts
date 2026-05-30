@@ -1,6 +1,7 @@
 import { UseCase } from "../application/use-case";
 import { Entity } from "../domain/entity";
 import { ValueObject } from "../domain/value-object";
+import { assertValidAggregateVersion } from "../shared/aggregate-version";
 import { type ContractVersion } from "./version";
 
 interface DomainEventContractSelection {
@@ -24,14 +25,6 @@ interface CreateDomainEventEnvelopeInput<TPayload> {
 interface DomainEventEnvelope<TPayload> extends DomainEventContractVersions {
   readonly aggregate_version: number;
   readonly payload: TPayload;
-}
-
-function assertValidAggregateVersion(aggregateVersion: number): void {
-  if (!Number.isInteger(aggregateVersion) || aggregateVersion < 0) {
-    throw new RangeError(
-      `Aggregate version must be a non-negative integer. Received: ${aggregateVersion}`,
-    );
-  }
 }
 
 function buildDomainEventContractVersions(

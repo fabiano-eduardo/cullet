@@ -13,6 +13,15 @@ export interface CoreConfigOptions {
   readonly observability?: CoreObservabilityConfig;
 }
 
+function reportSafely(
+  policyReporter: PolicyReporter,
+  event: PolicyEvent,
+): void {
+  try {
+    policyReporter.report(event);
+  } catch {}
+}
+
 /**
  * Centraliza a configuracao pura do core sem depender de implementacoes
  * concretas de logging, tracing ou report.
@@ -60,13 +69,13 @@ export class CoreConfig {
   ): ConditionEvaluatorReporter {
     return {
       warn(report) {
-        policyReporter.report({
+        reportSafely(policyReporter, {
           kind: "condition-eval",
           ...report,
         } satisfies PolicyEvent);
       },
       error(report) {
-        policyReporter.report({
+        reportSafely(policyReporter, {
           kind: "condition-eval",
           ...report,
         } satisfies PolicyEvent);

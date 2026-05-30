@@ -4,6 +4,7 @@ vi.mock("../application/use-case", () => ({
   UseCase: { CONTRACT_VERSION: "1.0" },
 }));
 
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
 import {
   buildDomainEventContractVersions,
   createDomainEventEnvelope,
@@ -130,34 +131,34 @@ describe("createDomainEventEnvelope()", () => {
     expect(envelope.aggregate_version).toBe(0);
   });
 
-  it("throws RangeError when aggregateVersion is negative", () => {
+  it("throws InvariantViolationException when aggregateVersion is negative", () => {
     expect(() =>
       createDomainEventEnvelope({
         aggregateVersion: -1,
         payload: {},
         contracts: {},
       }),
-    ).toThrow(RangeError);
+    ).toThrow(InvariantViolationException);
   });
 
-  it("throws RangeError when aggregateVersion is not an integer", () => {
+  it("throws InvariantViolationException when aggregateVersion is not an integer", () => {
     expect(() =>
       createDomainEventEnvelope({
         aggregateVersion: 1.5,
         payload: {},
         contracts: {},
       }),
-    ).toThrow(RangeError);
+    ).toThrow(InvariantViolationException);
   });
 
-  it("includes the correct message in the RangeError for invalid aggregateVersion", () => {
+  it("includes the correct message in the invariant violation for invalid aggregateVersion", () => {
     expect(() =>
       createDomainEventEnvelope({
         aggregateVersion: -5,
         payload: {},
         contracts: {},
       }),
-    ).toThrow("Aggregate version must be a non-negative integer");
+    ).toThrow("aggregateVersion must be a non-negative integer");
   });
 
   it("accepts a payload of any type", () => {
