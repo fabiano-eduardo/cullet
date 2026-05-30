@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Scaffolds a new kit under kits/<name>/versions/1.0.0/ from templates/kit/,
-// substituting placeholders and updating packages/cli/registry/index.json.
+// Scaffolds a new workspace kit under packages/<name>/ from templates/kit/,
+// substituting placeholders, updating packages/cli/registry/index.json and
+// creating an initial changeset entry.
 // Internal command for catalog maintainers — not exposed to end-users.
 //
 // Usage: node scripts/new-kit.mjs <kit-name> [--description "..."]
@@ -20,7 +21,8 @@ import pc from "picocolors";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
 const templateRoot = resolve(repoRoot, "templates", "kit");
-const kitsRoot = resolve(repoRoot, "kits");
+const packagesRoot = resolve(repoRoot, "packages");
+const changesetRoot = resolve(repoRoot, ".changeset");
 const registryPath = resolve(
   repoRoot,
   "packages",
@@ -88,6 +90,7 @@ function toScreamingSnakeCase(name) {
 function applySubstitutions(content, ctx) {
   return content
     .replace(/__KIT_NAME__/g, ctx.name)
+    .replace(/__KIT_PACKAGE_NAME__/g, ctx.packageName)
     .replace(/__KIT_DESCRIPTION__/g, ctx.description)
     .replace(/__KIT_CONST__/g, `${ctx.screamingSnake}_`)
     .replace(/__KIT_CAMEL__/g, ctx.camel);
@@ -108,18 +111,34 @@ function shouldSubstitute(file) {
   return SUBSTITUTE_EXTENSIONS.has(file.slice(lastDot));
 }
 
-async function copyTree(srcRoot, destRoot, ctx) {
-  const entries = await readdir(srcRoot, { withFileTypes: true });
+function mapTemplateRelativePath(relativePath) {
+  if (relativePath === "index.ts" || relativePath.startsWith("core/")) {
+    return join("src", relativePath);
+  }
+
+  return relativePath;
+}
+
+async function copyTree(srcRoot, destRoot, ctx, relativeDir = "") {
+  const entries = await readdir(join(srcRoot, relativeDir), {
+    withFileTypes: true,
+  });
   await mkdir(destRoot, { recursive: true });
 
   for (const entry of entries) {
-    const srcPath = join(srcRoot, entry.name);
-    const destPath = join(destRoot, entry.name);
+    const relativePath = relativeDir
+      ? join(relativeDir, entry.name)
+      : entry.name;
+    const srcPath = join(srcRoot, relativePath);
+    const destPath = join(destRoot, mapTemplateRelativePath(relativePath));
 
     if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, ctx);
+      await mkdir(destPath, { recursive: true });
+      await copyTree(srcRoot, destRoot, ctx, relativePath);
       continue;
     }
+
+    await mkdir(dirname(destPath), { recursive: true });
 
     if (entry.name === ".gitkeep") {
       await copyFile(srcPath, destPath);
@@ -154,12 +173,38 @@ async function writeRegistry(registry) {
   await writeFile(registryPath, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
 }
 
+async function createInitialChangeset(ctx) {
+  if (!(await fs.pathExists(changesetRoot))) {
+    fail(
+      `changeset directory not found at ${relative(repoRoot, changesetRoot)}.`,
+    );
+  }
+
+  const changesetPath = join(changesetRoot, `${ctx.name}-initial.md`);
+  if (await fs.pathExists(changesetPath)) {
+    fail(`changeset already exists: ${relative(repoRoot, changesetPath)}.`);
+  }
+
+  const content = [
+    "---",
+    `"${ctx.packageName}": patch`,
+    "---",
+    "",
+    `Add the initial scaffold for ${ctx.packageName}.`,
+    "",
+  ].join("\n");
+
+  await writeFile(changesetPath, content, "utf8");
+  return changesetPath;
+}
+
 async function main() {
   const { name, description } = parseArgs(process.argv);
   const version = "1.0.0";
 
   const ctx = {
     name,
+    packageName: `@cullet/${name}`,
     description,
     camel: toCamelCase(name),
     screamingSnake: toScreamingSnakeCase(name),
@@ -174,24 +219,29 @@ async function main() {
     fail(`kit "${name}" already exists in packages/cli/registry/index.json.`);
   }
 
-  const destDir = join(kitsRoot, name, "versions", version);
+  const destDir = join(packagesRoot, name);
   if (await fs.pathExists(destDir)) {
     fail(`destination already exists: ${relative(repoRoot, destDir)}.`);
   }
 
   await copyTree(templateRoot, destDir, ctx);
+  const changesetPath = await createInitialChangeset(ctx);
 
   registry[name] = {
     versions: [version],
     latest: version,
     description,
+    npmName: ctx.packageName,
   };
   await writeRegistry(registry);
 
   console.log(pc.green(`✓ created kit ${pc.bold(`${name}@${version}`)}`));
-  console.log(`  files in: ${pc.cyan(relative(repoRoot, destDir))}`);
+  console.log(`  package: ${pc.cyan(relative(repoRoot, destDir))}`);
   console.log(
     `  registry: ${pc.cyan(relative(repoRoot, registryPath))} updated`,
+  );
+  console.log(
+    `  changeset: ${pc.cyan(relative(repoRoot, changesetPath))} created`,
   );
   console.log("");
   console.log(pc.bold("Next steps:"));
@@ -207,14 +257,19 @@ async function main() {
   );
   console.log(
     `  3. implement the layers under ${pc.cyan(
-      relative(repoRoot, join(destDir, "core")),
+      relative(repoRoot, join(destDir, "src", "core")),
     )}`,
   );
   console.log(`  4. run ${pc.cyan("npm run validate-kits")} to lint your kit`);
   console.log(
     `  5. run ${pc.cyan(
-      "npm --workspace cullet run build",
-    )} to rebuild the CLI package with the updated registry`,
+      `npm --workspace ${ctx.packageName} run build`,
+    )} to build the new package`,
+  );
+  console.log(
+    `  6. run ${pc.cyan(
+      "npm install",
+    )} to refresh workspace links and lockfile metadata`,
   );
 }
 

@@ -1,8 +1,8 @@
-# __KIT_NAME__
+# **KIT_NAME**
 
-__KIT_DESCRIPTION__
+**KIT_DESCRIPTION**
 
-Para o sumário prompt-friendly do kit veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../../../PHILOSOPHY.md) do repositório.
+Para o sumário prompt-friendly do kit veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../PHILOSOPHY.md) do repositório.
 
 ---
 
@@ -17,13 +17,7 @@ Substitua esta seção pela descrição concreta do que vem dentro do kit:
 ## Como começa
 
 ```ts
-import { /* primitives */ } from "cullet/__KIT_NAME__";
-```
-
-Versão pinada (recomendado em produção):
-
-```ts
-import { /* primitives */ } from "cullet/__KIT_NAME__/1.0.0";
+import {} from /* primitives */ "@cullet/__KIT_NAME__";
 ```
 
 Se preferir o modo full-control:
@@ -32,7 +26,7 @@ Se preferir o modo full-control:
 npx cullet fc __KIT_NAME__@1.0.0
 ```
 
-O comando copia o kit para `./cullet/__KIT_NAME__@1.0.0/` e registra o alias `cullet/__KIT_NAME__` no seu `tsconfig.json`.
+O comando copia o kit para `./cullet/__KIT_NAME__@1.0.0/` e registra o alias `@cullet/__KIT_NAME__` no seu `tsconfig.json`.
 
 ## Decisões tomadas
 
@@ -45,5 +39,5 @@ O comando copia o kit para `./cullet/__KIT_NAME__@1.0.0/` e registra o alias `cu
 
 - **Novos casos de uso**: crie em `core/application/` consumindo portas existentes; nunca import de `adapters/` dentro de `application/`.
 - **Adicionar uma porta**: crie a interface em `core/application/ports/`, implemente em `adapters/<sua-lib>/`, e mantenha a porta livre de tipos de runtime externo.
-- **Mudança incompatível**: abra uma nova versão (`versions/2.0.0/`). Regras completas em [`kits/VERSIONING.md`](../../../../kits/VERSIONING.md).
+- **Mudança incompatível**: abra um changeset e publique uma nova major do pacote. Regras completas em [`kits/VERSIONING.md`](../../kits/VERSIONING.md).
 - **Antes de publicar**: rode `npm run validate-kits` para garantir que o kit ainda respeita a filosofia.
