@@ -1,4 +1,3 @@
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
 import { assertValidDate } from "../../shared/temporal-guards";
 
 import { assertValidTime, type ValidTime } from "./valid-time";

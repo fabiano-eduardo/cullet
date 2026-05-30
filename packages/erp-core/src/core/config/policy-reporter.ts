@@ -1,7 +1,4 @@
-import type {
-  ConditionEvaluationReport,
-  ConditionEvaluationReportTag,
-} from "../policies/engines/condition-evaluator-reporter";
+import type { ConditionEvaluationReport } from "../policies/engines/condition-evaluator-reporter";
 import type {
   PolicyDecisionId,
   PolicyDefinitionId,

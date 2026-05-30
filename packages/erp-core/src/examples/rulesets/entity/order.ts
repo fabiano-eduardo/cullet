@@ -31,7 +31,7 @@ interface OrderCancelledEvent {
 
 type OrderDomainEvent = OrderCancelledEvent;
 
-interface OrderCreationRuleset extends CreationRuleset<OrderCreationData> {}
+type OrderCreationRuleset = CreationRuleset<OrderCreationData>;
 
 interface OrderInvariantRuleset extends InvariantRuleset {
   assertCanAddItem(order: Order, item: OrderItem): void;

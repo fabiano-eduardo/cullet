@@ -21,7 +21,6 @@ import { isValidDate } from "../../shared/temporal-guards";
 
 import type {
   PolicyEvent,
-  PolicyEvaluationFailedEvent,
   PolicyReporter,
 } from "../../config/policy-reporter";
 import { SilentPolicyReporter } from "../../config/silent-policy-reporter";
@@ -112,7 +111,9 @@ export class PolicyService {
   #reportSafely(event: PolicyEvent): void {
     try {
       this.#reporter.report(event);
-    } catch {}
+    } catch {
+      // Falhas de telemetria nao podem interromper a avaliacao de politicas.
+    }
   }
 
   private resolveEvaluationNow(seed: ContextSeed): Result<Date, string> {

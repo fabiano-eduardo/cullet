@@ -399,7 +399,13 @@ describe("PolicyService", () => {
       policyKey: "financial.charges.charge_eligibility",
       scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
       contextVersion: 1,
-      seed: makeSeed({}, { tenantId: "   " }),
+      // Um tenantId em branco nao pode ser construido via asTenantId (brand
+      // valida com hard-fail), entao injetamos o valor invalido direto para
+      // exercitar a validacao soft do servico (ContextSeedValidator).
+      seed: {
+        ...makeSeed({}),
+        tenantId: "   " as ReturnType<typeof asTenantId>,
+      },
     });
 
     expect(result.isErr()).toBe(true);

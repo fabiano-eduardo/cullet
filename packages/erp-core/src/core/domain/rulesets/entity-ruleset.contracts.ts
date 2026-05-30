@@ -5,7 +5,7 @@ interface CreationRuleset<TData> extends Ruleset {
   validate(data: TData): void;
 }
 
-interface InvariantRuleset extends Ruleset {}
+type InvariantRuleset = Ruleset;
 
 export {
   type CreationRuleset,

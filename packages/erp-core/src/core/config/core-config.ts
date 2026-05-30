@@ -19,7 +19,9 @@ function reportSafely(
 ): void {
   try {
     policyReporter.report(event);
-  } catch {}
+  } catch {
+    // Falhas de telemetria nao podem interromper o fluxo de dominio.
+  }
 }
 
 /**

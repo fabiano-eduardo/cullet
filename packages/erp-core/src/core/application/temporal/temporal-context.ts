@@ -1,4 +1,3 @@
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
 import { makeImmutable } from "../../shared/immutable";
 import { assertValidDate } from "../../shared/temporal-guards";
 

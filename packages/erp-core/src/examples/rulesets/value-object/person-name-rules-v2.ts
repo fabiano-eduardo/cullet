@@ -16,7 +16,7 @@ class PersonNameRulesV2 implements ValueObjectRuleset<string> {
   validate(value: string): void {
     this.v1.validate(value);
 
-    if (/[^a-zA-ZÀ-ÿ\s'\-]/.test(value)) {
+    if (/[^a-zA-ZÀ-ÿ\s'-]/.test(value)) {
       throw new PersonNameCharacterError(
         `Name contains invalid characters: "${value}". Only letters, hyphens, and apostrophes are allowed.`,
       );
