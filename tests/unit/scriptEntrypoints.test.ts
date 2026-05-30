@@ -125,7 +125,12 @@ describe.sequential("script entrypoints", () => {
         "index.json",
       );
       const originalRegistry = await readFile(registryPath, "utf8");
-      const kitDir = join(repoRoot, "kits", kitName);
+      const kitDir = join(repoRoot, "packages", kitName);
+      const changesetPath = join(
+        repoRoot,
+        ".changeset",
+        `${kitName}-initial.md`,
+      );
       const previousArgv = [...process.argv];
       const logs: string[] = [];
       const logSpy = vi
@@ -147,65 +152,104 @@ describe.sequential("script entrypoints", () => {
         await importFresh("scripts/new-kit.mjs");
 
         await waitUntil(() => {
-          expect(logs.join("\n")).toContain("npm --workspace cullet run build");
+          expect(logs.join("\n")).toContain(
+            `npm --workspace @cullet/${kitName} run build`,
+          );
         });
 
         await waitUntil(async () => {
           const registry = JSON.parse(
             await readFile(registryPath, "utf8"),
-          ) as Record<string, { latest: string }>;
+          ) as Record<string, { latest: string; npmName?: string }>;
 
-          expect(registry[kitName]).toMatchObject({ latest: "1.0.0" });
+          expect(registry[kitName]).toMatchObject({
+            latest: "1.0.0",
+            npmName: `@cullet/${kitName}`,
+          });
         });
 
         await expect(
-          readFile(join(kitDir, "versions", "1.0.0", "README.md"), "utf8"),
+          readFile(join(kitDir, "README.md"), "utf8"),
         ).resolves.toContain(kitName);
         await expect(
-          readFile(join(kitDir, "versions", "1.0.0", "meta.json"), "utf8"),
+          readFile(join(kitDir, "meta.json"), "utf8"),
         ).resolves.toContain(kitName);
+        await expect(
+          readFile(join(kitDir, "package.json"), "utf8"),
+        ).resolves.toContain(`@cullet/${kitName}`);
+        await expect(
+          readFile(join(kitDir, "src", "index.ts"), "utf8"),
+        ).resolves.toContain("packageMetadata.version");
+        await expect(readFile(changesetPath, "utf8")).resolves.toContain(
+          `"@cullet/${kitName}": patch`,
+        );
       } finally {
         process.argv = previousArgv;
         logSpy.mockRestore();
         errorSpy.mockRestore();
         await writeFile(registryPath, originalRegistry, "utf8");
         await rm(kitDir, { recursive: true, force: true });
+        await rm(changesetPath, { force: true });
       }
     });
 
-    it("verifies the generated npm pack tarball contents", async () => {
-      const packResult = spawnSync("npm", ["pack", "--json"], {
-        cwd: repoRoot,
-        encoding: "utf8",
-      });
-
-      if (packResult.status !== 0) {
-        throw new Error(packResult.stderr || "npm pack failed");
-      }
-
-      const tarballInfo = JSON.parse(packResult.stdout) as Array<{
-        filename: string;
-      }>;
-      const tarballPath = join(repoRoot, tarballInfo[0].filename);
-      const previousArgv = [...process.argv];
-      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-      process.argv = [
-        "node",
-        join(repoRoot, "scripts", "check-pack-contents.mjs"),
-        tarballPath,
+    it("verifies the generated npm pack tarball contents for workspace packages", async () => {
+      const packageDirs = [
+        join(repoRoot, "packages", "cli"),
+        join(repoRoot, "packages", "dummy-api"),
       ];
 
-      try {
-        await expect(
-          importFresh("scripts/check-pack-contents.mjs"),
-        ).resolves.toBeUndefined();
-      } finally {
-        process.argv = previousArgv;
-        logSpy.mockRestore();
-        errorSpy.mockRestore();
-        await rm(tarballPath, { force: true });
+      for (const packageDir of packageDirs) {
+        const buildResult = spawnSync("npm", ["run", "build"], {
+          cwd: packageDir,
+          encoding: "utf8",
+        });
+
+        if (buildResult.status !== 0) {
+          throw new Error(
+            buildResult.stderr || buildResult.stdout || "npm run build failed",
+          );
+        }
+
+        const packResult = spawnSync("npm", ["pack", "--json"], {
+          cwd: packageDir,
+          encoding: "utf8",
+        });
+
+        if (packResult.status !== 0) {
+          throw new Error(
+            packResult.stderr || packResult.stdout || "npm pack failed",
+          );
+        }
+
+        const tarballInfo = JSON.parse(packResult.stdout) as Array<{
+          filename: string;
+        }>;
+        const tarballPath = join(packageDir, tarballInfo[0].filename);
+        const previousArgv = [...process.argv];
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        const errorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        process.argv = [
+          "node",
+          join(repoRoot, "scripts", "check-pack-contents.mjs"),
+          "--package",
+          packageDir,
+          tarballPath,
+        ];
+
+        try {
+          await expect(
+            importFresh("scripts/check-pack-contents.mjs"),
+          ).resolves.toBeUndefined();
+        } finally {
+          process.argv = previousArgv;
+          logSpy.mockRestore();
+          errorSpy.mockRestore();
+          await rm(tarballPath, { force: true });
+        }
       }
     });
   });
