@@ -26,25 +26,32 @@
       "types": "./dist/policies/engines/v1/gate/index.d.ts",
       "import": "./dist/policies/engines/v1/gate/index.js"
     },
-    "./application/policy-error-mapper": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
-    },
     "./exceptions/validation-field": {
       "types": "./dist/exceptions/validation-field.d.ts",
       "import": "./dist/exceptions/validation-field.js"
     },
     "./package.json": "./package.json"
   },
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts",
+    "dev": "tsdown --config tsdown.config.ts --watch"
+  },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "meta.json",
+    "KIT_CONTEXT.md",
+    "README.md"
   ],
   "sideEffects": false,
   "engines": {
     "node": ">=18.17"
   },
   "peerDependencies": {
-    "zod": "^3.22.0"
+    "zod": ">=3.22.0 <5"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "license": "MIT"
 }

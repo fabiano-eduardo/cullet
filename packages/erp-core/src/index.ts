@@ -1,4 +1,4 @@
-import packageMetadata from "./package.json" assert { type: "json" };
+import packageMetadata from "../package.json" assert { type: "json" };
 
 export * from "./core/index.js";
 

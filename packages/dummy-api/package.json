@@ -1,0 +1,34 @@
+{
+  "name": "@cullet/dummy-api",
+  "version": "1.0.0",
+  "description": "Kit dummy de API para validar o fluxo de criacao",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown --config tsdown.config.ts",
+    "dev": "tsdown --config tsdown.config.ts --watch"
+  },
+  "files": [
+    "dist",
+    "src",
+    "meta.json",
+    "KIT_CONTEXT.md",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
