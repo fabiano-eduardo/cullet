@@ -1,5 +1,5 @@
 {
-  "name": "@fabiano-eduardo/erp-core",
+  "name": "@cullet/erp-core",
   "version": "1.0.0",
   "description": "Core ERP with clean architecture, temporality, policies, and rule sets",
   "type": "module",
