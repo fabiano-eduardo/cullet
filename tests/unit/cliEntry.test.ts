@@ -53,6 +53,8 @@ function makeTelemetryEnv(root: string): Record<string, string> {
     HOME: root,
     CULLET_CONFIG_HOME: join(root, "config"),
     CULLET_STATE_HOME: join(root, "state"),
+    // Keep `info` deterministic and offline: skip the `npm view` round-trip.
+    CULLET_OFFLINE: "1",
   };
 }
 
@@ -272,7 +274,8 @@ describe.sequential("cli commands", () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Kit validado: erp-core@1.0.0");
       expect(result.stdout).toContain("Importe direto no codigo:");
-      expect(result.stdout).toContain("Alias criado: cullet/erp-core");
+      expect(result.stdout).toContain('from "@cullet/erp-core"');
+      expect(result.stdout).toContain("Alias criado: @cullet/erp-core");
 
       const tsconfig = JSON.parse(
         await readFile(join(projectDir, "tsconfig.json"), "utf8"),
@@ -280,13 +283,32 @@ describe.sequential("cli commands", () => {
         compilerOptions?: { paths?: Record<string, string[]> };
       };
 
-      expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
-        "./node_modules/cullet/dist/kits/erp-core/versions/1.0.0/index.js",
+      expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core"]).toEqual([
+        "./node_modules/@cullet/erp-core/dist/index.js",
       ]);
     });
 
     it("runs full-control and copies the kit into the consumer project", async () => {
       const projectDir = await makeProject("fc-project");
+
+      // The (c.3) flow resolves the kit from the consumer's node_modules, so the
+      // fixture installs @cullet/erp-core the way `cullet fc` would before copy.
+      const installedKit = join(
+        projectDir,
+        "node_modules",
+        "@cullet",
+        "erp-core",
+      );
+      await writeJson(join(installedKit, "package.json"), {
+        name: "@cullet/erp-core",
+        version: "1.0.0",
+      });
+      await mkdir(join(installedKit, "src"), { recursive: true });
+      await writeFile(
+        join(installedKit, "src", "index.ts"),
+        "export const kit = 'erp-core';\n",
+        "utf8",
+      );
 
       const result = await runCommand(
         createFullControlCommand(),
@@ -315,9 +337,24 @@ describe.sequential("cli commands", () => {
         compilerOptions?: { paths?: Record<string, string[]> };
       };
 
-      expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
+      expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core"]).toEqual([
         "./cullet/erp-core@1.0.0/index.ts",
       ]);
+    });
+
+    it("fails full-control with --no-install when the kit is not installed", async () => {
+      const projectDir = await makeProject("fc-no-install");
+
+      await expect(
+        runCommand(
+          createFullControlCommand(),
+          ["fc", "erp-core@1.0.0", "--no-install"],
+          {
+            cwd: projectDir,
+            env: makeTelemetryEnv(tempRoot),
+          },
+        ),
+      ).rejects.toThrow(/nao esta instalado e --no-install/);
     });
 
     it("runs migrate in dry-run mode for a temporary deprecated fixture", async () => {

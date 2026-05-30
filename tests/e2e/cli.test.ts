@@ -212,11 +212,13 @@ describe("cullet CLI e2e", () => {
   });
 
   it("cullet info erp-core succeeds in a minimal project", async () => {
-    const result = await runCli(["info", "erp-core"], project);
+    const result = await runCli(["info", "erp-core"], project, {
+      env: { CULLET_OFFLINE: "1" },
+    });
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/Kit validado: erp-core@/);
     expect(result.stdout).toMatch(
-      /import \{ \.\.\. \} from "cullet\/erp-core"/,
+      /import \{ \.\.\. \} from "@cullet\/erp-core"/,
     );
   });
 
@@ -235,7 +237,7 @@ describe("cullet CLI e2e", () => {
       readFileSync(join(project, "tsconfig.json"), "utf8"),
     ) as { compilerOptions?: { paths?: Record<string, unknown> } };
     expect(tsconfig.compilerOptions?.paths).toBeDefined();
-    expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
+    expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core"]).toEqual([
       `./cullet/${subdirs[0]}/index.ts`,
     ]);
   });
@@ -266,7 +268,7 @@ describe("cullet CLI e2e", () => {
     const tsconfig = JSON.parse(
       readFileSync(join(project, "tsconfig.json"), "utf8"),
     ) as { compilerOptions?: { paths?: Record<string, unknown> } };
-    expect(tsconfig.compilerOptions?.paths?.["cullet/erp-core"]).toEqual([
+    expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core"]).toEqual([
       `./cullet/erp-core@1.0.0/index.ts`,
     ]);
   });
