@@ -6,16 +6,16 @@ description: Como o cullet versiona pacote e kits sem quebrar consumidores exist
 `cullet` tem dois níveis de versão:
 
 - O pacote npm `cullet`, definido em `package.json`.
-- Cada kit individual, definido em `kits/<nome>/versions/<x.y.z>/meta.json` e refletido em `registry/index.json`.
+- Cada kit individual, definido por `packages/<nome>/package.json`, repetido em `packages/<nome>/meta.json` e refletido em `registry/index.json`.
 
 ## Regras principais
 
 - SemVer é aplicado ao kit, não apenas ao pacote.
-- Versões publicadas de kit são imutáveis; correção é sempre uma nova versão, nunca reescrita da pasta antiga.
+- Versões publicadas de kit são imutáveis; correção é sempre uma nova versão npm, nunca reescrita de uma release já publicada.
 - `cullet/<nome>` resolve para a `latest` do kit.
 - `cullet/<nome>/<versão>` fixa o consumo em uma versão exata.
 
-## Quando abrir nova pasta de versão
+## Quando abrir uma nova release
 
 - `MAJOR`: mudança incompatível na superfície pública do kit.
 - `MINOR`: adição compatível de API ou capacidade.

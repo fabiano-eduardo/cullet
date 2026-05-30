@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Scaffolds a new kit under kits/<name>/versions/1.0.0/ from templates/kit/,
-// substituting placeholders and updating registry/index.json. Internal command
-// for catalog maintainers — not exposed to end-users.
+// substituting placeholders and updating packages/cli/registry/index.json.
+// Internal command for catalog maintainers — not exposed to end-users.
 //
 // Usage: node scripts/new-kit.mjs <kit-name> [--description "..."]
 
@@ -21,7 +21,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
 const templateRoot = resolve(repoRoot, "templates", "kit");
 const kitsRoot = resolve(repoRoot, "kits");
-const registryPath = resolve(repoRoot, "registry", "index.json");
+const registryPath = resolve(
+  repoRoot,
+  "packages",
+  "cli",
+  "registry",
+  "index.json",
+);
 
 const KIT_NAME_RE = /^[a-z][a-z0-9-]*$/;
 
@@ -134,7 +140,7 @@ async function readRegistry() {
   const raw = await readFile(registryPath, "utf8");
   const parsed = JSON.parse(raw);
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    fail("registry/index.json is not a JSON object.");
+    fail("packages/cli/registry/index.json is not a JSON object.");
   }
   return parsed;
 }
@@ -165,7 +171,7 @@ async function main() {
 
   const registry = await readRegistry();
   if (registry[name] !== undefined) {
-    fail(`kit "${name}" already exists in registry/index.json.`);
+    fail(`kit "${name}" already exists in packages/cli/registry/index.json.`);
   }
 
   const destDir = join(kitsRoot, name, "versions", version);
@@ -207,8 +213,8 @@ async function main() {
   console.log(`  4. run ${pc.cyan("npm run validate-kits")} to lint your kit`);
   console.log(
     `  5. run ${pc.cyan(
-      "npm run build",
-    )} to bundle it (sync-exports is automatic via prebuild)`,
+      "npm --workspace cullet run build",
+    )} to rebuild the CLI package with the updated registry`,
   );
 }
 

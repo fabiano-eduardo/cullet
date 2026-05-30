@@ -40,4 +40,4 @@ import { Timeline } from "cullet/erp-core/1.0.0";
 
 ## Leitura completa
 
-Veja o README do kit em [kits/erp-core/versions/1.0.0/README.md](https://github.com/fabiano-eduardo/cullet/blob/main/kits/erp-core/versions/1.0.0/README.md).
+Veja o README do kit em [packages/erp-core/README.md](https://github.com/fabiano-eduardo/cullet/blob/main/packages/erp-core/README.md).

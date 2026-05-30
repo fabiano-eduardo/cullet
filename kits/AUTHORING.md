@@ -146,6 +146,42 @@ Prática recomendada:
 - exponha constantes `NOME_DO_KIT` e `VERSAO_DO_KIT` quando fizer sentido para inspeção;
 - mantenha `meta.json.exports` em sincronia com o que está realmente disponível em `index.ts`.
 
+### Manifesto npm do kit
+
+Enquanto a migração para o modelo (c) ainda está em andamento, o `package.json` dentro de `kits/<nome>/versions/<versao>/` é preparatório: ele deve usar o escopo `@cullet/*`, manter `peerDependencies` em sincronia com `meta.json.compatibility.directImport.peerDependencies`, e não pode introduzir `exports` locais para arquivos que não existem na pasta do kit.
+
+O modelo-alvo para cada kit, quando a publicação por pacote estiver ativa, é este:
+
+```jsonc
+{
+  "name": "@cullet/erp-core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js",
+    },
+    "./policies": {
+      "types": "./dist/policies/index.d.ts",
+      "import": "./dist/policies/index.js",
+    },
+    "./package.json": "./package.json",
+  },
+  "files": ["dist", "src", "meta.json", "KIT_CONTEXT.md", "README.md"],
+  "sideEffects": false,
+  "engines": { "node": ">=18.17" },
+  "peerDependencies": { "zod": ">=3.22.0 <5" },
+  "publishConfig": { "access": "public" },
+  "license": "MIT",
+}
+```
+
+Adapte os subpaths ao que o kit realmente expõe. Se o kit não tiver `./errors` ou `./policies`, mantenha apenas `.` e `./package.json`.
+
 ## 9. Registro, versão e deprecação
 
 Para um kit novo, o `new-kit` já cria a entrada inicial no `registry/index.json`.

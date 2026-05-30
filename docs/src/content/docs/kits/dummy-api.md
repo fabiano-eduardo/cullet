@@ -18,4 +18,4 @@ description: Sandbox do pipeline de criação e validação de kits do catálogo
 
 ## Leitura completa
 
-Veja o README do kit em [kits/dummy-api/versions/1.0.0/README.md](https://github.com/fabiano-eduardo/cullet/blob/main/kits/dummy-api/versions/1.0.0/README.md).
+Veja o README do kit em [packages/dummy-api/README.md](https://github.com/fabiano-eduardo/cullet/blob/main/packages/dummy-api/README.md).

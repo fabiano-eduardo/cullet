@@ -4,9 +4,9 @@ Este documento fixa as regras que todo kit do catálogo `cullet` segue para evol
 
 ## 1. SemVer aplicado ao kit, não ao pacote
 
-Cada kit tem **sua própria versão SemVer**, independente da versão do pacote npm `cullet`. A versão vive em `kits/<nome>/versions/<x.y.z>/meta.json` (campo `version`) e em `registry/index.json` (`versions` e `latest`).
+Cada kit tem **sua própria versão SemVer**, independente da versão do pacote npm `cullet`. No workspace, a versão canônica do kit vive em `packages/<nome>/package.json`; `packages/<nome>/meta.json` repete o mesmo valor para o catálogo, e `registry/index.json` segue registrando `versions` e `latest`.
 
-- **MAJOR** — mudança incompatível na superfície pública do kit (remoção, troca de assinatura, renomeação, mudança de comportamento observável). Exige nova pasta `versions/<x+1.0.0>/`.
+- **MAJOR** — mudança incompatível na superfície pública do kit (remoção, troca de assinatura, renomeação, mudança de comportamento observável). Exige uma nova release npm (`x+1.0.0`).
 - **MINOR** — adição de superfície pública compatível (novo símbolo, nova porta, novo campo opcional).
 - **PATCH** — correção de bug ou ajuste interno que não altera contrato.
 
@@ -16,17 +16,24 @@ A versão do pacote npm `cullet` (em `package.json`) segue seu próprio ciclo, n
 
 > Versões antigas **nunca** são removidas do catálogo.
 
-Quando uma versão é publicada, ela vira contrato. Consumidores podem importar `cullet/<nome>/<x.y.z>` e esperar a mesma superfície para sempre. O fluxo de evolução é, então, **estritamente aditivo**:
+Quando uma versão é publicada, ela vira contrato. Consumidores podem instalar `@cullet/<nome>@<x.y.z>` e esperar o mesmo tarball para sempre. A imutabilidade deixa de ser garantida por um diretório versionado no repo e passa a ser garantida por três artefatos combinados:
 
-1. Crie uma nova pasta `kits/<nome>/versions/<nova-versao>/`.
-2. Atualize `registry/index.json`:
-   - acrescente `<nova-versao>` em `versions`,
-   - aponte `latest` para ela (se for a nova referência).
-3. **Não** edite arquivos dentro de pastas de versões antigas, exceto:
-   - correções de typo em `README.md` ou `KIT_CONTEXT.md`,
-   - marcação de `deprecated` em `meta.json` (ver seção 3).
+1. o tarball publicado no npm,
+2. a tag git que corresponde à release,
+3. a política operacional de nunca reescrever uma versão após publicação, mesmo durante a janela em que o npm ainda permitiria `unpublish`.
 
-Se uma versão precisou ser publicada com bug crítico, a solução é publicar um PATCH novo (`x.y.z+1`), não reescrever o passado.
+O fluxo de evolução é, então, **estritamente aditivo**:
+
+1. Evolua `packages/<nome>/` na branch corrente.
+2. Atualize `packages/<nome>/package.json` e `packages/<nome>/meta.json` para a nova versão.
+3. Atualize `registry/index.json`:
+
+- acrescente `<nova-versao>` em `versions`,
+- aponte `latest` para ela (se for a nova referência).
+
+4. Publique a nova versão npm e marque a tag git correspondente.
+
+`latest` deixa de ser um diretório local e passa a ser a dist-tag npm do kit. Se uma versão precisou sair com bug crítico, a solução é publicar um PATCH novo (`x.y.z+1`), não reescrever o passado.
 
 ## 3. Descontinuação (deprecation)
 
@@ -73,31 +80,31 @@ A motivação é dupla: usuários veem o aviso no fluxo natural, e o catálogo n
 
 ### Primeira versão de um kit novo
 
-```bash
-npm run new-kit -- <nome-do-kit>
-# opcional:
-npm run new-kit -- <nome-do-kit> --description "Descrição curta do kit"
-```
-
-O script (`scripts/new-kit.mjs`) copia `templates/kit/` para `kits/<nome>/versions/1.0.0/`, faz a substituição de placeholders, e adiciona a entrada no `registry/index.json`. Os próximos passos (validar, implementar, buildar) são impressos no final da execução.
+Na topologia de workspace, um kit nasce em `packages/<nome>/` com `package.json`, `tsdown.config.ts`, `src/`, `meta.json`, `README.md` e `KIT_CONTEXT.md`. O scaffold automático ainda está sendo alinhado à nova estrutura; até a conclusão dessa migração, use `templates/kit/` como base e registre o kit manualmente em `registry/index.json`.
 
 ### Nova MAJOR de um kit existente
 
 Não há atalho de CLI para isso — é uma decisão de catálogo. Faça manualmente:
 
-1. Copie a pasta `kits/<nome>/versions/<antiga>/` para `kits/<nome>/versions/<nova>/`.
-2. Atualize `meta.json` da nova versão (`version`, `changelog`).
-3. Faça as mudanças incompatíveis somente dentro da nova pasta.
+1. Evolua `packages/<nome>/src/` na branch da nova release.
+2. Atualize `package.json` e `meta.json` do kit (`version`, `changelog`).
+3. Faça as mudanças incompatíveis na nova release, sem tentar preservar a árvore anterior no repo.
 4. Em `registry/index.json`, adicione a nova versão em `versions` e atualize `latest`.
 5. Marque a versão antiga como `deprecated` se a sucessão for clara.
-6. Rode `npm run validate-kits` e `npm run build`.
+6. Rode o build do pacote e publique a nova versão npm.
 
 ## 5. Validação contínua
 
-`npm run validate-kits` percorre todas as pastas `kits/*/versions/*/` que têm `meta.json` e checa:
+Durante a transição para o monorepo por pacote, `npm run validate-kits` ainda está sendo adaptado para deixar de varrer `kits/*/versions/*/` e passar a validar `packages/*/meta.json`. A regra de catálogo, porém, já é a mesma:
 
 - Conformidade com `kits/kit-spec.schema.json` (inclui o formato de `deprecated`).
 - Existência de `README.md`, `KIT_CONTEXT.md` e `entryPoint`.
 - Regras de lint declaradas no kit (`noExternalImports`, `noUpwardImports`, etc.).
 
 CI deve rodar este comando em todo PR. Erros bloqueiam merge; warnings ficam visíveis no log.
+
+## 6. Migração planejada para pacotes por kit
+
+O catálogo está em migração para o modelo (c) descrito em `tmp/plano-migracao-c-cli-registry-29.05.2026.md`: `cullet` permanece como CLI + registry, e cada kit passa a existir como pacote npm próprio no escopo `@cullet/*`.
+
+Nesta fase, os kits já vivem em `packages/<nome>/` e a versão publicada passa a ser a do `package.json` do pacote. A migração restante cobre o scaffold, a validação e a resolução do CLI; enquanto isso, o princípio de imutabilidade já deve ser tratado como regra operacional de release, não mais como uma garantia estrutural de diretórios `versions/` no repo.
