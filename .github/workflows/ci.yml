@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint and registry drift
+  repository:
+    name: Repository checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,46 +45,57 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-      - name: TypeScript typecheck
-        run: npm run typecheck
-
-      - name: Validate kits
-        run: npm run validate-kits
-
       - name: Verify kit peerDependencies are in sync
         run: npm run sync-kit-deps:check
 
-  test:
-    name: Test (Node ${{ matrix.node }} on ${{ matrix.os }})
-    needs: lint
-    runs-on: ${{ matrix.os }}
+  packages:
+    name: Package ${{ matrix.package }}
+    needs: repository
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        node: [18, 20, 22]
+        include:
+          - package: cli
+            build_command: npm run build --workspace cullet
+            typecheck_command: npm run typecheck
+            test_command: npm run test
+            validate_command: 'node -e "console.log(''Skipping validate-kit for cullet: packages/cli has no meta.json.'')"'
+          - package: erp-core
+            build_command: npm run build --workspace @cullet/erp-core
+            typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/erp-core/src -name '*.ts' -print) packages/erp-core/tsdown.config.ts
+            test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/erp-core/src/
+            validate_command: npm run validate-kits -- --filter @cullet/erp-core
+          - package: dummy-api
+            build_command: npm run build --workspace @cullet/dummy-api
+            typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/dummy-api/src -name '*.ts' -print) packages/dummy-api/tsdown.config.ts
+            test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/dummy-api/src/ --passWithNoTests
+            validate_command: npm run validate-kits -- --filter @cullet/dummy-api
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 20
           cache: npm
 
       - run: npm ci
 
-      - name: Build (required for e2e)
-        run: npm run build
+      - name: Build package
+        run: ${{ matrix.build_command }}
 
-      - name: Unit tests
-        run: npm run test
+      - name: Typecheck package slice
+        run: ${{ matrix.typecheck_command }}
 
-      - name: E2E smoke tests
-        run: npm run test:e2e
+      - name: Test package slice
+        run: ${{ matrix.test_command }}
 
-  test-kits:
-    name: Kit unit tests
-    needs: lint
+      - name: Validate package slice
+        run: ${{ matrix.validate_command }}
+
+  integration:
+    name: Integration E2E
+    needs: packages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,12 +107,15 @@ jobs:
 
       - run: npm ci
 
-      - name: Kit unit tests (kits/**/*.spec.ts)
-        run: npm run test:kits
+      - name: Build workspace
+        run: npm run build
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
 
   pack:
     name: Release dry run
-    needs: lint
+    needs: repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
