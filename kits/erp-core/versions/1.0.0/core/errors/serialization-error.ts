@@ -99,10 +99,10 @@ abstract class SerializationError extends AppError {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Deserialization
+// Serialization In
 // ─────────────────────────────────────────────────────────────────────────────
 
-class DeserializationError extends SerializationError {
+class SerializationInError extends SerializationError {
   private constructor(input: SerializationErrorOptions) {
     super(input);
   }
@@ -112,8 +112,8 @@ class DeserializationError extends SerializationError {
     metadata: Omit<SerializationErrorMetadata, "direction" | "category"> & {
       cause?: unknown;
     },
-  ): DeserializationError {
-    return new DeserializationError({
+  ): SerializationInError {
+    return new SerializationInError({
       message: SerializationMessages.message("deserialize", category),
       code: SerializationCodes.code("deserialize", category),
       category,
@@ -217,10 +217,11 @@ function safePreview(value: unknown, limit = 240): string | undefined {
 }
 
 export {
-  DeserializationError,
   safePreview,
   SerializationCodes,
   SerializationError,
+  SerializationInError as DeserializationError,
+  SerializationInError,
   SerializationMessages,
   SerializationOutError,
 };

@@ -116,7 +116,7 @@ type IntegrationErrorEndpointOptions = IntegrationErrorBaseOptions;
 function buildMetadata(
   input: IntegrationErrorBaseOptions & { reason: IntegrationErrorReason },
 ): IntegrationErrorMetadata {
-  return {
+  return compactMetadata({
     reason: input.reason,
     provider: input.provider,
     operation: input.operation,
@@ -129,7 +129,7 @@ function buildMetadata(
     details: input.details,
     statusCode: input.statusCode,
     responseCode: input.responseCode,
-  };
+  }) as IntegrationErrorMetadata;
 }
 
 function pickAppErrorFields(
@@ -145,6 +145,12 @@ function pickAppErrorFields(
     createdAtIso: options.createdAtIso,
     publicMessage: options.publicMessage,
   };
+}
+
+function compactMetadata<T extends Record<string, unknown>>(input: T): T {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as T;
 }
 
 export { IntegrationError };

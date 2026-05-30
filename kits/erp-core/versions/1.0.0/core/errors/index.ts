@@ -74,10 +74,11 @@ export type {
   SerializationFailureCategory,
 } from "./serialization-error";
 export {
-  DeserializationError,
+  SerializationInError as DeserializationError,
   safePreview,
   SerializationCodes,
   SerializationError,
+  SerializationInError,
   SerializationMessages,
   SerializationOutError,
 } from "./serialization-error";

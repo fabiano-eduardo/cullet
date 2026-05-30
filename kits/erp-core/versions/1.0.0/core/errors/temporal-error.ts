@@ -113,18 +113,27 @@ function evaluateTemporalWindow(input: {
   validFromIso?: string | null;
   validUntilIso?: string | null;
   evaluatedAtIso: string;
-}): { expired: boolean } | null {
+}): { expired: boolean; notYetValid: boolean } | null {
   const evaluatedMs = Date.parse(input.evaluatedAtIso);
   if (Number.isNaN(evaluatedMs)) return null;
+
+  let notYetValid = false;
+
+  if (input.validFromIso) {
+    const fromMs = Date.parse(input.validFromIso);
+    if (!Number.isNaN(fromMs) && evaluatedMs < fromMs) {
+      notYetValid = true;
+    }
+  }
 
   if (input.validUntilIso) {
     const untilMs = Date.parse(input.validUntilIso);
     if (!Number.isNaN(untilMs) && evaluatedMs > untilMs) {
-      return { expired: true };
+      return { expired: true, notYetValid: false };
     }
   }
 
-  return { expired: false };
+  return { expired: false, notYetValid };
 }
 
 export {

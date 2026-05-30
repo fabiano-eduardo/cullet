@@ -48,6 +48,9 @@ class AuthenticationError extends AppError {
     cause?: unknown;
     type?: string;
     severity?: ErrorSeverity;
+    correlationId?: string;
+    requestId?: string;
+    commandId?: string;
     createdAtIso?: string;
     publicMessage?: string;
   }) {
@@ -59,6 +62,9 @@ class AuthenticationError extends AppError {
       },
       type: params.type,
       severity: params.severity,
+      correlationId: params.correlationId,
+      requestId: params.requestId,
+      commandId: params.commandId,
       createdAtIso: params.createdAtIso,
       publicMessage: params.publicMessage,
     });
@@ -78,7 +84,7 @@ class AuthenticationError extends AppError {
       message: "Missing credentials",
       code: ErrorCodes.authentication.missingToken,
       reason: "missing_token",
-      metadata: options,
+      metadata: compactMetadata(options),
       ...extractAppErrorOptions(options),
     });
   }
@@ -90,13 +96,13 @@ class AuthenticationError extends AppError {
       message: "Invalid credentials",
       code: ErrorCodes.authentication.invalidToken,
       reason: "invalid_token",
-      metadata: {
+      metadata: compactMetadata({
         authScheme: options?.authScheme,
         tokenLocation: options?.tokenLocation,
         details: options?.details,
         correlationId: options?.correlationId,
         requestId: options?.requestId,
-      },
+      }),
       ...extractAppErrorOptions(options),
     });
   }
@@ -108,7 +114,7 @@ class AuthenticationError extends AppError {
       message: "Expired credentials",
       code: ErrorCodes.authentication.expiredToken,
       reason: "expired_token",
-      metadata: options,
+      metadata: compactMetadata(options),
       ...extractAppErrorOptions(options),
     });
   }
@@ -128,7 +134,7 @@ class AuthenticationError extends AppError {
       message: "Invalid username or password",
       code: ErrorCodes.authentication.invalidCredentials,
       reason: "invalid_credentials",
-      metadata: options,
+      metadata: compactMetadata(options),
       ...extractAppErrorOptions(options),
     });
   }
@@ -149,6 +155,16 @@ function extractAppErrorOptions(options?: Partial<AppErrorOptions>) {
     createdAtIso: options?.createdAtIso,
     publicMessage: options?.publicMessage,
   };
+}
+
+function compactMetadata<T extends Record<string, unknown>>(
+  input?: T,
+): T | undefined {
+  if (!input) return undefined;
+
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as T;
 }
 
 export { AuthenticationError };
