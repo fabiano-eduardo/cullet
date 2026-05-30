@@ -1,12 +1,12 @@
 import {
   Entity,
   PolicyCatalog,
+  PolicyResolver,
   PolicyService,
   ValueObject,
   mapPolicyEvaluationError,
   type PolicyDecision,
-} from "cullet/erp-core";
-import { PolicyResolver } from "cullet/erp-core/1.0.0";
+} from "@cullet/erp-core";
 
 void Entity;
 void ValueObject;

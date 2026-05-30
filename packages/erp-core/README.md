@@ -28,19 +28,20 @@ import {
   PolicyService,
   mapPolicyEvaluationError,
   type PolicyDecision,
-} from "cullet/erp-core";
+} from "@cullet/erp-core";
 ```
 
-Pinado em uma versão (recomendado em produção):
+Pinado em uma versão (recomendado em produção): fixe a versão npm do pacote no
+seu `package.json` (ex.: `"@cullet/erp-core": "1.0.0"`).
 
 ```ts
-import { PolicyResolver } from "cullet/erp-core/1.0.0";
+import { PolicyResolver } from "@cullet/erp-core";
 ```
 
 Full-control (kit copiado para dentro do projeto, livre para editar):
 
 ```bash
-npx cullet fc erp-core@1.0.0
+npx cullet fc @cullet/erp-core@1.0.0
 ```
 
 ## Composicao sem singletons
@@ -57,8 +58,8 @@ import {
   PolicyContextBuilder,
   Result,
   registerNamespacedContextResolversIn,
-} from "cullet/erp-core";
-import { GateEngineV1 } from "cullet/erp-core/policies/engines/v1/gate";
+} from "@cullet/erp-core";
+import { GateEngineV1 } from "@cullet/erp-core/policies/engines/v1/gate";
 
 const coreConfig = new CoreConfig({
   observability: { reporter },

@@ -12,7 +12,7 @@ import { UnexpectedError } from "./unexpected-error";
 import { ValidationError } from "./validation-error";
 import { NON_SERIALIZABLE_PLACEHOLDER } from "./utils";
 
-describe("error catalog factories", () => {
+describe("catalog-errors factories", () => {
   describe("happy path", () => {
     it("builds missing-token errors with stable authentication metadata", () => {
       const error = AuthenticationError.missingToken({

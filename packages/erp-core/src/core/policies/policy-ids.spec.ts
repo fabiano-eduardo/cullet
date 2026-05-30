@@ -32,7 +32,7 @@ const idConstructors = [
   },
 ] as const;
 
-describe("policy id constructors", () => {
+describe("policy-ids constructors", () => {
   it.each(idConstructors)(
     "returns the original value for a valid $fieldName",
     ({ build, validValue }) => {
