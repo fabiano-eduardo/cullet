@@ -10,7 +10,7 @@ import {
   kitImportSpecifier,
   kitNodeModulesEntry,
   kitSrcDir,
-} from "../../cli/utils/paths.js";
+} from "../../packages/cli/src/cli/utils/paths.js";
 
 describe("paths", () => {
   it("exposes the canonical directory names", () => {
@@ -25,8 +25,20 @@ describe("paths", () => {
     );
   });
 
+  it("resolves the kit source directory from the monorepo root when the cli lives in packages/", () => {
+    expect(kitSrcDir("/repo/packages/cli", "erp-core", "1.0.0")).toMatch(
+      /repo[\\/]+kits[\\/]+erp-core[\\/]+versions[\\/]+1\.0\.0$/,
+    );
+  });
+
   it("builds the kit dist directory from the package root", () => {
     expect(kitDistDir("/repo", "erp-core", "1.0.0")).toMatch(
+      /repo[\\/]+dist[\\/]+kits[\\/]+erp-core[\\/]+versions[\\/]+1\.0\.0$/,
+    );
+  });
+
+  it("resolves the kit dist directory from the monorepo root when the cli lives in packages/", () => {
+    expect(kitDistDir("/repo/packages/cli", "erp-core", "1.0.0")).toMatch(
       /repo[\\/]+dist[\\/]+kits[\\/]+erp-core[\\/]+versions[\\/]+1\.0\.0$/,
     );
   });

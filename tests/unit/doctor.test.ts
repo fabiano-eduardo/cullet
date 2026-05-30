@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveDoctorProjectRoot } from "../../cli/commands/doctor.js";
+import { resolveDoctorProjectRoot } from "../../packages/cli/src/cli/commands/doctor.js";
 
 describe("resolveDoctorProjectRoot", () => {
   it("uses the current cwd when no override is provided", () => {

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   loadKitMigrationPlan,
   runKitMigrationCodemod,
-} from "../../cli/utils/migration.js";
+} from "../../packages/cli/src/cli/utils/migration.js";
 
 let root: string;
 let projectDir: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseKitArg } from "../../cli/utils/resolve.js";
+import { parseKitArg } from "../../packages/cli/src/cli/utils/resolve.js";
 
 describe("parseKitArg", () => {
   describe("happy path", () => {
@@ -23,6 +23,19 @@ describe("parseKitArg", () => {
 
     it("parses scoped package names without version", () => {
       expect(parseKitArg("@scoped/name")).toEqual({ name: "@scoped/name" });
+    });
+
+    it("parses @cullet/erp-core without version", () => {
+      expect(parseKitArg("@cullet/erp-core")).toEqual({
+        name: "@cullet/erp-core",
+      });
+    });
+
+    it("parses @cullet/erp-core with explicit version", () => {
+      expect(parseKitArg("@cullet/erp-core@1.0.0")).toEqual({
+        name: "@cullet/erp-core",
+        version: "1.0.0",
+      });
     });
 
     it("trims surrounding whitespace", () => {
@@ -61,6 +74,10 @@ describe("parseKitArg", () => {
       expect(() => parseKitArg("@scope@1.0.0")).toThrow(/Formato invalido/);
     });
 
+    it("rejects @cullet/ with empty kit name after slash", () => {
+      expect(() => parseKitArg("@cullet/")).toThrow(/Formato invalido/);
+    });
+
     it("rejects multiple version separators in unscoped names", () => {
       expect(() => parseKitArg("erp-core@beta@1.0.0")).toThrow(
         /Formato invalido/,
@@ -75,6 +92,12 @@ describe("parseKitArg", () => {
       // documented edge case — the registry lookup will then surface a clear
       // "kit not found" error to the user.
       expect(parseKitArg("@version")).toEqual({ name: "@version" });
+    });
+
+    it("treats @cullet bare scope (no slash) as a bare name", () => {
+      // A bare org/scope arg like @cullet has no kit name — the registry
+      // lookup will surface a "kit not found" error to the user.
+      expect(parseKitArg("@cullet")).toEqual({ name: "@cullet" });
     });
 
     it("parses scoped names using the @ after the package name", () => {

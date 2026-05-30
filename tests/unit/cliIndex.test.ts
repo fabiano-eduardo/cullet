@@ -34,7 +34,7 @@ function makeFakeCommander(options: {
 }
 
 async function importCliIndex(tag: string): Promise<void> {
-  const moduleUrl = new URL(`../../cli/index.ts?${tag}`, import.meta.url);
+  const moduleUrl = new URL(`../../packages/cli/src/cli/index.ts?${tag}`, import.meta.url);
   await import(/* @vite-ignore */ moduleUrl.href);
   await new Promise((resolve) => setImmediate(resolve));
 }
@@ -70,25 +70,25 @@ describe("cli index", () => {
     vi.doMock("node:fs/promises", () => ({
       readFile: vi.fn().mockResolvedValue('{"version":"0.2.0"}'),
     }));
-    vi.doMock("../../cli/utils/resolve.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/utils/resolve.js", () => ({
       findCulletPackageRoot: vi.fn().mockReturnValue("/repo"),
     }));
-    vi.doMock("../../cli/commands/list.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/list.js", () => ({
       createListCommand: vi.fn().mockReturnValue(commands.list),
     }));
-    vi.doMock("../../cli/commands/info.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/info.js", () => ({
       createInfoCommand: vi.fn().mockReturnValue(commands.info),
     }));
-    vi.doMock("../../cli/commands/full-control.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/full-control.js", () => ({
       createFullControlCommand: vi.fn().mockReturnValue(commands.fc),
     }));
-    vi.doMock("../../cli/commands/migrate.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
       createMigrateCommand: vi.fn().mockReturnValue(commands.migrate),
     }));
-    vi.doMock("../../cli/commands/telemetry.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
       createTelemetryCommand: vi.fn().mockReturnValue(commands.telemetry),
     }));
-    vi.doMock("../../cli/commands/doctor.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/doctor.js", () => ({
       createDoctorCommand: vi.fn().mockReturnValue(commands.doctor),
     }));
 
@@ -121,25 +121,25 @@ describe("cli index", () => {
     vi.doMock("node:fs/promises", () => ({
       readFile: vi.fn().mockResolvedValue('{"version":"0.2.0"}'),
     }));
-    vi.doMock("../../cli/utils/resolve.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/utils/resolve.js", () => ({
       findCulletPackageRoot: vi.fn().mockReturnValue("/repo"),
     }));
-    vi.doMock("../../cli/commands/list.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/list.js", () => ({
       createListCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/info.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/info.js", () => ({
       createInfoCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/full-control.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/full-control.js", () => ({
       createFullControlCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/migrate.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
       createMigrateCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/telemetry.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
       createTelemetryCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/doctor.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/doctor.js", () => ({
       createDoctorCommand: vi.fn().mockReturnValue({}),
     }));
 
@@ -166,25 +166,25 @@ describe("cli index", () => {
     vi.doMock("node:fs/promises", () => ({
       readFile: vi.fn().mockResolvedValue("{}"),
     }));
-    vi.doMock("../../cli/utils/resolve.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/utils/resolve.js", () => ({
       findCulletPackageRoot: vi.fn().mockReturnValue("/repo"),
     }));
-    vi.doMock("../../cli/commands/list.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/list.js", () => ({
       createListCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/info.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/info.js", () => ({
       createInfoCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/full-control.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/full-control.js", () => ({
       createFullControlCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/migrate.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
       createMigrateCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/telemetry.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
       createTelemetryCommand: vi.fn().mockReturnValue({}),
     }));
-    vi.doMock("../../cli/commands/doctor.js", () => ({
+    vi.doMock("../../packages/cli/src/cli/commands/doctor.js", () => ({
       createDoctorCommand: vi.fn().mockReturnValue({}),
     }));
 

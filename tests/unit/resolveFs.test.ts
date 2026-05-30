@@ -10,7 +10,7 @@ import {
   loadRegistry,
   resolveBuiltKitDir,
   resolveKitSourceDir,
-} from "../../cli/utils/resolve.js";
+} from "../../packages/cli/src/cli/utils/resolve.js";
 
 let root: string;
 let metaUrl: string;
@@ -120,6 +120,7 @@ describe("loadRegistry", () => {
       versions: ["1.0.0"],
       latest: "1.0.0",
       description: "ERP core",
+      npmName: "cullet/erp-core",
     });
   });
 

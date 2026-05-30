@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { upsertPathAlias } from "../../cli/utils/tsconfig.js";
+import { upsertPathAlias } from "../../packages/cli/src/cli/utils/tsconfig.js";
 
 const ALIAS = "cullet/erp-core";
 const TARGET = "./cullet/erp-core@1.0.0/index.ts";

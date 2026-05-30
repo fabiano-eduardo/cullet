@@ -3,7 +3,7 @@ import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { copyDirectoryTransactional } from "../../cli/commands/full-control.js";
+import { copyDirectoryTransactional } from "../../packages/cli/src/cli/commands/full-control.js";
 
 async function makeFixtureRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "cullet-fc-"));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listKits, loadKit, loadRegistry } from "../../registry/index.js";
+import { listKits, loadKit, loadRegistry } from "../../packages/cli/src/registry/index.js";
 
 describe("registry runtime API", () => {
   it("loads the published registry without requiring path access from the caller", async () => {
@@ -11,6 +11,13 @@ describe("registry runtime API", () => {
     });
   });
 
+  it("exposes npmName on each registry entry", async () => {
+    const registry = await loadRegistry();
+
+    expect(registry["erp-core"].npmName).toBe("@cullet/erp-core");
+    expect(registry["dummy-api"].npmName).toBe("@cullet/dummy-api");
+  });
+
   it("lists kits in a stable, typed shape", async () => {
     await expect(listKits()).resolves.toContainEqual({
       name: "erp-core",
@@ -18,6 +25,7 @@ describe("registry runtime API", () => {
         "Core ERP com clean architecture, temporalidade, policies e rule sets",
       latest: "1.0.0",
       versions: ["1.0.0"],
+      npmName: "@cullet/erp-core",
     });
   });
 

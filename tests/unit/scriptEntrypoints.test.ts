@@ -115,15 +115,15 @@ describe.sequential("script entrypoints", () => {
       await expect(runValidateKitAsScript()).resolves.toEqual([0]);
     });
 
-    it("executes sync-package-exports --check when package.json is already synchronized", async () => {
-      await expect(
-        runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"]),
-      ).resolves.toBe(0);
-    });
-
     it("scaffolds a new kit from the repository templates", async () => {
       const kitName = `coverage-kit-${Date.now()}-${importCounter}`;
-      const registryPath = join(repoRoot, "registry", "index.json");
+      const registryPath = join(
+        repoRoot,
+        "packages",
+        "cli",
+        "registry",
+        "index.json",
+      );
       const originalRegistry = await readFile(registryPath, "utf8");
       const kitDir = join(repoRoot, "kits", kitName);
       const previousArgv = [...process.argv];
@@ -147,7 +147,7 @@ describe.sequential("script entrypoints", () => {
         await importFresh("scripts/new-kit.mjs");
 
         await waitUntil(() => {
-          expect(logs.join("\n")).toContain("run npm run build");
+          expect(logs.join("\n")).toContain("npm --workspace cullet run build");
         });
 
         await waitUntil(async () => {
@@ -206,31 +206,6 @@ describe.sequential("script entrypoints", () => {
         logSpy.mockRestore();
         errorSpy.mockRestore();
         await rm(tarballPath, { force: true });
-      }
-    });
-  });
-
-  describe("error cases", () => {
-    it("fails sync-package-exports --check when package.json exports drift from the registry", async () => {
-      const packageJsonPath = join(repoRoot, "package.json");
-      const originalPackageJson = await readFile(packageJsonPath, "utf8");
-
-      try {
-        const packageJson = JSON.parse(originalPackageJson) as {
-          exports?: Record<string, unknown>;
-        };
-        delete packageJson.exports?.["./registry"];
-        await writeFile(
-          packageJsonPath,
-          `${JSON.stringify(packageJson, null, 2)}\n`,
-          "utf8",
-        );
-
-        await expect(
-          runScriptExpectExit("scripts/sync-package-exports.mjs", ["--check"]),
-        ).resolves.toBe(1);
-      } finally {
-        await writeFile(packageJsonPath, originalPackageJson, "utf8");
       }
     });
   });

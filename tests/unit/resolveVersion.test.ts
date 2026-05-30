@@ -4,7 +4,7 @@ import {
   resolveRegistryEntry,
   resolveVersion,
   type RegistryEntry,
-} from "../../cli/utils/resolve.js";
+} from "../../packages/cli/src/cli/utils/resolve.js";
 
 function makeEntry(overrides: Partial<RegistryEntry> = {}): RegistryEntry {
   return {

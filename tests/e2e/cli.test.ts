@@ -14,8 +14,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
-const cliEntry = join(repoRoot, "cli", "index.js");
-const distEntry = join(repoRoot, "dist", "cli", "index.js");
+const cliEntry = join(repoRoot, "packages", "cli", "index.js");
+const distEntry = join(repoRoot, "packages", "cli", "dist", "cli", "index.js");
 
 interface RunResult {
   stdout: string;
@@ -123,7 +123,13 @@ function createTemporaryMigrationFixture(): TemporaryMigrationFixture {
   const targetVersion = "2.0.0";
   const changedFile = "migration-applied.txt";
   const kitName = `e2e-migrate-${process.pid}-${Date.now()}`;
-  const registryPath = join(repoRoot, "registry", "index.json");
+  const registryPath = join(
+    repoRoot,
+    "packages",
+    "cli",
+    "registry",
+    "index.json",
+  );
   const originalRegistry = readFileSync(registryPath, "utf8");
   const kitRoot = join(repoRoot, "kits", kitName);
   const versionRoot = join(kitRoot, "versions", sourceVersion);

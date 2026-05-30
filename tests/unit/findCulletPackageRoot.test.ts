@@ -3,7 +3,7 @@ import { tmpdir, platform } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { findCulletPackageRoot } from "../../cli/utils/resolve.js";
+import { findCulletPackageRoot } from "../../packages/cli/src/cli/utils/resolve.js";
 
 let workspace: string;
 

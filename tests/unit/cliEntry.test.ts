@@ -5,12 +5,12 @@ import { fileURLToPath } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDoctorCommand } from "../../cli/commands/doctor.js";
-import { createFullControlCommand } from "../../cli/commands/full-control.js";
-import { createInfoCommand } from "../../cli/commands/info.js";
-import { createListCommand } from "../../cli/commands/list.js";
-import { createMigrateCommand } from "../../cli/commands/migrate.js";
-import { createTelemetryCommand } from "../../cli/commands/telemetry.js";
+import { createDoctorCommand } from "../../packages/cli/src/cli/commands/doctor.js";
+import { createFullControlCommand } from "../../packages/cli/src/cli/commands/full-control.js";
+import { createInfoCommand } from "../../packages/cli/src/cli/commands/info.js";
+import { createListCommand } from "../../packages/cli/src/cli/commands/list.js";
+import { createMigrateCommand } from "../../packages/cli/src/cli/commands/migrate.js";
+import { createTelemetryCommand } from "../../packages/cli/src/cli/commands/telemetry.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -158,7 +158,13 @@ async function createTemporaryMigrationFixture(): Promise<{
   const sourceVersion = "1.0.0";
   const targetVersion = "2.0.0";
   const kitName = `coverage-migrate-${Date.now()}`;
-  const registryPath = join(repoRoot, "registry", "index.json");
+  const registryPath = join(
+    repoRoot,
+    "packages",
+    "cli",
+    "registry",
+    "index.json",
+  );
   const originalRegistry = await readFile(registryPath, "utf8");
   const kitRoot = join(repoRoot, "kits", kitName);
   const versionRoot = join(kitRoot, "versions", sourceVersion);
