@@ -5,18 +5,25 @@ export default mergeConfig(
   baseVitestConfig,
   defineConfig({
     test: {
-      // Repo suite only. Kit specs (`kits/**/*.spec.ts`) run in their own
-      // invocation via `npm run test:kits` (see vitest.kits.config.ts) to keep
-      // this fast unit suite isolated from kit-level global state and worker
-      // contention.
+      // Repo suite only. Kit specs (`packages/*/src/**/*.spec.ts`) run in
+      // their own invocation via `npm run test:kits` (see
+      // vitest.kits.config.ts) to keep this fast unit suite isolated from
+      // kit-level global state and worker contention.
       include: ["tests/**/*.test.ts"],
-      exclude: ["tests/e2e/**", "kits/**", "node_modules", "dist"],
+      exclude: [
+        "tests/e2e/**",
+        "kits/**",
+        "node_modules",
+        "dist",
+        "packages/*/src/**/*.spec.ts",
+        "packages/**/dist",
+      ],
       testTimeout: 15_000,
       coverage: {
         provider: "v8",
         include: [
-          "cli/**/*.ts",
-          "registry/**/*.ts",
+          "packages/cli/src/cli/**/*.ts",
+          "packages/cli/src/registry/**/*.ts",
           "scripts/{validate-kit,sync-package-exports,new-kit,check-pack-contents}.mjs",
         ],
         reporter: ["text", "lcov"],
@@ -25,25 +32,25 @@ export default mergeConfig(
           functions: 70,
           statements: 70,
           branches: 66,
-          "cli/index.ts": {
+          "packages/cli/src/cli/index.ts": {
             lines: 100,
             functions: 100,
             statements: 100,
             branches: 75,
           },
-          "cli/commands/**/*.ts": {
+          "packages/cli/src/cli/commands/**/*.ts": {
             lines: 65,
             functions: 85,
             statements: 65,
             branches: 40,
           },
-          "cli/utils/**/*.ts": {
+          "packages/cli/src/cli/utils/**/*.ts": {
             lines: 90,
             functions: 95,
             statements: 89,
             branches: 75,
           },
-          "registry/**/*.ts": {
+          "packages/cli/src/registry/**/*.ts": {
             lines: 100,
             functions: 100,
             statements: 100,
