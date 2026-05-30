@@ -29,6 +29,8 @@
     "changeset": "changeset",
     "changeset:status": "changeset status --since=origin/main",
     "validate-kits": "node ./scripts/validate-kit.mjs",
+    "sync-kit-deps": "node ./scripts/sync-kit-deps.mjs",
+    "sync-kit-deps:check": "node ./scripts/sync-kit-deps.mjs --check",
     "new-kit": "node ./scripts/new-kit.mjs",
     "build": "npm run build --workspaces --if-present",
     "dev": "npm --workspace cullet run dev",
