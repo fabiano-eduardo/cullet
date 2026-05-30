@@ -1,4 +1,5 @@
 import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+import { assertValidAggregateVersion } from "../shared/aggregate-version";
 import { assertValidDate, cloneDate } from "../shared/temporal-guards";
 import { type ContractVersion, version } from "../versioning/version";
 
@@ -7,14 +8,6 @@ interface EntityState<TIdentifier> {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly aggregateVersion: number;
-}
-
-function assertValidAggregateVersion(aggregateVersion: number): void {
-  if (!Number.isInteger(aggregateVersion) || aggregateVersion < 0) {
-    throw new InvariantViolationException(
-      `aggregateVersion must be a non-negative integer. Received: ${aggregateVersion}`,
-    );
-  }
 }
 
 @version("1.0")
