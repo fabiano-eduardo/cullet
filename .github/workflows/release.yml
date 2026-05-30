@@ -40,8 +40,8 @@ jobs:
       - name: Validate kits
         run: npm run validate-kits
 
-      - name: Verify exports are in sync
-        run: npm run sync-exports:check
+      - name: Verify kit peerDependencies are in sync
+        run: npm run sync-kit-deps:check
 
       - name: Unit tests
         run: npm run test

@@ -51,8 +51,8 @@ jobs:
       - name: Validate kits
         run: npm run validate-kits
 
-      - name: Verify package.json exports are in sync with registry
-        run: npm run sync-exports:check
+      - name: Verify kit peerDependencies are in sync
+        run: npm run sync-kit-deps:check
 
   test:
     name: Test (Node ${{ matrix.node }} on ${{ matrix.os }})
