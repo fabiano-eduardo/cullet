@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { formatDependency } from "../utils/formatDependency.js";
-import { kitImportSpecifier, kitNodeModulesEntry } from "../utils/paths.js";
+import { fetchPublishedPackageInfo } from "../utils/npm-registry.js";
+import { kitNodeModulesEntry } from "../utils/paths.js";
 import {
   describeKitSuccessor,
   getDirectImportPeerDependencies,
@@ -91,6 +92,41 @@ function printKitContext(raw: string, options: { full: boolean }): void {
   }
 }
 
+async function printPublishedVersions(npmName: string): Promise<void> {
+  const published = await fetchPublishedPackageInfo(npmName);
+
+  console.log("");
+  console.log(pc.bold("Versoes publicadas no npm:"));
+
+  if (published === null) {
+    console.log(
+      pc.dim(
+        `  Nao foi possivel consultar o npm (offline ou ${npmName} ainda nao publicado).`,
+      ),
+    );
+    return;
+  }
+
+  const latest = published.distTags.latest;
+  const sorted = [...published.versions].reverse();
+  const preview = sorted.slice(0, 10);
+  console.log(pc.dim(`  ${preview.join(", ")}`));
+  if (sorted.length > preview.length) {
+    console.log(pc.dim(`  ... e mais ${sorted.length - preview.length} versao(oes)`));
+  }
+
+  const tags = Object.entries(published.distTags);
+  if (tags.length > 0) {
+    console.log(
+      pc.dim(
+        `  dist-tags: ${tags.map(([tag, value]) => `${tag}=${value}`).join(", ")}`,
+      ),
+    );
+  } else if (latest !== undefined) {
+    console.log(pc.dim(`  latest: ${latest}`));
+  }
+}
+
 export function createInfoCommand(): Command {
   return new Command("info")
     .alias("install")
@@ -114,16 +150,9 @@ export function createInfoCommand(): Command {
           const registry = await loadRegistry(import.meta.url);
           const entry = resolveRegistryEntry(registry, parsed.name);
           const version = resolveVersion(parsed.name, entry, parsed.version);
-          const isLatestImplicit =
-            parsed.version === undefined && version === entry.latest;
-          const importSpecifier = kitImportSpecifier(
-            parsed.name,
-            version,
-            isLatestImplicit,
-          );
+          const importSpecifier = entry.npmName;
           tracker.set("kit", parsed.name);
           tracker.set("resolvedVersion", version);
-          tracker.set("latestImplicit", isLatestImplicit);
 
           console.log(pc.green(`Kit validado: ${parsed.name}@${version}`));
 
@@ -155,6 +184,8 @@ export function createInfoCommand(): Command {
           console.log("");
           console.log(pc.bold("Importe direto no codigo:"));
           console.log(pc.cyan(`import { ... } from "${importSpecifier}";`));
+
+          await printPublishedVersions(entry.npmName);
 
           printCompatibility(meta);
 
@@ -195,8 +226,8 @@ export function createInfoCommand(): Command {
 
           const aliasResult = await upsertPathAlias(
             process.cwd(),
-            `cullet/${parsed.name}`,
-            kitNodeModulesEntry(parsed.name, version),
+            entry.npmName,
+            kitNodeModulesEntry(entry.npmName),
           );
 
           if (aliasResult.status === "missing-tsconfig") {
@@ -217,7 +248,7 @@ export function createInfoCommand(): Command {
 
           console.log(
             pc.green(
-              `Alias ${actionLabel}: cullet/${parsed.name} -> ${aliasResult.target}`,
+              `Alias ${actionLabel}: ${entry.npmName} -> ${aliasResult.target}`,
             ),
           );
         },
