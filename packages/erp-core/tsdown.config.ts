@@ -9,6 +9,7 @@ export default defineConfig({
     "src/policies/engines/v1/gate/index.ts",
     "src/exceptions/validation-field.ts",
   ],
+  external: ["zod", "pino"],
   dts: true,
   format: ["esm"],
   target: "node18",
