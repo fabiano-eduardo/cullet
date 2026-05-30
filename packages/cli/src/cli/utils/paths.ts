@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { resolveRepoRoot } from "../../shared/repo-root.js";
 
 export const KITS_DIR = "kits";
 export const DIST_DIR = "dist";
@@ -9,7 +10,13 @@ export function kitSrcDir(
   name: string,
   version: string,
 ): string {
-  return join(packageRoot, KITS_DIR, name, "versions", version);
+  return join(
+    resolveRepoRoot(packageRoot),
+    KITS_DIR,
+    name,
+    "versions",
+    version,
+  );
 }
 
 export function kitDistDir(
@@ -17,7 +24,14 @@ export function kitDistDir(
   name: string,
   version: string,
 ): string {
-  return join(packageRoot, DIST_DIR, "kits", name, "versions", version);
+  return join(
+    resolveRepoRoot(packageRoot),
+    DIST_DIR,
+    "kits",
+    name,
+    "versions",
+    version,
+  );
 }
 
 export function kitDistEntryRelative(

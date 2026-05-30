@@ -1,0 +1,14 @@
+{
+  "dummy-api": {
+    "versions": ["1.0.0"],
+    "latest": "1.0.0",
+    "description": "Kit dummy de API para validar o fluxo de criacao",
+    "npmName": "@cullet/dummy-api"
+  },
+  "erp-core": {
+    "versions": ["1.0.0"],
+    "latest": "1.0.0",
+    "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
+    "npmName": "@cullet/erp-core"
+  }
+}

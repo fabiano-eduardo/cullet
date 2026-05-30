@@ -2,6 +2,7 @@ import { constants, existsSync, readFileSync } from "node:fs";
 import { access, readFile } from "node:fs/promises";
 import { dirname, join, parse } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveRepoRoot } from "../shared/repo-root.js";
 
 const KITS_DIR = "kits";
 const DIST_KITS_DIR = "dist/kits";
@@ -15,6 +16,8 @@ export interface RegistryEntry {
   versions: string[];
   latest: string;
   description: string;
+  /** npm package name for this kit (e.g. "@cullet/erp-core"). Falls back to "cullet/<name>" for legacy entries without the field. */
+  npmName: string;
 }
 
 export type Registry = Record<string, RegistryEntry>;
@@ -75,7 +78,13 @@ const DEPRECATION_META_DIVERGENCE_WARNING_CODE =
 const warnedDeprecationMetaDivergences = new Set<string>();
 
 function kitSrcDir(packageRoot: string, name: string, version: string): string {
-  return join(packageRoot, KITS_DIR, name, "versions", version);
+  return join(
+    resolveRepoRoot(packageRoot),
+    KITS_DIR,
+    name,
+    "versions",
+    version,
+  );
 }
 
 function kitDistDir(
@@ -83,7 +92,13 @@ function kitDistDir(
   name: string,
   version: string,
 ): string {
-  return join(packageRoot, DIST_KITS_DIR, name, "versions", version);
+  return join(
+    resolveRepoRoot(packageRoot),
+    DIST_KITS_DIR,
+    name,
+    "versions",
+    version,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -146,10 +161,14 @@ function parseRegistry(data: unknown): Registry {
       );
     }
 
+    const npmName =
+      typeof entry.npmName === "string" ? entry.npmName : `cullet/${name}`;
+
     registry[name] = {
       versions: [...versions],
       latest,
       description,
+      npmName,
     };
   }
 

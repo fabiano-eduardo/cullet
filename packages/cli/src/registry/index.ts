@@ -40,6 +40,7 @@ export interface CatalogKitSummary {
   description: string;
   latest: string;
   versions: string[];
+  npmName: string;
 }
 
 export interface CatalogKitContext {
@@ -74,6 +75,7 @@ export async function listKits(): Promise<CatalogKitSummary[]> {
       description: entry.description,
       latest: entry.latest,
       versions: [...entry.versions],
+      npmName: entry.npmName,
     }));
 }
 
