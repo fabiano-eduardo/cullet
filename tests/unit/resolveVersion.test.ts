@@ -11,6 +11,7 @@ function makeEntry(overrides: Partial<RegistryEntry> = {}): RegistryEntry {
     versions: ["1.0.0", "1.1.0", "2.0.0"],
     latest: "1.1.0",
     description: "test kit",
+    npmName: "@cullet/kit",
     ...overrides,
   };
 }

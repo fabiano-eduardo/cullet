@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   disableTelemetry,
@@ -18,6 +19,13 @@ import {
   resolveTelemetryLogPath,
   runCommandWithTelemetry,
 } from "../../packages/cli/src/cli/utils/telemetry.js";
+
+// findCulletPackageRoot caminha para cima procurando o pacote "cullet"
+// (packages/cli). Os testes precisam de uma URL de modulo dentro desse pacote,
+// nao a URL do proprio arquivo de teste (que vive na raiz do workspace).
+const cliMetaUrl = pathToFileURL(
+  join(process.cwd(), "packages", "cli", "src", "cli", "utils", "telemetry.ts"),
+).href;
 
 let homeDir: string;
 
@@ -147,7 +155,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "fc",
           success: true,
@@ -212,7 +220,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "info",
           success: true,
@@ -234,7 +242,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await enableTelemetry({ env });
     await emitTelemetryIfEnabled(
-      import.meta.url,
+      cliMetaUrl,
       {
         command: "info",
         success: true,
@@ -258,7 +266,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "info",
           success: true,
@@ -305,7 +313,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "info",
           success: true,
@@ -343,7 +351,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "info",
           success: true,
@@ -376,7 +384,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "list",
           success: true,
@@ -407,7 +415,7 @@ describe("emitTelemetryIfEnabled", () => {
 
     await expect(
       emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "doctor",
           success: true,
@@ -455,7 +463,7 @@ describe("emitTelemetryIfEnabled", () => {
       });
 
       const result = emitTelemetryIfEnabled(
-        import.meta.url,
+        cliMetaUrl,
         {
           command: "doctor",
           success: true,
@@ -487,7 +495,7 @@ describe("runCommandWithTelemetry", () => {
     await enableTelemetry({ env });
 
     await runCommandWithTelemetry({
-      fromMetaUrl: import.meta.url,
+      fromMetaUrl: cliMetaUrl,
       command: "info",
       env,
       async handler(tracker) {
@@ -498,7 +506,7 @@ describe("runCommandWithTelemetry", () => {
 
     await expect(
       runCommandWithTelemetry({
-        fromMetaUrl: import.meta.url,
+        fromMetaUrl: cliMetaUrl,
         command: "migrate",
         env,
         async handler(tracker) {
