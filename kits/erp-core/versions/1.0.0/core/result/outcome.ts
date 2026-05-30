@@ -1,5 +1,7 @@
 // core/domain/outcome.ts
 
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+
 /**
  * Outcome — Business decision abstraction.
  *
@@ -109,10 +111,17 @@ export class Outcome<S extends string, D = undefined> {
   match<THandlers extends { [K in S]: (outcome: Outcome<K, D>) => unknown }>(
     handlers: THandlers,
   ): ReturnType<THandlers[S]> {
-    const handler = (handlers as Record<string, (o: unknown) => unknown>)[
-      this.status
-    ];
-    // Safe: at runtime this.status always matches exactly one handler key
+    const handler = (
+      handlers as Partial<Record<string, (o: unknown) => unknown>>
+    )[this.status];
+
+    if (typeof handler !== "function") {
+      const availableStatuses = Object.keys(handlers);
+      throw new InvariantViolationException(
+        `Outcome.match is missing a handler for runtime status "${this.status}". Available handlers: ${availableStatuses.join(", ") || "(none)"}`,
+      );
+    }
+
     return handler(this) as ReturnType<THandlers[S]>;
   }
 

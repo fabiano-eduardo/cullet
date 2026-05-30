@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
 import { Outcome } from "./outcome";
 
 describe("Outcome", () => {
@@ -156,6 +157,26 @@ describe("Outcome", () => {
       });
 
       expect(result).toBe("failed: no balance");
+    });
+
+    it("throws an invariant violation when the runtime status has no handler", () => {
+      const persistedStatus = "ESCALATED" as unknown as "APPROVED" | "REJECTED";
+      const outcome = Outcome.of(persistedStatus, undefined);
+
+      expect(() =>
+        outcome.match({
+          APPROVED: () => "ok",
+          REJECTED: () => "failed",
+        }),
+      ).toThrowError(InvariantViolationException);
+      expect(() =>
+        outcome.match({
+          APPROVED: () => "ok",
+          REJECTED: () => "failed",
+        }),
+      ).toThrow(
+        'Outcome.match is missing a handler for runtime status "ESCALATED". Available handlers: APPROVED, REJECTED',
+      );
     });
   });
 
