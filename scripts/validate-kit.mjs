@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Valida cada kit em kits/<name>/versions/<v>/ contra kits/kit-spec.schema.json
+// Valida cada kit workspace em packages/<name>/ contra scripts/kit-spec.schema.json
 // e contra as regras de lint declaradas em meta.json.lint.
 //
 // Saída: relatório agrupado por kit; exit code != 0 se houver erros (warnings não bloqueiam).
@@ -19,8 +19,8 @@ import {
 const scriptPath = fileURLToPath(import.meta.url);
 const here = dirname(scriptPath);
 const repoRoot = resolve(here, "..");
-const kitsRoot = resolve(repoRoot, "kits");
-const schemaPath = resolve(kitsRoot, "kit-spec.schema.json");
+const packagesRoot = resolve(repoRoot, "packages");
+const schemaPath = resolve(here, "kit-spec.schema.json");
 
 const DEFAULT_LINT = {
   nodenextImports: "error",
@@ -54,6 +54,54 @@ async function exists(p) {
   return fs.pathExists(p);
 }
 
+function parseArgs(argv = process.argv.slice(2)) {
+  let filter;
+  let packageDir;
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+
+    if (arg === "--filter") {
+      filter = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--filter=")) {
+      filter = arg.slice("--filter=".length);
+      continue;
+    }
+
+    if (arg === "--package") {
+      packageDir = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--package=")) {
+      packageDir = arg.slice("--package=".length);
+      continue;
+    }
+
+    throw new Error(
+      `unknown argument: ${arg}. Use --filter <package-name> and/or --package <dir>.`,
+    );
+  }
+
+  if (filter !== undefined && filter.trim().length === 0) {
+    throw new Error("--filter requires a non-empty value.");
+  }
+
+  if (packageDir !== undefined && packageDir.trim().length === 0) {
+    throw new Error("--package requires a non-empty value.");
+  }
+
+  return {
+    filter: filter?.trim(),
+    packageDir: packageDir?.trim(),
+  };
+}
+
 function findDuplicateValues(values) {
   const seen = new Set();
   const duplicates = new Set();
@@ -69,29 +117,78 @@ function findDuplicateValues(values) {
   return [...duplicates];
 }
 
-async function findKitMetas() {
+async function readJson(path) {
+  return JSON.parse(await readFile(path, "utf8"));
+}
+
+async function buildKitEntry(packageDir) {
+  const packageJsonPath = join(packageDir, "package.json");
+  const metaPath = join(packageDir, "meta.json");
+  const sourceDir = join(packageDir, "src");
+
+  if (
+    !(await exists(packageDir)) ||
+    !(await exists(packageJsonPath)) ||
+    !(await exists(metaPath)) ||
+    !(await exists(sourceDir))
+  ) {
+    return null;
+  }
+
+  const packageJson = await readJson(packageJsonPath);
+
+  return {
+    kitName: packageJson.name?.split("/").at(-1) ?? packageJson.name,
+    packageName: packageJson.name,
+    version: packageJson.version,
+    packageDir,
+    packageJsonPath,
+    metaPath,
+    sourceDir,
+  };
+}
+
+function matchesFilter(kit, filter) {
+  if (filter === undefined) return true;
+
+  return [
+    kit.packageName,
+    kit.kitName,
+    relative(repoRoot, kit.packageDir),
+  ].includes(filter);
+}
+
+async function findKitMetas(options = {}) {
+  const { filter, packageDir } = options;
+
+  if (packageDir !== undefined) {
+    const resolvedPackageDir = resolve(process.cwd(), packageDir);
+    const kit = await buildKitEntry(resolvedPackageDir);
+
+    if (kit === null) {
+      throw new Error(
+        `package directory must contain package.json, meta.json and src/: ${relative(repoRoot, resolvedPackageDir)}`,
+      );
+    }
+
+    return matchesFilter(kit, filter) ? [kit] : [];
+  }
+
   const out = [];
-  const kits = await readdir(kitsRoot, { withFileTypes: true });
-  for (const k of kits) {
-    if (!k.isDirectory()) continue;
-    const versionsDir = join(kitsRoot, k.name, "versions");
-    if (!(await exists(versionsDir))) continue;
-    const versions = await readdir(versionsDir, { withFileTypes: true });
-    for (const v of versions) {
-      if (!v.isDirectory()) continue;
-      const kitDir = join(versionsDir, v.name);
-      const metaPath = join(kitDir, "meta.json");
-      if (await exists(metaPath)) {
-        out.push({
-          kitName: k.name,
-          version: v.name,
-          kitDir,
-          metaPath,
-        });
-      }
+  const packageEntries = await readdir(packagesRoot, { withFileTypes: true });
+
+  for (const packageEntry of packageEntries) {
+    if (!packageEntry.isDirectory() || packageEntry.name === "cli") continue;
+
+    const kit = await buildKitEntry(join(packagesRoot, packageEntry.name));
+    if (kit !== null && matchesFilter(kit, filter)) {
+      out.push(kit);
     }
   }
-  return out;
+
+  return out.sort((left, right) =>
+    left.packageName.localeCompare(right.packageName),
+  );
 }
 
 // --- Schema validator (lean, hand-rolled for this schema's shape) ---
@@ -270,6 +367,10 @@ function bareRoot(spec) {
 function resolveRelative(fromFile, spec) {
   // Mirror what TS bundler resolution does for our limited use: drop trailing /
   return resolve(dirname(fromFile), spec);
+}
+
+function isAllowedPackageRootImport(kit, targetPath) {
+  return resolve(targetPath) === resolve(kit.packageJsonPath);
 }
 
 function pushFinding(findings, severity, msg, file) {
@@ -470,7 +571,7 @@ async function validateObservabilityPort(
   const severity = level(lint, "observabilityPorts");
   if (severity === "off") return;
 
-  const filePath = join(kit.kitDir, relPath);
+  const filePath = join(kit.sourceDir, relPath);
   if (!(await exists(filePath))) {
     pushFinding(
       findings,
@@ -529,9 +630,9 @@ async function validateKit(kit, schema) {
   if (schemaErrors.length > 0) return { kit, findings };
 
   // Existence checks
-  const readmePath = join(kit.kitDir, meta.docs.readme);
-  const contextPath = join(kit.kitDir, meta.docs.context);
-  const entryPath = join(kit.kitDir, meta.entryPoint);
+  const readmePath = join(kit.packageDir, meta.docs.readme);
+  const contextPath = join(kit.packageDir, meta.docs.context);
+  const entryPath = await resolveEntryPointPath(kit, meta.entryPoint);
 
   for (const [label, p] of [
     ["docs.readme", readmePath],
@@ -541,7 +642,7 @@ async function validateKit(kit, schema) {
     if (!(await exists(p))) {
       findings.push({
         severity: "error",
-        msg: `${label}: file not found at ${relative(kit.kitDir, p)}`,
+        msg: `${label}: file not found at ${relative(kit.packageDir, p)}`,
       });
       continue;
     }
@@ -571,11 +672,11 @@ async function validateKit(kit, schema) {
   ];
   const compatibilityDependencySet = new Set(compatibilityDependencyNames);
 
-  const tsFiles = await walkFiles(kit.kitDir, {
+  const tsFiles = await walkFiles(kit.sourceDir, {
     extensions: new Set([".ts"]),
   });
-  const allFiles = await walkFiles(kit.kitDir);
-  const kitDirResolved = resolve(kit.kitDir);
+  const allFiles = await walkFiles(kit.sourceDir);
+  const kitDirResolved = resolve(kit.sourceDir);
 
   for (const dependencyName of externalDeps) {
     if (!compatibilityDependencySet.has(dependencyName)) {
@@ -583,7 +684,7 @@ async function validateKit(kit, schema) {
         findings,
         "error",
         `compatibility matrix is missing dependency "${dependencyName}" declared in philosophy.externalDeps`,
-        relative(kit.kitDir, kit.metaPath),
+        relative(kit.packageDir, kit.metaPath),
       );
     }
   }
@@ -595,7 +696,7 @@ async function validateKit(kit, schema) {
       findings,
       "error",
       `compatibility.directImport.peerDependencies declares dependency "${duplicateName}" more than once`,
-      relative(kit.kitDir, kit.metaPath),
+      relative(kit.packageDir, kit.metaPath),
     );
   }
 
@@ -604,7 +705,7 @@ async function validateKit(kit, schema) {
       findings,
       "error",
       `compatibility.fullControl.dependencies declares dependency "${duplicateName}" more than once`,
-      relative(kit.kitDir, kit.metaPath),
+      relative(kit.packageDir, kit.metaPath),
     );
   }
 
@@ -630,7 +731,7 @@ async function validateKit(kit, schema) {
           findings,
           contextLint,
           `KIT_CONTEXT.md is missing required structured section [${sectionId}]`,
-          relative(kit.kitDir, contextPath),
+          relative(kit.packageDir, contextPath),
         );
       }
     }
@@ -640,7 +741,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md repeats structured section [${duplicateId}]`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.packageDir, contextPath),
       );
     }
 
@@ -653,7 +754,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md uses unknown structured section [${unexpectedId}]`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.packageDir, contextPath),
       );
     }
 
@@ -662,7 +763,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         "KIT_CONTEXT.md requires structured headings in the form ## [section-id] Title",
-        relative(kit.kitDir, contextPath),
+        relative(kit.packageDir, contextPath),
       );
     }
 
@@ -671,7 +772,7 @@ async function validateKit(kit, schema) {
         findings,
         contextLint,
         `KIT_CONTEXT.md should stay between 200 and 400 tokens; found ${tokenCount}`,
-        relative(kit.kitDir, contextPath),
+        relative(kit.packageDir, contextPath),
       );
     }
   }
@@ -679,7 +780,7 @@ async function validateKit(kit, schema) {
   const depthLint = level(lint, "folderDepth");
   if (depthLint !== "off") {
     for (const file of allFiles) {
-      const rel = relative(kit.kitDir, file);
+      const rel = relative(kit.sourceDir, file);
       const depth = splitRelative(rel).length - 1;
       if (depth > 5) {
         pushFinding(
@@ -695,11 +796,11 @@ async function validateKit(kit, schema) {
   const requiredCoreTestsLint = level(lint, "requiredCoreTests");
   if (requiredCoreTestsLint !== "off") {
     const hasDomainSource = tsFiles.some((file) => {
-      const rel = relative(kit.kitDir, file);
+      const rel = relative(kit.sourceDir, file);
       return rel.startsWith("core/domain/") && !isSpecFile(file);
     });
     const hasApplicationSource = tsFiles.some((file) => {
-      const rel = relative(kit.kitDir, file);
+      const rel = relative(kit.sourceDir, file);
       return (
         rel.startsWith("core/application/") &&
         !rel.startsWith("core/application/ports/") &&
@@ -708,12 +809,12 @@ async function validateKit(kit, schema) {
     });
     const hasDomainSpec = tsFiles.some(
       (file) =>
-        relative(kit.kitDir, file).startsWith("core/domain/") &&
+        relative(kit.sourceDir, file).startsWith("core/domain/") &&
         file.endsWith(".spec.ts"),
     );
     const hasApplicationSpec = tsFiles.some(
       (file) =>
-        relative(kit.kitDir, file).startsWith("core/application/") &&
+        relative(kit.sourceDir, file).startsWith("core/application/") &&
         file.endsWith(".spec.ts"),
     );
 
@@ -789,7 +890,7 @@ async function validateKit(kit, schema) {
   }
 
   const packageLint = level(lint, "noObservabilityRuntimeDeps");
-  const kitPackagePath = join(kit.kitDir, "package.json");
+  const kitPackagePath = kit.packageJsonPath;
   if (packageLint !== "off" && (await exists(kitPackagePath))) {
     const pkg = JSON.parse(await readFile(kitPackagePath, "utf8"));
     const dependencySections = [
@@ -812,7 +913,7 @@ async function validateKit(kit, schema) {
   }
 
   for (const file of tsFiles) {
-    const rel = relative(kit.kitDir, file);
+    const rel = relative(kit.sourceDir, file);
     const isSpec = isSpecFile(file);
     const src = await readFile(file, "utf8");
     const sourceFile = parseTsSource(file, src);
@@ -845,7 +946,10 @@ async function validateKit(kit, schema) {
         const lvl = level(lint, "noUpwardImports");
         if (lvl !== "off") {
           const target = resolveRelative(file, spec);
-          if (!target.startsWith(kitDirResolved)) {
+          if (
+            !target.startsWith(kitDirResolved) &&
+            !isAllowedPackageRootImport(kit, target)
+          ) {
             findings.push({
               severity: lvl,
               msg: `import escapes kit root: "${spec}"`,
@@ -885,7 +989,7 @@ async function validateKit(kit, schema) {
 
     const architectureLint = level(lint, "architectureLayers");
     if (architectureLint !== "off") {
-      const sourceLayer = getCoreLayerFromPath(kit.kitDir, file);
+      const sourceLayer = getCoreLayerFromPath(kit.sourceDir, file);
       for (const spec of imports) {
         if (sourceLayer === "domain" && !isSpec && isBare(spec)) {
           pushFinding(
@@ -900,7 +1004,7 @@ async function validateKit(kit, schema) {
         if (!isRelative(spec)) continue;
 
         const target = resolveRelative(file, spec);
-        const targetLayer = getCoreLayerFromPath(kit.kitDir, target);
+        const targetLayer = getCoreLayerFromPath(kit.sourceDir, target);
 
         if (sourceLayer === "domain" && !isSpec) {
           if (targetLayer === "application" || targetLayer === "adapters") {
@@ -1102,12 +1206,33 @@ async function validateKit(kit, schema) {
   return { kit, findings };
 }
 
-async function main() {
+async function resolveEntryPointPath(kit, entryPoint) {
+  const packageRelativePath = join(kit.packageDir, entryPoint);
+  if (entryPoint.startsWith("src/") || (await exists(packageRelativePath))) {
+    return packageRelativePath;
+  }
+
+  return join(kit.sourceDir, entryPoint);
+}
+
+async function main(argv = process.argv.slice(2)) {
+  let options;
+
+  try {
+    options = parseArgs(argv);
+  } catch (err) {
+    console.error(pc.red(`validate-kit: ${err.message}`));
+    return 1;
+  }
+
   const schema = JSON.parse(await readFile(schemaPath, "utf8"));
-  const kits = await findKitMetas();
+  const kits = await findKitMetas(options);
   if (kits.length === 0) {
-    console.error(pc.red("no kits found under kits/*/versions/*/meta.json"));
-    process.exit(1);
+    const target = options.packageDir
+      ? relative(repoRoot, resolve(process.cwd(), options.packageDir))
+      : (options.filter ?? "packages/*");
+    console.error(pc.red(`no kits found for ${target}`));
+    return 1;
   }
 
   let errors = 0;
@@ -1120,7 +1245,7 @@ async function main() {
     errors += errs.length;
     warnings += warns.length;
 
-    const header = `${kit.kitName}@${kit.version}`;
+    const header = `${kit.packageName}@${kit.version}`;
     if (findings.length === 0) {
       console.log(
         `${pc.green("✓")} ${pc.bold(header)} ${pc.dim("(no findings)")}`,
@@ -1145,12 +1270,14 @@ async function main() {
       `\n${kits.length} kit(s) scanned — ${errors} error(s), ${warnings} warning(s).`,
     ),
   );
-  process.exit(errors > 0 ? 1 : 0);
+  return errors > 0 ? 1 : 0;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
-  main().catch((err) => {
+  try {
+    process.exit(await main());
+  } catch (err) {
     console.error(pc.red("validate-kit crashed:"), err);
     process.exit(2);
-  });
+  }
 }
