@@ -20,6 +20,7 @@ import { Result } from "../../result/result";
 import { isValidDate } from "../../shared/temporal-guards";
 
 import type {
+  PolicyEvent,
   PolicyEvaluationFailedEvent,
   PolicyReporter,
 } from "../../config/policy-reporter";
@@ -108,6 +109,12 @@ export class PolicyService {
     this.#reporter = this.options.reporter ?? new SilentPolicyReporter();
   }
 
+  #reportSafely(event: PolicyEvent): void {
+    try {
+      this.#reporter.report(event);
+    } catch {}
+  }
+
   private resolveEvaluationNow(seed: ContextSeed): Result<Date, string> {
     const candidate = seed.fields["now"];
 
@@ -128,7 +135,7 @@ export class PolicyService {
     const result = await this.#evaluate(input);
     if (result.isErr()) {
       const error = result.errorOrNull()!;
-      this.#reporter.report({
+      this.#reportSafely({
         kind: "policy-evaluation-failed",
         level: "error",
         policyKey: "policyKey" in error ? error.policyKey : undefined,
@@ -139,7 +146,7 @@ export class PolicyService {
       });
     } else {
       const ok = result.getOrNull()!;
-      this.#reporter.report({
+      this.#reportSafely({
         kind: "policy-evaluation-completed",
         level: "info",
         policyKey: ok.ref.policyKey,
@@ -216,7 +223,7 @@ export class PolicyService {
       catalogEntry: versionedCatalogEntry,
     } = definitionResult.getOrNull()!;
 
-    this.#reporter.report({
+    this.#reportSafely({
       kind: "policy-resolution",
       level: "info",
       policyKey,

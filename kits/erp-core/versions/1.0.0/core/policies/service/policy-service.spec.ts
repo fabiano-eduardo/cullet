@@ -21,6 +21,7 @@ import {
   type VersionedGateEngine,
 } from "../engines";
 import { PolicyResolver } from "../resolver";
+import type { PolicyReporter } from "../../config/policy-reporter";
 import { Outcome } from "../../result/outcome";
 import { Result } from "../../result/result";
 
@@ -240,6 +241,16 @@ function buildComputeService(params: {
   });
 }
 
+function makeThrowingReporter(error: Error): PolicyReporter & {
+  readonly report: ReturnType<typeof vi.fn<PolicyReporter["report"]>>;
+} {
+  return {
+    report: vi.fn<PolicyReporter["report"]>(() => {
+      throw error;
+    }),
+  };
+}
+
 type PolicyCatalogVersionParams = Parameters<PolicyCatalog["getVersioned"]>[0];
 
 class TrackingPolicyCatalog extends PolicyCatalog {
@@ -290,6 +301,29 @@ describe("PolicyService", () => {
     expect(result.getOrNull()!.ref.gateEngineVersion).toBe(2);
     expect(gateEngineV1.evaluate).not.toHaveBeenCalled();
     expect(gateEngineV2.evaluate).toHaveBeenCalledOnce();
+  });
+
+  it("returns the successful evaluation even when the reporter throws", async () => {
+    const gateEngines = new GateEngineRegistry();
+    gateEngines.register(makeGateEngine(1, "ALLOW"));
+    const reporter = makeThrowingReporter(new Error("reporter exploded"));
+
+    const service = buildService(makeGateDefinition(1), gateEngines, {
+      reporter,
+    });
+    const result = await service.evaluate({
+      decisionId: asPolicyDecisionId("decision-report-success"),
+      policyKey: "financial.charges.charge_eligibility",
+      scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
+      contextVersion: 1,
+      seed: makeSeed({
+        now: new Date("2026-01-01T00:00:00Z"),
+      }),
+    });
+
+    expect(result.isOk()).toBe(true);
+    expect(result.getOrNull()!.decision.status).toBe("ALLOW");
+    expect(reporter.report).toHaveBeenCalledTimes(2);
   });
 
   it("returns an error when no gate engine is registered for the definition version", async () => {
@@ -380,8 +414,11 @@ describe("PolicyService", () => {
   it("returns an error when seed.fields.now is not a valid Date", async () => {
     const gateEngines = new GateEngineRegistry();
     gateEngines.register(makeGateEngine(1, "ALLOW"));
+    const reporter = makeThrowingReporter(new Error("reporter exploded"));
 
-    const service = buildService(makeGateDefinition(1), gateEngines);
+    const service = buildService(makeGateDefinition(1), gateEngines, {
+      reporter,
+    });
     const result = await service.evaluate({
       decisionId: asPolicyDecisionId("decision-invalid-now"),
       policyKey: "financial.charges.charge_eligibility",
@@ -399,6 +436,7 @@ describe("PolicyService", () => {
       policyKey: "financial.charges.charge_eligibility",
       cause: "seed.fields.now must be a valid Date when provided",
     });
+    expect(reporter.report).toHaveBeenCalledOnce();
   });
 
   it("allows configuring the future asOf window on PolicyService", async () => {
