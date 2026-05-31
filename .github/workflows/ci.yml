@@ -48,6 +48,9 @@ jobs:
       - name: Verify kit peerDependencies are in sync
         run: npm run sync-kit-deps:check
 
+      - name: Verify kit version constants are in sync
+        run: npm run sync-kit-version:check
+
   packages:
     name: Package ${{ matrix.package }}
     needs: repository

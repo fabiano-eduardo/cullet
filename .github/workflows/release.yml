@@ -43,6 +43,9 @@ jobs:
       - name: Verify kit peerDependencies are in sync
         run: npm run sync-kit-deps:check
 
+      - name: Verify kit version constants are in sync
+        run: npm run sync-kit-version:check
+
       - name: Unit tests
         run: npm run test
 
@@ -55,16 +58,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Validate publishable tarball
+      - name: Validate publishable tarballs (workspace)
         run: npm run release:dry-run
 
-      - name: Create release PR or publish package
+      - name: Create release PR or publish packages
         id: changesets
         uses: changesets/action@v1
         with:
           commit: "chore: release cullet"
           title: "chore: release cullet"
+          version: npm run changeset:version
           publish: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
