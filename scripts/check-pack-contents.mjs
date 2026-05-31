@@ -4,6 +4,7 @@
 //
 // Uso:
 //   node scripts/check-pack-contents.mjs [--package packages/cli] [tarball.tgz]
+//   node scripts/check-pack-contents.mjs --all
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
@@ -15,12 +16,21 @@ import {
   readPackageManifest,
 } from "./package-tarball.mjs";
 
+const scriptPath = fileURLToPath(import.meta.url);
+const repoRoot = resolve(dirname(scriptPath), "..");
+
 function parseArgs(argv = process.argv.slice(2)) {
   let packageDir = process.cwd();
   let tarballPath;
+  let validateAll = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+
+    if (arg === "--all") {
+      validateAll = true;
+      continue;
+    }
 
     if (arg === "--package") {
       packageDir = argv[i + 1];
@@ -49,6 +59,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   return {
     packageRoot: resolve(process.cwd(), packageDir),
     tarballPath,
+    validateAll,
   };
 }
 
@@ -58,30 +69,85 @@ function normalizeManifestPath(pathLike) {
   return pathLike.replace(/^\.\//, "");
 }
 
-function findLatestTarball(dir) {
-  const candidates = readdirSync(dir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".tgz"))
-    .map((entry) => resolve(dir, entry.name))
-    .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
+function getWorkspacePatterns(rootManifest) {
+  if (Array.isArray(rootManifest.workspaces)) {
+    return rootManifest.workspaces;
+  }
 
-  return candidates[0];
+  if (
+    rootManifest.workspaces !== null &&
+    typeof rootManifest.workspaces === "object" &&
+    Array.isArray(rootManifest.workspaces.packages)
+  ) {
+    return rootManifest.workspaces.packages;
+  }
+
+  return [];
 }
 
-function resolveTarballPath(rawPath, packageRoot) {
+function shouldValidateAllByDefault(packageRoot) {
+  const packageJsonPath = resolve(packageRoot, "package.json");
+  if (!existsSync(packageJsonPath)) {
+    return false;
+  }
+
+  const pkg = readPackageManifest(packageJsonPath);
+  return pkg.private === true && getWorkspacePatterns(pkg).length > 0;
+}
+
+function collectWorkspacePackageRoots(rootDir = repoRoot) {
+  const rootManifestPath = resolve(rootDir, "package.json");
+  if (!existsSync(rootManifestPath)) {
+    throw new Error(`package.json nao encontrado em ${rootDir}.`);
+  }
+
+  const rootManifest = readPackageManifest(rootManifestPath);
+  const packageRoots = new Set();
+
+  for (const pattern of getWorkspacePatterns(rootManifest)) {
+    if (typeof pattern !== "string") continue;
+
+    if (pattern.endsWith("/*")) {
+      const workspaceDir = resolve(rootDir, pattern.slice(0, -2));
+      if (!existsSync(workspaceDir) || !statSync(workspaceDir).isDirectory()) {
+        continue;
+      }
+
+      for (const entry of readdirSync(workspaceDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+
+        const candidate = resolve(workspaceDir, entry.name);
+        const manifestPath = resolve(candidate, "package.json");
+        if (!existsSync(manifestPath)) continue;
+
+        const manifest = readPackageManifest(manifestPath);
+        if (manifest.private === true) continue;
+        packageRoots.add(candidate);
+      }
+
+      continue;
+    }
+
+    const candidate = resolve(rootDir, pattern);
+    const manifestPath = resolve(candidate, "package.json");
+    if (!existsSync(manifestPath)) continue;
+
+    const manifest = readPackageManifest(manifestPath);
+    if (manifest.private === true) continue;
+    packageRoots.add(candidate);
+  }
+
+  return [...packageRoots].sort((left, right) =>
+    relative(rootDir, left).localeCompare(relative(rootDir, right)),
+  );
+}
+
+function resolveTarballPath(rawPath) {
   if (typeof rawPath === "string" && rawPath.trim().length > 0) {
     return resolve(process.cwd(), rawPath.trim());
   }
 
-  const pkg = readPackageManifest(resolve(packageRoot, "package.json"));
-  const expected = resolve(packageRoot, expectedTarballName(pkg));
-  if (existsSync(expected)) return expected;
-
-  const latestTarball = findLatestTarball(packageRoot);
-  if (latestTarball !== undefined) return latestTarball;
-
-  throw new Error(
-    "Nenhum tarball .tgz encontrado. Rode `npm pack` no pacote antes de validar o conteudo.",
-  );
+  return null;
 }
 
 function collectExportTargets(exportsValue, required) {
@@ -122,6 +188,33 @@ function isFileEntry(packageRoot, relativePath) {
   return existsSync(absolutePath) && statSync(absolutePath).isFile();
 }
 
+function collectDirectoryEntries(packageRoot, relativeDir) {
+  const directoryPath = resolve(packageRoot, relativeDir);
+  if (!existsSync(directoryPath) || !statSync(directoryPath).isDirectory()) {
+    return [];
+  }
+
+  const collected = [];
+  for (const entry of readdirSync(directoryPath, { withFileTypes: true })) {
+    const relativeEntry = normalizeTarballEntry(
+      relative(packageRoot, resolve(directoryPath, entry.name)),
+    );
+
+    if (entry.isDirectory()) {
+      collected.push(...collectDirectoryEntries(packageRoot, relativeEntry));
+      continue;
+    }
+
+    if (!entry.isFile() || isTestOnlyEntry(relativeEntry)) {
+      continue;
+    }
+
+    collected.push(relativeEntry);
+  }
+
+  return collected;
+}
+
 async function collectRequiredEntries(packageRoot) {
   const packageJsonPath = resolve(packageRoot, "package.json");
   if (!existsSync(packageJsonPath)) {
@@ -144,8 +237,20 @@ async function collectRequiredEntries(packageRoot) {
 
   for (const fileEntry of pkg.files ?? []) {
     const normalized = normalizeManifestPath(fileEntry);
-    if (normalized !== null && isFileEntry(packageRoot, normalized)) {
+    if (normalized === null || normalized.startsWith("!")) {
+      continue;
+    }
+
+    if (isFileEntry(packageRoot, normalized)) {
       required.add(normalized);
+      continue;
+    }
+
+    for (const directoryEntry of collectDirectoryEntries(
+      packageRoot,
+      normalized,
+    )) {
+      required.add(directoryEntry);
     }
   }
 
@@ -180,6 +285,81 @@ function stripSourceMapSuffix(entry) {
 
 function normalizeTarballEntry(pathLike) {
   return pathLike.replace(/\\/g, "/");
+}
+
+function collectEntriesFromDryRun(packageRoot) {
+  const result = spawnSync("npm", ["pack", "--json", "--dry-run"], {
+    cwd: packageRoot,
+    encoding: "utf8",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      result.stderr || result.stdout || "npm pack --dry-run falhou.",
+    );
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    throw new Error(
+      `Falha ao interpretar a saida do npm pack --dry-run em ${packageRoot}.`,
+    );
+  }
+
+  const packInfo = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (!packInfo || !Array.isArray(packInfo.files)) {
+    throw new Error(
+      `npm pack --dry-run nao retornou a lista de arquivos para ${packageRoot}.`,
+    );
+  }
+
+  return {
+    sourceLabel:
+      packInfo.filename ??
+      `${expectedTarballName(readPackageManifest(resolve(packageRoot, "package.json")))} (dry-run)`,
+    entries: packInfo.files
+      .map((entry) => normalizeTarballEntry(entry.path))
+      .filter(Boolean),
+  };
+}
+
+function collectEntriesFromTarball(packageRoot, tarballPath) {
+  if (!existsSync(tarballPath)) {
+    return {
+      exitCode: 1,
+      sourceLabel: basename(tarballPath),
+      entries: [],
+      error: `Tarball nao encontrado: ${tarballPath}`,
+    };
+  }
+
+  const result = spawnSync("tar", ["-tf", tarballPath], {
+    cwd: packageRoot,
+    encoding: "utf8",
+  });
+
+  if (result.status !== 0) {
+    return {
+      exitCode: result.status ?? 1,
+      sourceLabel: basename(tarballPath),
+      entries: [],
+      error: `Falha ao listar o conteudo de ${basename(tarballPath)}.\n${result.stderr}`,
+    };
+  }
+
+  return {
+    exitCode: 0,
+    sourceLabel: basename(tarballPath),
+    entries: result.stdout
+      .split(/\r?\n/)
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => entry.replace(/^package\//, ""))
+      .filter(Boolean),
+  };
 }
 
 function collectRelativeImportSpecifiers(sourceText) {
@@ -289,33 +469,18 @@ function findForbiddenEntries(entries, allowedDistEntries) {
   );
 }
 
-export async function main(argv = process.argv.slice(2)) {
-  const { packageRoot, tarballPath: rawTarballPath } = parseArgs(argv);
-  const tarballPath = resolveTarballPath(rawTarballPath, packageRoot);
+async function validatePackage(packageRoot, rawTarballPath) {
+  const tarballPath = resolveTarballPath(rawTarballPath);
+  const entrySource = tarballPath
+    ? collectEntriesFromTarball(packageRoot, tarballPath)
+    : collectEntriesFromDryRun(packageRoot);
 
-  if (!existsSync(tarballPath)) {
-    console.error(`Tarball nao encontrado: ${tarballPath}`);
-    return 1;
+  if (entrySource.exitCode) {
+    console.error(entrySource.error);
+    return entrySource.exitCode;
   }
 
-  const result = spawnSync("tar", ["-tf", tarballPath], {
-    cwd: packageRoot,
-    encoding: "utf8",
-  });
-
-  if (result.status !== 0) {
-    console.error(`Falha ao listar o conteudo de ${basename(tarballPath)}.`);
-    console.error(result.stderr);
-    return result.status ?? 1;
-  }
-
-  const entries = result.stdout
-    .split(/\r?\n/)
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => entry.replace(/^package\//, ""))
-    .filter(Boolean);
-
+  const { entries, sourceLabel } = entrySource;
   const { packageName, required } = await collectRequiredEntries(packageRoot);
   const missing = [...required].filter(
     (expected) => !entries.includes(expected),
@@ -333,26 +498,61 @@ export async function main(argv = process.argv.slice(2)) {
 
   if (missing.length > 0 || forbidden.length > 0) {
     if (missing.length > 0) {
-      console.error("Arquivos esperados ausentes do tarball:");
+      console.error(`[${packageName}] Arquivos esperados ausentes do tarball:`);
       for (const file of missing) console.error(`  - ${file}`);
     }
     if (forbidden.length > 0) {
-      console.error("Arquivos proibidos presentes no tarball:");
+      console.error(
+        `[${packageName}] Arquivos proibidos presentes no tarball:`,
+      );
       for (const file of forbidden) console.error(`  - ${file}`);
     }
     return 1;
   }
 
   console.log(
-    `Tarball OK (${basename(tarballPath)}): ${packageName} com ${entries.length} arquivo(s), ${required.size} caminho(s) criticos verificados.`,
+    `Tarball OK (${sourceLabel}): ${packageName} com ${entries.length} arquivo(s), ${required.size} caminho(s) criticos verificados.`,
   );
   return 0;
 }
 
-if (
-  process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+export async function main(argv = process.argv.slice(2)) {
+  const {
+    packageRoot,
+    tarballPath: rawTarballPath,
+    validateAll,
+  } = parseArgs(argv);
+
+  if (validateAll && rawTarballPath !== undefined) {
+    console.error("Nao combine --all com um tarball explicito.");
+    return 1;
+  }
+
+  if (
+    validateAll ||
+    (rawTarballPath === undefined && shouldValidateAllByDefault(packageRoot))
+  ) {
+    const packageRoots = collectWorkspacePackageRoots(repoRoot);
+    if (packageRoots.length === 0) {
+      console.error("Nenhum pacote publicavel encontrado no workspace.");
+      return 1;
+    }
+
+    let hasFailures = false;
+    for (const workspacePackageRoot of packageRoots) {
+      const exitCode = await validatePackage(workspacePackageRoot);
+      if (exitCode !== 0) {
+        hasFailures = true;
+      }
+    }
+
+    return hasFailures ? 1 : 0;
+  }
+
+  return validatePackage(packageRoot, rawTarballPath);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
   try {
     const exitCode = await main();
     if (exitCode !== 0) {

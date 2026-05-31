@@ -265,6 +265,66 @@ describe.sequential("script entrypoints", () => {
         }
       }
     });
+
+    it("validates all publishable workspace tarballs from the repository root", async () => {
+      const buildResult = spawnSync(
+        "npm",
+        [
+          "run",
+          "build",
+          "--workspace",
+          "cullet",
+          "--workspace",
+          "@cullet/erp-core",
+          "--workspace",
+          "@cullet/dummy-api",
+        ],
+        {
+          cwd: repoRoot,
+          encoding: "utf8",
+        },
+      );
+
+      if (buildResult.status !== 0) {
+        throw new Error(
+          buildResult.stderr || buildResult.stdout || "npm run build failed",
+        );
+      }
+
+      const previousArgv = [...process.argv];
+      const logs: string[] = [];
+      const errors: string[] = [];
+      const logSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation((...values) => {
+          logs.push(values.map((value) => String(value)).join(" "));
+        });
+      const errorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation((...values) => {
+          errors.push(values.map((value) => String(value)).join(" "));
+        });
+
+      process.argv = [
+        "node",
+        join(repoRoot, "scripts", "check-pack-contents.mjs"),
+      ];
+
+      try {
+        await expect(
+          importFresh("scripts/check-pack-contents.mjs"),
+        ).resolves.toBeUndefined();
+      } finally {
+        process.argv = previousArgv;
+        logSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
+
+      expect(errors).toEqual([]);
+      expect(logs.join("\n")).toContain("cullet com");
+      expect(logs.join("\n")).toContain("@cullet/erp-core");
+      expect(logs.join("\n")).toContain("@cullet/dummy-api");
+    }, 90_000);
   });
 
   describe("edge cases", () => {
