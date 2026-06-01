@@ -62,7 +62,9 @@ export function parsePublishedPackageInfo(
   };
 
   const versions = Array.isArray(record.versions)
-    ? record.versions.filter((value): value is string => typeof value === "string")
+    ? record.versions.filter(
+        (value): value is string => typeof value === "string",
+      )
     : typeof record.versions === "string"
       ? [record.versions]
       : [];

@@ -19,10 +19,7 @@ import { PolicyResolver } from "../resolver";
 import { Result } from "../../result/result";
 import { isValidDate } from "../../shared/temporal-guards";
 
-import type {
-  PolicyEvent,
-  PolicyReporter,
-} from "../../config/policy-reporter";
+import type { PolicyEvent, PolicyReporter } from "../../config/policy-reporter";
 import { SilentPolicyReporter } from "../../config/silent-policy-reporter";
 
 import {

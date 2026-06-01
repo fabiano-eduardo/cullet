@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { listKits, loadKit, loadRegistry } from "../../packages/cli/src/registry/index.js";
+import {
+  listKits,
+  loadKit,
+  loadRegistry,
+} from "../../packages/cli/src/registry/index.js";
 
 describe("registry runtime API", () => {
   it("loads the published registry without requiring path access from the caller", async () => {

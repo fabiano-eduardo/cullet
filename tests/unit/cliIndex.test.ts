@@ -34,7 +34,10 @@ function makeFakeCommander(options: {
 }
 
 async function importCliIndex(tag: string): Promise<void> {
-  const moduleUrl = new URL(`../../packages/cli/src/cli/index.ts?${tag}`, import.meta.url);
+  const moduleUrl = new URL(
+    `../../packages/cli/src/cli/index.ts?${tag}`,
+    import.meta.url,
+  );
   await import(/* @vite-ignore */ moduleUrl.href);
   await new Promise((resolve) => setImmediate(resolve));
 }

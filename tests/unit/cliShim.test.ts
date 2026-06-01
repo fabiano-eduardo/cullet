@@ -5,7 +5,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const originalExitCode = process.exitCode;
 
 async function importCliShim(tag: string): Promise<void> {
-  const moduleUrl = new URL(`../../packages/cli/index.js?${tag}`, import.meta.url);
+  const moduleUrl = new URL(
+    `../../packages/cli/index.js?${tag}`,
+    import.meta.url,
+  );
   await import(/* @vite-ignore */ moduleUrl.href);
 }
 

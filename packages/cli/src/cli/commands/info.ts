@@ -112,7 +112,9 @@ async function printPublishedVersions(npmName: string): Promise<void> {
   const preview = sorted.slice(0, 10);
   console.log(pc.dim(`  ${preview.join(", ")}`));
   if (sorted.length > preview.length) {
-    console.log(pc.dim(`  ... e mais ${sorted.length - preview.length} versao(oes)`));
+    console.log(
+      pc.dim(`  ... e mais ${sorted.length - preview.length} versao(oes)`),
+    );
   }
 
   const tags = Object.entries(published.distTags);

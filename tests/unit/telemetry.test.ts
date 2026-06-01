@@ -279,7 +279,8 @@ describe("emitTelemetryIfEnabled", () => {
 
   it("rethrows unexpected CLI version resolution failures", async () => {
     vi.resetModules();
-    const telemetry = await import("../../packages/cli/src/cli/utils/telemetry.js");
+    const telemetry =
+      await import("../../packages/cli/src/cli/utils/telemetry.js");
     const env = makeEnv();
 
     await telemetry.enableTelemetry({ env });

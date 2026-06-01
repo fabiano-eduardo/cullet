@@ -73,7 +73,6 @@ describe("paths", () => {
       "./cullet/erp-core@1.0.0/index.ts",
     );
   });
-
 });
 
 describe("resolveKitPackageRoot", () => {
@@ -97,15 +96,13 @@ describe("resolveKitPackageRoot", () => {
 
     const resolved = resolveKitPackageRoot(consumer, "@cullet/erp-core");
 
-    expect(resolved).toMatch(
-      /node_modules[\\/]+@cullet[\\/]+erp-core$/,
-    );
+    expect(resolved).toMatch(/node_modules[\\/]+@cullet[\\/]+erp-core$/);
     expect(existsSync(join(resolved, "package.json"))).toBe(true);
   });
 
   it("throws a descriptive error when the kit is not installed", () => {
-    expect(() =>
-      resolveKitPackageRoot(consumer, "@cullet/erp-core"),
-    ).toThrow(/Nao foi possivel resolver o pacote "@cullet\/erp-core"/);
+    expect(() => resolveKitPackageRoot(consumer, "@cullet/erp-core")).toThrow(
+      /Nao foi possivel resolver o pacote "@cullet\/erp-core"/,
+    );
   });
 });
