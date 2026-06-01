@@ -572,30 +572,36 @@ export async function loadKitDeprecation(
   version: string,
 ): Promise<KitDeprecation | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
-  const sourceMetaPath =
-    join(kitPackageDir(packageRoot, name), "meta.json");
   const distMetaPath = join(
     kitDistDir(packageRoot, name, version),
     "meta.json",
   );
-  const sourceCandidate = await readKitDeprecationCandidate(sourceMetaPath);
 
-  if (sourceCandidate !== null) {
-    const distCandidate = await readKitDeprecationCandidate(distMetaPath);
+  const srcPaths = [
+    join(kitPackageDir(packageRoot, name), "meta.json"),
+    join(kitSrcDir(packageRoot, name, version), "meta.json"),
+  ];
 
-    if (distCandidate !== null) {
-      warnOnDeprecationMetaDivergence(
-        packageRoot,
-        name,
-        version,
-        sourceMetaPath,
-        sourceCandidate.deprecation,
-        distMetaPath,
-        distCandidate.deprecation,
-      );
+  for (const sourceMetaPath of srcPaths) {
+    const sourceCandidate = await readKitDeprecationCandidate(sourceMetaPath);
+
+    if (sourceCandidate !== null) {
+      const distCandidate = await readKitDeprecationCandidate(distMetaPath);
+
+      if (distCandidate !== null) {
+        warnOnDeprecationMetaDivergence(
+          packageRoot,
+          name,
+          version,
+          sourceMetaPath,
+          sourceCandidate.deprecation,
+          distMetaPath,
+          distCandidate.deprecation,
+        );
+      }
+
+      return sourceCandidate.deprecation;
     }
-
-    return sourceCandidate.deprecation;
   }
 
   const distCandidate = await readKitDeprecationCandidate(distMetaPath);
