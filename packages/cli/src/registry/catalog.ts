@@ -101,6 +101,10 @@ function kitDistDir(
   );
 }
 
+function kitPackageDir(packageRoot: string, name: string): string {
+  return join(resolveRepoRoot(packageRoot), "packages", name);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -568,10 +572,8 @@ export async function loadKitDeprecation(
   version: string,
 ): Promise<KitDeprecation | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
-  const sourceMetaPath = join(
-    kitSrcDir(packageRoot, name, version),
-    "meta.json",
-  );
+  const sourceMetaPath =
+    join(kitPackageDir(packageRoot, name), "meta.json");
   const distMetaPath = join(
     kitDistDir(packageRoot, name, version),
     "meta.json",
@@ -627,6 +629,7 @@ export async function loadKitMeta(
 ): Promise<KitMeta | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const candidates = [
+    join(kitPackageDir(packageRoot, name), "meta.json"),
     join(kitSrcDir(packageRoot, name, version), "meta.json"),
     join(kitDistDir(packageRoot, name, version), "meta.json"),
   ];
@@ -646,6 +649,7 @@ export async function loadKitContext(
 ): Promise<string | null> {
   const packageRoot = findCulletPackageRoot(fromMetaUrl);
   const candidates = [
+    join(kitPackageDir(packageRoot, name), "KIT_CONTEXT.md"),
     join(kitSrcDir(packageRoot, name, version), "KIT_CONTEXT.md"),
     join(kitDistDir(packageRoot, name, version), "KIT_CONTEXT.md"),
   ];
