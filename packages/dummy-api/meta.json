@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2",
   "name": "dummy-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Kit dummy de API para validar o fluxo de criacao",
   "compatibility": {
     "engines": {

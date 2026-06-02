@@ -1,13 +1,17 @@
 #!/usr/bin/env node
-// Sincroniza packages/<kit>/src/version.ts a partir de package.json.version.
+// Sincroniza, a partir de package.json.version, os dois lugares que tambem
+// carregam a versao de cada kit:
+//   - packages/<kit>/src/version.ts  (entry auto-contido para a copia full-control)
+//   - packages/<kit>/meta.json       (campo "version" do contrato do kit)
 //
 // O entry de cada kit (src/index.ts) le a versao de ./version.js em vez de
 // `../package.json`. Isso mantem o src/ auto-contido: a copia full-control
 // (que copia apenas o conteudo de src/) compila sem depender de um arquivo
 // um nivel acima que nao existe no projeto consumidor.
 //
-// package.json e a fonte da verdade (o Changesets a versiona). Este script
-// projeta essa versao para src/version.ts.
+// package.json e a fonte da verdade (o Changesets a versiona, mas nao conhece
+// version.ts nem meta.json). Este script projeta essa versao para os dois e
+// roda como parte de `changeset:version`, mantendo o release consistente.
 //
 // Flags:
 //   --check   Nao escreve nada; sai com codigo != 0 se houver drift.
@@ -66,11 +70,20 @@ export async function collectKitPackageEntries(
       kitName: packageEntry.name,
       dir,
       packageJsonPath,
+      metaPath,
       versionFilePath: join(dir, "src", "version.ts"),
     });
   }
 
   return kits.sort((left, right) => left.kitName.localeCompare(right.kitName));
+}
+
+// Substitui apenas o valor do campo de nivel superior "version" no texto do
+// JSON, preservando indentacao e o resto do arquivo byte a byte (para nao
+// brigar com o Prettier). Nao casa "schemaVersion" (precisa de aspas + "v"
+// minusculo logo apos), nem "since"/engines, que usam outras chaves.
+export function setJsonVersionField(jsonText, version) {
+  return jsonText.replace(/("version"\s*:\s*")[^"]*(")/, `$1${version}$2`);
 }
 
 export async function syncKitVersions(
@@ -84,26 +97,40 @@ export async function syncKitVersions(
 
   for (const kit of kits) {
     const packageJson = await readJsonFile(kit.packageJsonPath);
-    const expected = renderVersionModule(packageJson.version);
-    const current = (await pathExists(kit.versionFilePath))
+    const version = packageJson.version;
+
+    // 1) src/version.ts
+    const expectedModule = renderVersionModule(version);
+    const currentModule = (await pathExists(kit.versionFilePath))
       ? await readFile(kit.versionFilePath, "utf8")
       : null;
 
-    if (current === expected) {
-      continue;
+    if (currentModule !== expectedModule) {
+      drift.push({ kitName: kit.kitName, path: kit.versionFilePath, version });
+      if (!check) {
+        await writeFile(kit.versionFilePath, expectedModule, "utf8");
+        updated.push(relative(packagesRoot, kit.versionFilePath));
+      }
     }
 
-    drift.push({
-      ...kit,
-      version: packageJson.version,
-    });
+    // 2) meta.json -> campo "version" (o Changesets bumpa package.json mas
+    // nao conhece o meta; sem isso o contrato do kit fica defasado).
+    if (await pathExists(kit.metaPath)) {
+      const metaText = await readFile(kit.metaPath, "utf8");
+      const metaVersion = JSON.parse(metaText).version;
 
-    if (check) {
-      continue;
+      if (metaVersion !== version) {
+        drift.push({ kitName: kit.kitName, path: kit.metaPath, version });
+        if (!check) {
+          await writeFile(
+            kit.metaPath,
+            setJsonVersionField(metaText, version),
+            "utf8",
+          );
+          updated.push(relative(packagesRoot, kit.metaPath));
+        }
+      }
     }
-
-    await writeFile(kit.versionFilePath, expected, "utf8");
-    updated.push(relative(packagesRoot, kit.versionFilePath));
   }
 
   return {
@@ -133,19 +160,19 @@ export async function main(
 
   if (drift.length === 0) {
     console.log(
-      "src/version.ts dos kits ja estao em sincronia com package.json.",
+      "src/version.ts e meta.json dos kits ja estao em sincronia com package.json.",
     );
     return 0;
   }
 
   if (checkOnly) {
     console.error(
-      "src/version.ts dos kits estao fora de sincronia com package.json.",
+      "src/version.ts/meta.json dos kits estao fora de sincronia com package.json.",
     );
 
     for (const mismatch of drift) {
       console.error(
-        `- ${relative(repoRoot, mismatch.versionFilePath)} (esperado version = "${mismatch.version}")`,
+        `- ${relative(repoRoot, mismatch.path)} (esperado version = "${mismatch.version}")`,
       );
     }
 
@@ -153,9 +180,9 @@ export async function main(
     return 1;
   }
 
-  console.log(`src/version.ts sincronizado para ${updated.length} kit(s).`);
-  for (const versionPath of updated) {
-    console.log(`- ${versionPath}`);
+  console.log(`Versao sincronizada em ${updated.length} arquivo(s).`);
+  for (const updatedPath of updated) {
+    console.log(`- ${updatedPath}`);
   }
   return 0;
 }

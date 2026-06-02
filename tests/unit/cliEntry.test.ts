@@ -272,7 +272,7 @@ describe.sequential("cli commands", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Kit validado: erp-core@1.0.0");
+      expect(result.stdout).toContain("Kit validado: erp-core@1.0.1");
       expect(result.stdout).toContain("Importe direto no codigo:");
       expect(result.stdout).toContain('from "@cullet/erp-core"');
       expect(result.stdout).toContain("Alias criado: @cullet/erp-core");

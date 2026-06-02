@@ -10,8 +10,8 @@ describe("registry runtime API", () => {
     const registry = await loadRegistry();
 
     expect(registry["erp-core"]).toMatchObject({
-      latest: "1.0.0",
-      versions: ["1.0.0"],
+      latest: "1.0.1",
+      versions: ["1.0.0", "1.0.1"],
     });
   });
 
@@ -27,8 +27,8 @@ describe("registry runtime API", () => {
       name: "erp-core",
       description:
         "Core ERP com clean architecture, temporalidade, policies e rule sets",
-      latest: "1.0.0",
-      versions: ["1.0.0"],
+      latest: "1.0.1",
+      versions: ["1.0.0", "1.0.1"],
       npmName: "@cullet/erp-core",
     });
   });
@@ -38,12 +38,12 @@ describe("registry runtime API", () => {
 
     expect(kit).toMatchObject({
       name: "erp-core",
-      version: "1.0.0",
-      latest: "1.0.0",
-      versions: ["1.0.0"],
+      version: "1.0.1",
+      latest: "1.0.1",
+      versions: ["1.0.0", "1.0.1"],
       meta: {
         name: "erp-core",
-        version: "1.0.0",
+        version: "1.0.1",
         compatibility: {
           engines: {
             node: ">=18",
