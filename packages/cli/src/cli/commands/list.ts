@@ -2,7 +2,9 @@ import { Command } from "commander";
 import pc from "picocolors";
 import {
   describeKitSuccessor,
+  getKitKind,
   loadKitDeprecation,
+  loadKitMeta,
   loadRegistry,
 } from "../utils/resolve.js";
 import { runCommandWithTelemetry } from "../utils/telemetry.js";
@@ -30,17 +32,18 @@ export function createListCommand(): Command {
 
           for (const name of names) {
             const entry = registry[name];
-            const deprecation = await loadKitDeprecation(
-              import.meta.url,
-              name,
-              entry.latest,
-            );
+            const [deprecation, meta] = await Promise.all([
+              loadKitDeprecation(import.meta.url, name, entry.latest),
+              loadKitMeta(import.meta.url, name, entry.latest),
+            ]);
+            const kind = getKitKind(meta);
+            const kindMarker = pc.dim(` [${kind}]`);
             const marker = deprecation ? pc.yellow(" [deprecated]") : "";
 
             console.log(
               `${pc.green(name)} ${pc.dim(
                 `(latest: ${entry.latest})`,
-              )}${marker}`,
+              )}${kindMarker}${marker}`,
             );
             console.log(`  ${entry.description}`);
             console.log(`  versoes: ${pc.bold(entry.versions.join(", "))}`);

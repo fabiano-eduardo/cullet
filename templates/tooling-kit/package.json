@@ -1,0 +1,14 @@
+{
+  "name": "__KIT_PACKAGE_NAME__",
+  "version": "1.0.0",
+  "description": "__KIT_DESCRIPTION__",
+  "type": "module",
+  "files": ["files", "meta.json", "KIT_CONTEXT.md", "README.md"],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}

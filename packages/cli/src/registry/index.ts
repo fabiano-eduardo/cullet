@@ -1,13 +1,21 @@
 import {
+  getCopyDelivery,
+  getCopyDependencies,
+  getCopyPlacement,
+  getKitKind,
+  isToolingKit,
   loadKitContext,
   loadKitDeprecation,
   loadKitMeta,
   loadRegistry as loadRegistryFromFiles,
   resolveRegistryEntry,
   resolveVersion,
+  type KitCopyDelivery,
+  type KitDelivery,
   type KitDeprecation,
   type KitDependency,
   type KitCompatibility,
+  type KitKind,
   type KitMeta,
   type KitSuccessor,
   type KitSuccessorCodemod,
@@ -27,12 +35,23 @@ export type {
   KitDeprecation,
   KitDependency,
   KitCompatibility,
+  KitCopyDelivery,
+  KitDelivery,
+  KitKind,
   KitMeta,
   KitSuccessor,
   KitSuccessorCodemod,
   KitContextDocument,
   KitContextSection,
   KitContextSectionId,
+};
+
+export {
+  getCopyDelivery,
+  getCopyDependencies,
+  getCopyPlacement,
+  getKitKind,
+  isToolingKit,
 };
 
 export interface CatalogKitSummary {

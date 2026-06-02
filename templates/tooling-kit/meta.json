@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "3",
+  "kind": "tooling",
+  "name": "__KIT_NAME__",
+  "version": "1.0.0",
+  "description": "__KIT_DESCRIPTION__",
+  "delivery": {
+    "copy": {
+      "placement": ".claude/",
+      "source": "files",
+      "dependencies": []
+    }
+  },
+  "docs": {
+    "context": "KIT_CONTEXT.md",
+    "readme": "README.md"
+  },
+  "lint": {
+    "kitContext": "warn"
+  },
+  "changelog": ["1.0.0 - Initial scaffold."],
+  "deprecated": false
+}

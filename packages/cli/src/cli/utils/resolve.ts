@@ -6,8 +6,13 @@ import {
   describeKitSuccessor,
   findCulletPackageRoot,
   formatKitSuccessor,
+  getCopyDelivery,
+  getCopyDependencies,
+  getCopyPlacement,
   getDirectImportPeerDependencies,
   getFullControlDependencies,
+  getKitKind,
+  isToolingKit,
   loadKitContext,
   loadKitDeprecation,
   loadKitMeta,
@@ -16,8 +21,11 @@ import {
   resolveRegistryEntry,
   resolveVersion,
   type KitCompatibility,
+  type KitCopyDelivery,
+  type KitDelivery,
   type KitDependency,
   type KitDeprecation,
+  type KitKind,
   type KitMeta,
   type KitSuccessor,
   type KitSuccessorCodemod,
@@ -29,8 +37,13 @@ export {
   describeKitSuccessor,
   findCulletPackageRoot,
   formatKitSuccessor,
+  getCopyDelivery,
+  getCopyDependencies,
+  getCopyPlacement,
   getDirectImportPeerDependencies,
   getFullControlDependencies,
+  getKitKind,
+  isToolingKit,
   loadKitContext,
   loadKitDeprecation,
   loadKitMeta,
@@ -38,8 +51,11 @@ export {
   resolveRegistryEntry,
   resolveVersion,
   type KitCompatibility,
+  type KitCopyDelivery,
+  type KitDelivery,
   type KitDependency,
   type KitDeprecation,
+  type KitKind,
   type KitMeta,
   type KitSuccessor,
   type KitSuccessorCodemod,
@@ -140,5 +156,29 @@ export async function resolveKitSourceDir(
         `O fonte do pacote "${npmName}" nao foi encontrado em ${sourceDir} nem em ${distDir}.`,
       );
     }
+  }
+}
+
+/**
+ * Locate the payload directory of a copy-only (`tooling`) kit inside the
+ * consumer's installed package (`node_modules/<npmName>/<source>`). Unlike
+ * {@link resolveKitSourceDir}, there is no `dist/` fallback: the payload is
+ * shipped verbatim and must be present where the kit declares it.
+ */
+export async function resolveKitPayloadDir(
+  consumerCwd: string,
+  npmName: string,
+  source: string,
+): Promise<string> {
+  const packageRoot = resolveKitPackageRoot(consumerCwd, npmName);
+  const payloadDir = join(packageRoot, source);
+
+  try {
+    await access(payloadDir, constants.F_OK);
+    return payloadDir;
+  } catch {
+    throw new Error(
+      `O payload do kit "${npmName}" nao foi encontrado em ${payloadDir}. O pacote pode nao incluir o diretorio "${source}".`,
+    );
   }
 }

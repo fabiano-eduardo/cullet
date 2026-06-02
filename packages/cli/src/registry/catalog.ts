@@ -61,17 +61,55 @@ export interface KitCompatibility {
   };
 }
 
+/**
+ * Nature of a kit. `foundation`/`capability` are importable TypeScript
+ * libraries; `tooling` is a copy-only kit (no entryPoint/exports), delivered by
+ * copying a payload directory into the consumer project. Absent ⇒ treated as
+ * `foundation` so existing kits keep their behavior.
+ */
+export type KitKind = "foundation" | "capability" | "tooling";
+
+export const DEFAULT_KIT_KIND: KitKind = "foundation";
+
+export interface KitCopyDelivery {
+  /** Destination directory in the consumer project, relative to its cwd. */
+  placement: string;
+  /** Directory inside the kit package holding the payload. Defaults to "files". */
+  source: string;
+  /** Optional script (relative to the copied payload) run once after the copy. */
+  postInstall?: string;
+  /** External dependencies the consumer must install for the payload to work. */
+  dependencies: KitDependency[];
+}
+
+export interface KitDelivery {
+  import?: {
+    peerDependencies: KitDependency[];
+  };
+  copy?: KitCopyDelivery;
+}
+
 export interface KitMeta {
   schemaVersion?: string;
+  kind?: KitKind;
   name?: string;
   version?: string;
   description?: string;
   compatibility?: KitCompatibility;
+  delivery?: KitDelivery;
   philosophy?: {
     externalDeps?: string[];
     testDeps?: string[];
   };
 }
+
+const KIT_KINDS: ReadonlySet<string> = new Set([
+  "foundation",
+  "capability",
+  "tooling",
+]);
+
+export const DEFAULT_COPY_SOURCE_DIR = "files";
 
 const DEPRECATION_META_DIVERGENCE_WARNING_CODE =
   "CULLET_DEPRECATION_META_DIVERGENCE";
@@ -378,6 +416,58 @@ function cloneKitDependencies(dependencies: KitDependency[]): KitDependency[] {
   return dependencies.map((dependency) => ({ ...dependency }));
 }
 
+function parseKitKind(value: unknown): KitKind | undefined {
+  return typeof value === "string" && KIT_KINDS.has(value)
+    ? (value as KitKind)
+    : undefined;
+}
+
+function parseKitCopyDelivery(value: unknown): KitCopyDelivery | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const placement = value.placement;
+  if (typeof placement !== "string" || placement.length === 0) {
+    return undefined;
+  }
+
+  const source =
+    typeof value.source === "string" && value.source.length > 0
+      ? value.source
+      : DEFAULT_COPY_SOURCE_DIR;
+  const dependencies = parseKitDependencyList(value.dependencies) ?? [];
+
+  const copy: KitCopyDelivery = { placement, source, dependencies };
+  if (typeof value.postInstall === "string" && value.postInstall.length > 0) {
+    copy.postInstall = value.postInstall;
+  }
+
+  return copy;
+}
+
+function parseKitDelivery(value: unknown): KitDelivery | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const delivery: KitDelivery = {};
+
+  if (isRecord(value.import)) {
+    const peerDependencies = parseKitDependencyList(
+      value.import.peerDependencies,
+    );
+    if (peerDependencies !== undefined) {
+      delivery.import = { peerDependencies };
+    }
+  }
+
+  const copy = parseKitCopyDelivery(value.copy);
+  if (copy !== undefined) {
+    delivery.copy = copy;
+  }
+
+  return delivery.import === undefined && delivery.copy === undefined
+    ? undefined
+    : delivery;
+}
+
 function fallbackKitDependencies(names: string[] | undefined): KitDependency[] {
   if (names === undefined) return [];
 
@@ -438,6 +528,8 @@ async function readKitMeta(metaPath: string): Promise<KitMeta | null> {
     if (!isRecord(parsed)) return null;
     const philosophy = isRecord(parsed.philosophy) ? parsed.philosophy : {};
     const compatibility = parseKitCompatibility(parsed.compatibility);
+    const kind = parseKitKind(parsed.kind);
+    const delivery = parseKitDelivery(parsed.delivery);
     const externalDeps = Array.isArray(philosophy.externalDeps)
       ? philosophy.externalDeps.filter(
           (entry): entry is string => typeof entry === "string",
@@ -453,6 +545,8 @@ async function readKitMeta(metaPath: string): Promise<KitMeta | null> {
     if (typeof parsed.schemaVersion === "string") {
       meta.schemaVersion = parsed.schemaVersion;
     }
+    if (kind !== undefined) meta.kind = kind;
+    if (delivery !== undefined) meta.delivery = delivery;
     if (typeof parsed.name === "string") meta.name = parsed.name;
     if (typeof parsed.version === "string") meta.version = parsed.version;
     if (typeof parsed.description === "string") {
@@ -626,6 +720,46 @@ export function getFullControlDependencies(
   return dependencies !== undefined
     ? cloneKitDependencies(dependencies)
     : fallbackKitDependencies(meta?.philosophy?.externalDeps);
+}
+
+/** Resolve a kit's kind, defaulting to `foundation` when unset. */
+export function getKitKind(meta: KitMeta | null | undefined): KitKind {
+  return meta?.kind ?? DEFAULT_KIT_KIND;
+}
+
+/** True when the kit is delivered by copying a payload rather than importing. */
+export function isToolingKit(meta: KitMeta | null | undefined): boolean {
+  return getKitKind(meta) === "tooling";
+}
+
+export function getCopyDelivery(
+  meta: KitMeta | null | undefined,
+): KitCopyDelivery | undefined {
+  const copy = meta?.delivery?.copy;
+  if (copy === undefined) return undefined;
+  return {
+    placement: copy.placement,
+    source: copy.source,
+    dependencies: cloneKitDependencies(copy.dependencies),
+    ...(copy.postInstall !== undefined
+      ? { postInstall: copy.postInstall }
+      : {}),
+  };
+}
+
+/** Consumer-relative destination directory for a copy-only kit, if declared. */
+export function getCopyPlacement(
+  meta: KitMeta | null | undefined,
+): string | undefined {
+  return meta?.delivery?.copy?.placement;
+}
+
+/** External dependencies a copy-only kit's payload needs in the consumer. */
+export function getCopyDependencies(
+  meta: KitMeta | null | undefined,
+): KitDependency[] {
+  const dependencies = meta?.delivery?.copy?.dependencies;
+  return dependencies !== undefined ? cloneKitDependencies(dependencies) : [];
 }
 
 export async function loadKitMeta(

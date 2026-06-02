@@ -20,8 +20,16 @@ import pc from "picocolors";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
-const templateRoot = resolve(repoRoot, "templates", "kit");
+const templatesRoot = resolve(repoRoot, "templates");
 const packagesRoot = resolve(repoRoot, "packages");
+
+// Kind → template directory under templates/. `foundation` is the default
+// importable-library kit; `tooling` is a copy-only kit (no src/, ships a
+// `files/` payload).
+const KIND_TEMPLATES = {
+  foundation: "kit",
+  tooling: "tooling-kit",
+};
 const changesetRoot = resolve(repoRoot, ".changeset");
 const registryPath = resolve(
   repoRoot,
@@ -42,6 +50,7 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   let name;
   let description;
+  let kind;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -50,6 +59,11 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg.startsWith("--description=")) {
       description = arg.slice("--description=".length);
+    } else if (arg === "--kind" || arg === "-k") {
+      kind = args[i + 1];
+      i += 1;
+    } else if (arg.startsWith("--kind=")) {
+      kind = arg.slice("--kind=".length);
     } else if (!arg.startsWith("-") && name === undefined) {
       name = arg;
     } else {
@@ -69,7 +83,14 @@ function parseArgs(argv) {
     fail("description must be at least 10 characters (schema requirement).");
   }
 
-  return { name, description };
+  if (kind === undefined) kind = "foundation";
+  if (!Object.prototype.hasOwnProperty.call(KIND_TEMPLATES, kind)) {
+    fail(
+      `invalid kind "${kind}". Use one of: ${Object.keys(KIND_TEMPLATES).join(", ")}.`,
+    );
+  }
+
+  return { name, description, kind };
 }
 
 function toCamelCase(name) {
@@ -199,17 +220,19 @@ async function createInitialChangeset(ctx) {
 }
 
 async function main() {
-  const { name, description } = parseArgs(process.argv);
+  const { name, description, kind } = parseArgs(process.argv);
   const version = "1.0.0";
 
   const ctx = {
     name,
     packageName: `@cullet/${name}`,
     description,
+    kind,
     camel: toCamelCase(name),
     screamingSnake: toScreamingSnakeCase(name),
   };
 
+  const templateRoot = resolve(templatesRoot, KIND_TEMPLATES[kind]);
   if (!(await fs.pathExists(templateRoot))) {
     fail(`template not found at ${relative(repoRoot, templateRoot)}.`);
   }
@@ -235,7 +258,9 @@ async function main() {
   };
   await writeRegistry(registry);
 
-  console.log(pc.green(`✓ created kit ${pc.bold(`${name}@${version}`)}`));
+  console.log(
+    pc.green(`✓ created ${kind} kit ${pc.bold(`${name}@${version}`)}`),
+  );
   console.log(`  package: ${pc.cyan(relative(repoRoot, destDir))}`);
   console.log(
     `  registry: ${pc.cyan(relative(repoRoot, registryPath))} updated`,
@@ -245,6 +270,34 @@ async function main() {
   );
   console.log("");
   console.log(pc.bold("Next steps:"));
+
+  if (kind === "tooling") {
+    console.log(
+      `  1. edit ${pc.cyan(
+        relative(repoRoot, join(destDir, "meta.json")),
+      )} (delivery.copy.placement, dependencies)`,
+    );
+    console.log(
+      `  2. fill ${pc.cyan(
+        relative(repoRoot, join(destDir, "KIT_CONTEXT.md")),
+      )} with the real prompt-friendly summary`,
+    );
+    console.log(
+      `  3. put the payload to be copied under ${pc.cyan(
+        relative(repoRoot, join(destDir, "files")),
+      )}`,
+    );
+    console.log(
+      `  4. run ${pc.cyan("npm run validate-kits")} to validate your kit`,
+    );
+    console.log(
+      `  5. run ${pc.cyan(
+        "npm install",
+      )} to refresh workspace links and lockfile metadata`,
+    );
+    return;
+  }
+
   console.log(
     `  1. edit ${pc.cyan(
       relative(repoRoot, join(destDir, "meta.json")),

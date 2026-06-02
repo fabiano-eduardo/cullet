@@ -5,7 +5,10 @@ import { fetchPublishedPackageInfo } from "../utils/npm-registry.js";
 import { kitNodeModulesEntry } from "../utils/paths.js";
 import {
   describeKitSuccessor,
+  getCopyDependencies,
+  getCopyPlacement,
   getDirectImportPeerDependencies,
+  isToolingKit,
   loadKitContext,
   loadKitDeprecation,
   loadKitMeta,
@@ -183,13 +186,37 @@ export function createInfoCommand(): Command {
             }
           }
 
+          const tooling = isToolingKit(meta);
+
           console.log("");
-          console.log(pc.bold("Importe direto no codigo:"));
-          console.log(pc.cyan(`import { ... } from "${importSpecifier}";`));
+          if (tooling) {
+            console.log(pc.bold("Adicione ao projeto:"));
+            console.log(pc.cyan(`npx cullet fc ${parsed.name}@${version}`));
+            const placement = getCopyPlacement(meta);
+            if (placement !== undefined) {
+              console.log(
+                pc.dim(`Os arquivos sao copiados para: ${placement}`),
+              );
+            }
+          } else {
+            console.log(pc.bold("Importe direto no codigo:"));
+            console.log(pc.cyan(`import { ... } from "${importSpecifier}";`));
+          }
 
           await printPublishedVersions(entry.npmName);
 
-          printCompatibility(meta);
+          if (tooling) {
+            const deps = getCopyDependencies(meta);
+            if (deps.length > 0) {
+              console.log("");
+              console.log(pc.bold("Dependencias externas do payload:"));
+              for (const dependency of deps) {
+                console.log(pc.dim(`  ${formatDependency(dependency)}`));
+              }
+            }
+          } else {
+            printCompatibility(meta);
+          }
 
           const context = await loadKitContext(
             import.meta.url,
@@ -214,6 +241,24 @@ export function createInfoCommand(): Command {
             console.log(
               pc.dim("Este kit nao publicou um KIT_CONTEXT.md ainda."),
             );
+          }
+
+          if (tooling) {
+            if (options.alias) {
+              console.log("");
+              console.log(
+                pc.yellow(
+                  "O parametro --alias nao se aplica a kits do tipo tooling: eles nao sao importados, e sim copiados para o projeto.",
+                ),
+              );
+            }
+            console.log("");
+            console.log(
+              pc.dim(
+                `Dica: rode \`npx cullet fc ${parsed.name}\` para copiar o kit para dentro do projeto.`,
+              ),
+            );
+            return;
           }
 
           if (!options.alias) {

@@ -4,22 +4,83 @@
   "title": "Cullet kit-spec",
   "description": "Schema for a kit's meta.json. Versioned via schemaVersion.",
   "type": "object",
-  "required": [
-    "schemaVersion",
-    "name",
-    "version",
-    "description",
-    "compatibility",
-    "entryPoint",
-    "philosophy",
-    "docs"
-  ],
+  "required": ["schemaVersion", "name", "version", "description", "docs"],
   "additionalProperties": true,
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "enum": ["2"],
-      "description": "Version of this schema. Bump when breaking changes are made."
+      "enum": ["2", "3"],
+      "description": "Version of this schema. Bump when breaking changes are made. \"2\" = library kit (entryPoint/philosophy/compatibility). \"3\" adds `kind` and `delivery` for copy-only kits."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["foundation", "capability", "tooling"],
+      "description": "Nature of the kit. `foundation`/`capability` are importable TS libraries; `tooling` is a copy-only kit (no entryPoint/exports). Absent ⇒ treated as `foundation`. Library-specific fields (entryPoint, philosophy, compatibility) are required for non-tooling kinds and forbidden of substance for tooling; `delivery.copy` is required for tooling. These conditional rules are enforced by validate-kit.mjs."
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Declared delivery modes. Used primarily by `tooling` kits (which have no `compatibility`). For library kits, `compatibility` remains the source of truth.",
+      "properties": {
+        "import": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "peerDependencies": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "required": ["name", "range"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "range": { "type": "string", "minLength": 1 },
+                  "optional": { "type": "boolean" },
+                  "notes": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
+          }
+        },
+        "copy": {
+          "type": "object",
+          "required": ["placement"],
+          "additionalProperties": false,
+          "properties": {
+            "placement": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Destination directory in the consumer project, relative to its cwd (e.g. \".claude/\")."
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Directory inside the kit package holding the payload to copy. Defaults to \"files\"."
+            },
+            "postInstall": {
+              "type": "string",
+              "pattern": "\\.(mjs|js)$",
+              "description": "Optional script (relative to the copied payload) run once after the copy."
+            },
+            "dependencies": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "required": ["name", "range"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "range": { "type": "string", "minLength": 1 },
+                  "optional": { "type": "boolean" },
+                  "notes": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "name": {
       "type": "string",

@@ -49,6 +49,14 @@ const REQUIRED_KIT_CONTEXT_SECTION_IDS = [
   "extension-points",
   "non-goals",
 ];
+// Copy-only `tooling` kits have no clean-architecture layers or extension
+// points, so KIT_CONTEXT.md only needs the structural sections that still make
+// sense for them.
+const REQUIRED_TOOLING_KIT_CONTEXT_SECTION_IDS = [
+  "purpose",
+  "key-decisions",
+  "non-goals",
+];
 
 async function exists(p) {
   return fs.pathExists(p);
@@ -121,21 +129,41 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
-async function buildKitEntry(packageDir) {
+export async function buildKitEntry(packageDir) {
   const packageJsonPath = join(packageDir, "package.json");
   const metaPath = join(packageDir, "meta.json");
-  const sourceDir = join(packageDir, "src");
 
   if (
     !(await exists(packageDir)) ||
     !(await exists(packageJsonPath)) ||
-    !(await exists(metaPath)) ||
-    !(await exists(sourceDir))
+    !(await exists(metaPath))
   ) {
     return null;
   }
 
   const packageJson = await readJson(packageJsonPath);
+
+  // Read `kind` up front to decide where the kit's payload lives. Library kits
+  // (foundation/capability) keep their source under `src/`; copy-only `tooling`
+  // kits ship a payload directory (default `files/`, overridable via
+  // delivery.copy.source). A malformed/missing payload is reported as a
+  // validation error in validateKit — not silently skipped here.
+  let metaForKind = null;
+  try {
+    metaForKind = await readJson(metaPath);
+  } catch {
+    // Invalid JSON is reported by validateKit; assume a library kit for now.
+  }
+
+  const kind =
+    typeof metaForKind?.kind === "string" ? metaForKind.kind : "foundation";
+  const isTooling = kind === "tooling";
+  const sourceDirName =
+    isTooling && typeof metaForKind?.delivery?.copy?.source === "string"
+      ? metaForKind.delivery.copy.source
+      : isTooling
+        ? "files"
+        : "src";
 
   return {
     kitName: packageJson.name?.split("/").at(-1) ?? packageJson.name,
@@ -144,7 +172,9 @@ async function buildKitEntry(packageDir) {
     packageDir,
     packageJsonPath,
     metaPath,
-    sourceDir,
+    sourceDir: join(packageDir, sourceDirName),
+    kind,
+    isTooling,
   };
 }
 
@@ -610,7 +640,7 @@ async function validateObservabilityPort(
   }
 }
 
-async function validateKit(kit, schema) {
+export async function validateKit(kit, schema) {
   const findings = []; // { severity: "error"|"warn", msg, file? }
 
   let meta;
@@ -629,16 +659,49 @@ async function validateKit(kit, schema) {
     findings.push({ severity: "error", msg: `schema: ${e}` });
   if (schemaErrors.length > 0) return { kit, findings };
 
+  // The JSON Schema validator is structural and cannot express "field X is
+  // required only when kind is Y" (no if/then support). Enforce the
+  // kind-conditional contract imperatively here.
+  const isTooling = kit.isTooling;
+
+  if (isTooling) {
+    const placement = meta.delivery?.copy?.placement;
+    if (typeof placement !== "string" || placement.trim().length === 0) {
+      findings.push({
+        severity: "error",
+        msg: `schema: tooling kit requires delivery.copy.placement`,
+      });
+    }
+  } else {
+    for (const field of ["compatibility", "entryPoint", "philosophy"]) {
+      if (meta[field] === undefined) {
+        findings.push({
+          severity: "error",
+          msg: `schema: missing required field "${field}" for ${kit.kind} kit`,
+        });
+      }
+    }
+    if (findings.some((finding) => finding.severity === "error")) {
+      return { kit, findings };
+    }
+  }
+
   // Existence checks
   const readmePath = join(kit.packageDir, meta.docs.readme);
   const contextPath = join(kit.packageDir, meta.docs.context);
-  const entryPath = await resolveEntryPointPath(kit, meta.entryPoint);
 
-  for (const [label, p] of [
+  const existenceTargets = [
     ["docs.readme", readmePath],
     ["docs.context", contextPath],
-    ["entryPoint", entryPath],
-  ]) {
+  ];
+  if (!isTooling) {
+    existenceTargets.push([
+      "entryPoint",
+      await resolveEntryPointPath(kit, meta.entryPoint),
+    ]);
+  }
+
+  for (const [label, p] of existenceTargets) {
     if (!(await exists(p))) {
       findings.push({
         severity: "error",
@@ -656,10 +719,35 @@ async function validateKit(kit, schema) {
     }
   }
 
+  // For copy-only kits, the payload directory replaces `src/`; it must exist
+  // and carry at least one file to be worth distributing.
+  if (isTooling) {
+    if (!(await exists(kit.sourceDir))) {
+      findings.push({
+        severity: "error",
+        msg: `delivery payload directory not found at ${relative(
+          kit.packageDir,
+          kit.sourceDir,
+        )}`,
+      });
+      return { kit, findings };
+    }
+    const payloadFiles = await walkFiles(kit.sourceDir);
+    if (payloadFiles.length === 0) {
+      findings.push({
+        severity: "error",
+        msg: `delivery payload directory is empty at ${relative(
+          kit.packageDir,
+          kit.sourceDir,
+        )}`,
+      });
+    }
+  }
+
   // Lint pass
   const lint = meta.lint ?? {};
-  const externalDeps = new Set(meta.philosophy.externalDeps ?? []);
-  const testDeps = new Set(meta.philosophy.testDeps ?? []);
+  const externalDeps = new Set(meta.philosophy?.externalDeps ?? []);
+  const testDeps = new Set(meta.philosophy?.testDeps ?? []);
   const directImportDependencyNames = (
     meta.compatibility?.directImport?.peerDependencies ?? []
   ).map((dependency) => dependency.name);
@@ -711,6 +799,9 @@ async function validateKit(kit, schema) {
 
   const contextLint = level(lint, "kitContext");
   if (contextLint !== "off" && (await exists(contextPath))) {
+    const requiredContextSections = isTooling
+      ? REQUIRED_TOOLING_KIT_CONTEXT_SECTION_IDS
+      : REQUIRED_KIT_CONTEXT_SECTION_IDS;
     const contextText = (await readFile(contextPath, "utf8")).trim();
     const tokenCount = countTokens(contextText);
     const headingIds = [];
@@ -725,7 +816,7 @@ async function validateKit(kit, schema) {
       }
     }
 
-    for (const sectionId of REQUIRED_KIT_CONTEXT_SECTION_IDS) {
+    for (const sectionId of requiredContextSections) {
       if (!headingIds.includes(sectionId)) {
         pushFinding(
           findings,
@@ -746,7 +837,7 @@ async function validateKit(kit, schema) {
     }
 
     const unexpectedStructuredIds = headingIds.filter(
-      (sectionId) => !REQUIRED_KIT_CONTEXT_SECTION_IDS.includes(sectionId),
+      (sectionId) => !requiredContextSections.includes(sectionId),
     );
 
     for (const unexpectedId of unexpectedStructuredIds) {
@@ -791,6 +882,14 @@ async function validateKit(kit, schema) {
         );
       }
     }
+  }
+
+  // Everything below is clean-architecture / TypeScript-source lint, which only
+  // applies to importable library kits. Copy-only `tooling` kits ship arbitrary
+  // payloads (markdown, configs, hooks) and have no philosophy/layers, so we
+  // stop here after the generic structural checks above.
+  if (isTooling) {
+    return { kit, findings };
   }
 
   const requiredCoreTestsLint = level(lint, "requiredCoreTests");

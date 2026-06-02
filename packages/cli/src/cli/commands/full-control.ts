@@ -1,35 +1,50 @@
 import { Command } from "commander";
 import fs from "fs-extra";
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
 import { basename, dirname, join, relative } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { promisify } from "node:util";
 import pc from "picocolors";
 import { formatDependency } from "../utils/formatDependency.js";
 import {
   detectPackageManager,
   formatInstallCommand,
   installPackage,
+  type PackageManager,
 } from "../utils/package-manager.js";
 import {
   kitFullControlAliasTarget,
   kitFullControlDir,
+  kitToolingDestinationDir,
 } from "../utils/paths.js";
 import {
   describeKitSuccessor,
+  getCopyDelivery,
+  getCopyDependencies,
   getFullControlDependencies,
+  isToolingKit,
   loadKitDeprecation,
   loadKitMeta,
   loadRegistry,
   parseKitArg,
   type KitDependency,
+  type KitMeta,
+  type RegistryEntry,
   resolveInstalledKitVersion,
+  resolveKitPayloadDir,
   resolveKitSourceDir,
   resolveRegistryEntry,
   resolveVersion,
 } from "../utils/resolve.js";
-import { runCommandWithTelemetry } from "../utils/telemetry.js";
+import {
+  runCommandWithTelemetry,
+  type TelemetryCommandTracker,
+} from "../utils/telemetry.js";
 import { upsertPathAlias } from "../utils/tsconfig.js";
+
+const execFileAsync = promisify(execFile);
 
 interface FullControlOptions {
   dryRun?: boolean;
@@ -169,15 +184,27 @@ export async function copyDirectoryTransactional(
   }
 }
 
+interface FullControlContext {
+  parsed: { name: string; version?: string };
+  entry: RegistryEntry;
+  version: string;
+  meta: KitMeta | null;
+  installSpec: string;
+  alreadyInstalled: boolean;
+  packageManager: PackageManager;
+  options: FullControlOptions;
+  tracker: TelemetryCommandTracker;
+}
+
 export function createFullControlCommand(): Command {
   return new Command("fc")
     .description(
-      "Copia um kit para dentro do projeto atual e atualiza o alias local",
+      "Adiciona um kit ao projeto atual: copia o codigo do kit para dentro do projeto. Kits importaveis ganham um alias local; kits do tipo tooling sao copiados para o placement declarado.",
     )
     .argument("<kit>", "Nome do kit no formato nome ou nome@versao")
     .option(
       "--dry-run",
-      "Lista o que seria copiado e o alias resultante sem escrever nada",
+      "Lista o que seria copiado e o resultado (alias/placement) sem escrever nada",
     )
     .option(
       "--no-install",
@@ -218,177 +245,426 @@ export function createFullControlCommand(): Command {
             }
           }
 
+          const meta = await loadKitMeta(import.meta.url, parsed.name, version);
           const installSpec = `${entry.npmName}@${version}`;
           const installedVersion = resolveInstalledKitVersion(
             process.cwd(),
             entry.npmName,
           );
-          const alreadyInstalled = installedVersion === version;
-          const packageManager = detectPackageManager(process.cwd());
-          const destinationDir = kitFullControlDir(
-            process.cwd(),
-            parsed.name,
+          const context: FullControlContext = {
+            parsed,
+            entry,
             version,
-          );
+            meta,
+            installSpec,
+            alreadyInstalled: installedVersion === version,
+            packageManager: detectPackageManager(process.cwd()),
+            options,
+            tracker,
+          };
 
-          if (options.dryRun) {
-            console.log(
-              pc.bold(`[dry-run] full-control para ${parsed.name}@${version}`),
-            );
-
-            if (alreadyInstalled) {
-              console.log(
-                pc.dim(
-                  `${installSpec} ja esta instalado; nenhuma instalacao seria necessaria.`,
-                ),
-              );
-            } else if (options.install === false) {
-              console.log(
-                pc.yellow(
-                  `--no-install: o pacote ${installSpec} nao seria instalado. Garanta que ele ja esteja presente.`,
-                ),
-              );
-            } else {
-              console.log(
-                pc.dim(
-                  `Instalaria ${installSpec} com: ${formatInstallCommand(packageManager, installSpec)}`,
-                ),
-              );
-            }
-
-            console.log(`Destino: ${pc.cyan(destinationDir)}`);
-            if (await fs.pathExists(destinationDir)) {
-              console.log(
-                pc.yellow(
-                  `O destino ja existe. Em execucao real, o CLI pedira confirmacao antes de sobrescrever.`,
-                ),
-              );
-            }
-
-            if (alreadyInstalled) {
-              const sourceDir = await resolveKitSourceDir(
-                process.cwd(),
-                entry.npmName,
-              );
-              console.log(`Origem:  ${pc.cyan(sourceDir)}`);
-              const sample = await collectSampleFiles(sourceDir, 12);
-              if (sample.files.length > 0) {
-                console.log(pc.bold("Arquivos que seriam copiados (amostra):"));
-                for (const file of sample.files) {
-                  console.log(`  ${pc.dim(relative(sourceDir, file))}`);
-                }
-                if (sample.truncated) {
-                  console.log(pc.dim(`  ... e mais arquivos`));
-                }
-              }
-            } else {
-              console.log(
-                pc.dim(
-                  `O fonte do kit seria copiado de node_modules/${entry.npmName}/src apos a instalacao.`,
-                ),
-              );
-            }
-
-            const aliasPreview = await upsertPathAlias(
-              process.cwd(),
-              entry.npmName,
-              kitFullControlAliasTarget(parsed.name, version),
-              { dryRun: true },
-            );
-
-            printAliasOutcome(aliasPreview, { dryRun: true });
-
-            const meta = await loadKitMeta(
-              import.meta.url,
-              parsed.name,
-              version,
-            );
-            const deps = getFullControlDependencies(meta);
-            if (deps.length > 0) {
-              console.log("");
-              console.log(
-                pc.dim(
-                  `Apos a copia real, voce precisara instalar: ${deps
-                    .map(formatDependency)
-                    .join(", ")}`,
-                ),
-              );
-            }
-            return;
+          if (isToolingKit(meta)) {
+            tracker.set("kind", "tooling");
+            await runToolingFullControl(context);
+          } else {
+            tracker.set("kind", "library");
+            await runLibraryFullControl(context);
           }
-
-          if (!alreadyInstalled) {
-            if (options.install === false) {
-              throw new Error(
-                `${installSpec} nao esta instalado e --no-install foi usado. Instale com: ${formatInstallCommand(packageManager, installSpec)}`,
-              );
-            }
-
-            console.log(
-              pc.cyan(`Instalando ${installSpec} com ${packageManager}...`),
-            );
-            try {
-              await installPackage(process.cwd(), packageManager, installSpec);
-            } catch (error) {
-              throw new Error(
-                `Falha ao instalar ${installSpec} com ${packageManager}: ${errorMessage(error)}`,
-              );
-            }
-            tracker.set("installed", true);
-          }
-
-          const sourceDir = await resolveKitSourceDir(
-            process.cwd(),
-            entry.npmName,
-          );
-
-          const destinationExists = await fs.pathExists(destinationDir);
-
-          if (destinationExists) {
-            const shouldOverwrite = await confirmOverwrite(destinationDir);
-
-            if (!shouldOverwrite) {
-              console.log(
-                pc.yellow("Operacao cancelada. Nenhum arquivo foi alterado."),
-              );
-              tracker.set("cancelled", true);
-              return;
-            }
-          }
-
-          await copyDirectoryTransactional(sourceDir, destinationDir);
-
-          const aliasResult = await upsertPathAlias(
-            process.cwd(),
-            entry.npmName,
-            kitFullControlAliasTarget(parsed.name, version),
-          );
-
-          console.log(
-            pc.green(
-              `Kit ${parsed.name} copiado para ./cullet/${parsed.name}@${version}/`,
-            ),
-          );
-          console.log(`Origem: ${pc.cyan(sourceDir)}`);
-          console.log(`Destino: ${pc.cyan(destinationDir)}`);
-
-          printAliasOutcome(aliasResult, { dryRun: false });
-
-          const meta = await loadKitMeta(import.meta.url, parsed.name, version);
-          const deps = getFullControlDependencies(meta);
-          printExternalDepsWarning(deps);
-
-          console.log("");
-          console.log(pc.bold("Como usar agora:"));
-          console.log(pc.cyan(`import { ... } from "${entry.npmName}";`));
-          console.log(
-            pc.dim(
-              "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
-            ),
-          );
         },
       });
     });
+}
+
+/** Print the install line shared by both strategies' dry-run previews. */
+function printInstallPreview(context: FullControlContext): void {
+  const { alreadyInstalled, options, installSpec, packageManager } = context;
+  if (alreadyInstalled) {
+    console.log(
+      pc.dim(
+        `${installSpec} ja esta instalado; nenhuma instalacao seria necessaria.`,
+      ),
+    );
+  } else if (options.install === false) {
+    console.log(
+      pc.yellow(
+        `--no-install: o pacote ${installSpec} nao seria instalado. Garanta que ele ja esteja presente.`,
+      ),
+    );
+  } else {
+    console.log(
+      pc.dim(
+        `Instalaria ${installSpec} com: ${formatInstallCommand(packageManager, installSpec)}`,
+      ),
+    );
+  }
+}
+
+/** Install the kit package when it is not already present, shared by both strategies. */
+async function ensureKitInstalled(context: FullControlContext): Promise<void> {
+  const { alreadyInstalled, options, installSpec, packageManager, tracker } =
+    context;
+  if (alreadyInstalled) return;
+
+  if (options.install === false) {
+    throw new Error(
+      `${installSpec} nao esta instalado e --no-install foi usado. Instale com: ${formatInstallCommand(packageManager, installSpec)}`,
+    );
+  }
+
+  console.log(pc.cyan(`Instalando ${installSpec} com ${packageManager}...`));
+  try {
+    await installPackage(process.cwd(), packageManager, installSpec);
+  } catch (error) {
+    throw new Error(
+      `Falha ao instalar ${installSpec} com ${packageManager}: ${errorMessage(error)}`,
+    );
+  }
+  tracker.set("installed", true);
+}
+
+/** Importable kits (foundation/capability): copy `src/` and register a tsconfig alias. */
+async function runLibraryFullControl(
+  context: FullControlContext,
+): Promise<void> {
+  const { parsed, entry, version, meta, options, tracker } = context;
+  const destinationDir = kitFullControlDir(process.cwd(), parsed.name, version);
+
+  if (options.dryRun) {
+    console.log(
+      pc.bold(`[dry-run] full-control para ${parsed.name}@${version}`),
+    );
+    printInstallPreview(context);
+
+    console.log(`Destino: ${pc.cyan(destinationDir)}`);
+    if (await fs.pathExists(destinationDir)) {
+      console.log(
+        pc.yellow(
+          `O destino ja existe. Em execucao real, o CLI pedira confirmacao antes de sobrescrever.`,
+        ),
+      );
+    }
+
+    if (context.alreadyInstalled) {
+      const sourceDir = await resolveKitSourceDir(process.cwd(), entry.npmName);
+      console.log(`Origem:  ${pc.cyan(sourceDir)}`);
+      const sample = await collectSampleFiles(sourceDir, 12);
+      if (sample.files.length > 0) {
+        console.log(pc.bold("Arquivos que seriam copiados (amostra):"));
+        for (const file of sample.files) {
+          console.log(`  ${pc.dim(relative(sourceDir, file))}`);
+        }
+        if (sample.truncated) {
+          console.log(pc.dim(`  ... e mais arquivos`));
+        }
+      }
+    } else {
+      console.log(
+        pc.dim(
+          `O fonte do kit seria copiado de node_modules/${entry.npmName}/src apos a instalacao.`,
+        ),
+      );
+    }
+
+    const aliasPreview = await upsertPathAlias(
+      process.cwd(),
+      entry.npmName,
+      kitFullControlAliasTarget(parsed.name, version),
+      { dryRun: true },
+    );
+
+    printAliasOutcome(aliasPreview, { dryRun: true });
+
+    const deps = getFullControlDependencies(meta);
+    if (deps.length > 0) {
+      console.log("");
+      console.log(
+        pc.dim(
+          `Apos a copia real, voce precisara instalar: ${deps
+            .map(formatDependency)
+            .join(", ")}`,
+        ),
+      );
+    }
+    return;
+  }
+
+  await ensureKitInstalled(context);
+
+  const sourceDir = await resolveKitSourceDir(process.cwd(), entry.npmName);
+  const destinationExists = await fs.pathExists(destinationDir);
+
+  if (destinationExists) {
+    const shouldOverwrite = await confirmOverwrite(destinationDir);
+
+    if (!shouldOverwrite) {
+      console.log(
+        pc.yellow("Operacao cancelada. Nenhum arquivo foi alterado."),
+      );
+      tracker.set("cancelled", true);
+      return;
+    }
+  }
+
+  await copyDirectoryTransactional(sourceDir, destinationDir);
+
+  const aliasResult = await upsertPathAlias(
+    process.cwd(),
+    entry.npmName,
+    kitFullControlAliasTarget(parsed.name, version),
+  );
+
+  console.log(
+    pc.green(
+      `Kit ${parsed.name} copiado para ./cullet/${parsed.name}@${version}/`,
+    ),
+  );
+  console.log(`Origem: ${pc.cyan(sourceDir)}`);
+  console.log(`Destino: ${pc.cyan(destinationDir)}`);
+
+  printAliasOutcome(aliasResult, { dryRun: false });
+
+  const deps = getFullControlDependencies(meta);
+  printExternalDepsWarning(deps);
+
+  console.log("");
+  console.log(pc.bold("Como usar agora:"));
+  console.log(pc.cyan(`import { ... } from "${entry.npmName}";`));
+  console.log(
+    pc.dim(
+      "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
+    ),
+  );
+}
+
+/**
+ * Copy-only (`tooling`) kits: merge the kit's payload into the declared
+ * placement (e.g. ".claude/"). Unlike library kits there is no tsconfig alias
+ * and no `import` — the files become part of the project as-is. The placement
+ * is a shared directory, so the payload is merged (existing siblings are
+ * preserved); only files the kit ships can be overwritten, and only after
+ * confirmation.
+ */
+async function runToolingFullControl(
+  context: FullControlContext,
+): Promise<void> {
+  const { parsed, entry, version, meta, options, tracker } = context;
+
+  const copy = getCopyDelivery(meta);
+  if (copy === undefined) {
+    throw new Error(
+      `O kit ${parsed.name}@${version} e do tipo tooling mas nao declara delivery.copy no meta.json. O catalogo esta inconsistente.`,
+    );
+  }
+
+  const destinationDir = kitToolingDestinationDir(
+    process.cwd(),
+    copy.placement,
+  );
+  const deps = getCopyDependencies(meta);
+
+  if (options.dryRun) {
+    console.log(
+      pc.bold(
+        `[dry-run] full-control (tooling) para ${parsed.name}@${version}`,
+      ),
+    );
+    printInstallPreview(context);
+
+    console.log(
+      `Destino: ${pc.cyan(destinationDir)} ${pc.dim(`(placement: ${copy.placement})`)}`,
+    );
+
+    if (context.alreadyInstalled) {
+      const sourceDir = await resolveKitPayloadDir(
+        process.cwd(),
+        entry.npmName,
+        copy.source,
+      );
+      console.log(`Origem:  ${pc.cyan(sourceDir)}`);
+      const conflicts = await findPayloadConflicts(sourceDir, destinationDir);
+      const sample = await collectSampleFiles(sourceDir, 12);
+      if (sample.files.length > 0) {
+        console.log(pc.bold("Arquivos que seriam adicionados (amostra):"));
+        for (const file of sample.files) {
+          console.log(`  ${pc.dim(relative(sourceDir, file))}`);
+        }
+        if (sample.truncated) {
+          console.log(pc.dim(`  ... e mais arquivos`));
+        }
+      }
+      if (conflicts.length > 0) {
+        console.log(
+          pc.yellow(
+            `${conflicts.length} arquivo(s) ja existem em ${copy.placement} e seriam sobrescritos (apos confirmacao).`,
+          ),
+        );
+      }
+    } else {
+      console.log(
+        pc.dim(
+          `O payload seria copiado de node_modules/${entry.npmName}/${copy.source} apos a instalacao.`,
+        ),
+      );
+    }
+
+    console.log(
+      pc.dim(
+        "Kits do tipo tooling nao criam alias no tsconfig: os arquivos passam a fazer parte do projeto.",
+      ),
+    );
+    if (copy.postInstall !== undefined) {
+      console.log(
+        pc.dim(
+          `Apos a copia, o script ${copy.postInstall} seria executado em ${copy.placement}.`,
+        ),
+      );
+    }
+    if (deps.length > 0) {
+      console.log("");
+      console.log(
+        pc.dim(
+          `Apos a copia real, voce precisara instalar: ${deps
+            .map(formatDependency)
+            .join(", ")}`,
+        ),
+      );
+    }
+    return;
+  }
+
+  await ensureKitInstalled(context);
+
+  const sourceDir = await resolveKitPayloadDir(
+    process.cwd(),
+    entry.npmName,
+    copy.source,
+  );
+
+  const conflicts = await findPayloadConflicts(sourceDir, destinationDir);
+  if (conflicts.length > 0) {
+    const shouldOverwrite = await confirmToolingOverwrite(
+      copy.placement,
+      conflicts,
+    );
+    if (!shouldOverwrite) {
+      console.log(
+        pc.yellow("Operacao cancelada. Nenhum arquivo foi alterado."),
+      );
+      tracker.set("cancelled", true);
+      return;
+    }
+  }
+
+  await fs.ensureDir(destinationDir);
+  await fs.copy(sourceDir, destinationDir, { overwrite: true });
+
+  console.log(pc.green(`Kit ${parsed.name} adicionado em ${copy.placement}`));
+  console.log(`Origem: ${pc.cyan(sourceDir)}`);
+  console.log(`Destino: ${pc.cyan(destinationDir)}`);
+
+  if (copy.postInstall !== undefined) {
+    await runPostInstall(destinationDir, copy.postInstall, tracker);
+  }
+
+  printExternalDepsWarning(deps);
+
+  console.log("");
+  console.log(pc.bold("Como usar agora:"));
+  console.log(
+    pc.dim(
+      `Os arquivos do kit foram adicionados em ${copy.placement}. Nenhum import nem alias de tsconfig e necessario.`,
+    ),
+  );
+}
+
+async function confirmToolingOverwrite(
+  placement: string,
+  conflicts: string[],
+): Promise<boolean> {
+  const readline = createInterface({ input, output });
+  const preview = conflicts.slice(0, 10);
+
+  try {
+    console.log(
+      pc.yellow(
+        `Os seguintes arquivos ja existem em ${placement} e serao sobrescritos:`,
+      ),
+    );
+    for (const file of preview) {
+      console.log(`  ${pc.dim(file)}`);
+    }
+    if (conflicts.length > preview.length) {
+      console.log(pc.dim(`  ... e mais ${conflicts.length - preview.length}`));
+    }
+
+    const answer = await readline.question(pc.yellow(`Continuar? (y/N) `));
+    return /^(y|yes|s|sim)$/i.test(answer.trim());
+  } finally {
+    readline.close();
+  }
+}
+
+/** Files in the payload that already exist at the destination (would be overwritten). */
+export async function findPayloadConflicts(
+  sourceDir: string,
+  destinationDir: string,
+): Promise<string[]> {
+  const conflicts: string[] = [];
+  for (const rel of await listRelativeFiles(sourceDir)) {
+    if (await fs.pathExists(join(destinationDir, rel))) {
+      conflicts.push(rel);
+    }
+  }
+  return conflicts;
+}
+
+export async function listRelativeFiles(root: string): Promise<string[]> {
+  const out: string[] = [];
+
+  async function walk(dir: string): Promise<void> {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile()) {
+        out.push(relative(root, full));
+      }
+    }
+  }
+
+  if (await fs.pathExists(root)) {
+    await walk(root);
+  }
+  return out;
+}
+
+async function runPostInstall(
+  destinationDir: string,
+  postInstall: string,
+  tracker: TelemetryCommandTracker,
+): Promise<void> {
+  const scriptPath = join(destinationDir, postInstall);
+  if (!(await fs.pathExists(scriptPath))) {
+    console.log(
+      pc.yellow(
+        `Aviso: o script de postInstall declarado (${postInstall}) nao foi encontrado em ${destinationDir}; pulando.`,
+      ),
+    );
+    return;
+  }
+
+  console.log(pc.cyan(`Executando postInstall: ${postInstall}...`));
+  try {
+    await execFileAsync(process.execPath, [scriptPath], {
+      cwd: destinationDir,
+    });
+    tracker.set("postInstall", true);
+  } catch (error) {
+    throw new Error(
+      `Falha ao executar o postInstall (${postInstall}): ${errorMessage(error)}`,
+    );
+  }
 }
 
 async function collectSampleFiles(

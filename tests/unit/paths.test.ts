@@ -13,6 +13,7 @@ import {
   kitFullControlDir,
   kitNodeModulesEntry,
   kitSrcDir,
+  kitToolingDestinationDir,
   resolveKitPackageRoot,
 } from "../../packages/cli/src/cli/utils/paths.js";
 
@@ -71,6 +72,28 @@ describe("paths", () => {
   it("renders the full-control alias target with the @version suffix", () => {
     expect(kitFullControlAliasTarget("erp-core", "1.0.0")).toBe(
       "./cullet/erp-core@1.0.0/index.ts",
+    );
+  });
+
+  it("resolves a tooling placement relative to the project cwd", () => {
+    expect(kitToolingDestinationDir("/proj", ".claude/")).toMatch(
+      /proj[\\/]+\.claude$/,
+    );
+    expect(kitToolingDestinationDir("/proj", "config/agents")).toMatch(
+      /proj[\\/]+config[\\/]+agents$/,
+    );
+  });
+
+  it("allows a placement equal to the project root", () => {
+    expect(kitToolingDestinationDir("/proj", ".")).toMatch(/proj$/);
+  });
+
+  it("rejects a placement that escapes the project root", () => {
+    expect(() => kitToolingDestinationDir("/proj", "../outside")).toThrow(
+      /aponta para fora do projeto/,
+    );
+    expect(() => kitToolingDestinationDir("/proj", "/etc")).toThrow(
+      /aponta para fora do projeto/,
     );
   });
 });

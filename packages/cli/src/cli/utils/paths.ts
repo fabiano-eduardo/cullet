@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { resolveRepoRoot } from "../../shared/repo-root.js";
 
 export const KITS_DIR = "kits";
@@ -88,4 +88,28 @@ export function kitFullControlAliasTarget(
   version: string,
 ): string {
   return `./cullet/${name}@${version}/index.ts`;
+}
+
+/**
+ * Resolve the destination directory for a copy-only (`tooling`) kit. The
+ * placement is declared by the kit (e.g. ".claude/") and resolved relative to
+ * the consumer's project root. Throws if the placement would escape that root,
+ * so a kit can never write outside the project it is being added to.
+ */
+export function kitToolingDestinationDir(
+  projectCwd: string,
+  placement: string,
+): string {
+  const destination = resolve(projectCwd, placement);
+  const root = resolve(projectCwd);
+  const withinRoot =
+    destination === root || destination.startsWith(`${root}${sep}`);
+
+  if (!withinRoot) {
+    throw new Error(
+      `O placement "${placement}" do kit aponta para fora do projeto (${destination}). Placements devem ficar dentro de ${root}.`,
+    );
+  }
+
+  return destination;
 }
