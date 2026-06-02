@@ -1,10 +1,10 @@
 ---
 title: cullet
-description: Catálogo de kits arquiteturais opinativos para TypeScript.
+description: Catálogo opinativo de blocos arquiteturais e ferramentas para TypeScript.
 template: splash
 hero:
-  title: Bala de cobre para arquiteturas TypeScript
-  tagline: Kits curados, versionados e utilizáveis por import direto ou full-control, sem abrir mão de contratos explícitos e evolução previsível.
+  title: Bala de cobre para projetos TypeScript
+  tagline: Kits curados e versionados — de bibliotecas importáveis a harness e ferramentas copy-only — que você adota do zero ou pluga num projeto em andamento, sem abrir mão do controle total.
   image:
     file: ../../assets/cullet-mark.svg
     alt: Marca do cullet
@@ -17,7 +17,8 @@ hero:
 
 ## O que já está pronto
 
-- Um CLI para listar kits, inspecionar contexto, validar o projeto consumidor e copiar um kit para modo full-control.
+- Duas famílias de kit declaradas por `kind`: kits de biblioteca (`foundation` / `capability`), importáveis ou copiáveis, e kits `tooling` copy-only que se mesclam num placement do projeto (ex.: `.claude/`).
+- Um CLI para listar kits, inspecionar contexto, validar o projeto consumidor e copiar um kit (biblioteca ou tooling) para dentro do projeto.
 - Um catálogo versionado por kit, com `latest` e subpaths pinados (`cullet/<kit>/<versão>`).
 - Um fluxo de release automatizado por `changesets`, no qual PRs carregam a intenção de release e o merge publica sem terminal humano.
 

@@ -3,7 +3,9 @@ title: Anatomia de um kit
 description: Resumo operacional para sair do scaffold e chegar a um kit publicável.
 ---
 
-O guia completo de autoria vive em [kits/AUTHORING.md](https://github.com/fabiano-eduardo/cullet/blob/main/kits/AUTHORING.md). Esta página resume a trilha mínima.
+O guia completo de autoria vive em [kits/AUTHORING.md](https://github.com/fabiano-eduardo/cullet/blob/main/kits/AUTHORING.md). Esta página resume a trilha mínima para kits de biblioteca (`kind: foundation` / `capability`).
+
+Para um kit `tooling` (copy-only), o fluxo é mais curto: `npm run new-kit -- <nome-do-kit> --kind tooling`, edite o payload em `files/` e ajuste `meta.json → delivery.copy` (placement, source e dependências). Não há `core/`, portas nem import.
 
 ## Fluxo curto
 

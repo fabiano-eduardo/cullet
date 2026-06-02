@@ -2,10 +2,16 @@
 
 ## What this project is
 
-`cullet` is an opinionated catalog of architectural TypeScript kits. It ships a CLI and a set of kits that consumers can use in two ways:
+`cullet` is an opinionated catalog of architectural building blocks for TypeScript projects. It ships a CLI and a set of kits.
 
-- **Direct import**: `import { Entity } from 'cullet/erp-core'`
-- **Full-control copy**: `npx cullet fc erp-core@1.0.0` (copies kit source into the consumer project)
+Being an importable TypeScript module is **not** an invariant of a kit — it is an opt-in capability. A kit declares its nature via `kind` in `meta.json`:
+
+- **`foundation` / `capability`** — importable library kits (the default when `kind` is absent). Consumed two ways:
+  - **Direct import**: `import { Entity } from 'cullet/erp-core'`
+  - **Full-control copy**: `npx cullet fc erp-core@1.0.0` (copies kit `src/` into the consumer project and registers a tsconfig alias)
+- **`tooling`** — copy-only kits (e.g. an AI-agent harness). Not importable; they declare `delivery.copy.placement` and ship a `files/` payload that `npx cullet fc <kit>` merges into that placement (e.g. `.claude/`). No import, no tsconfig alias.
+
+The kind-conditional contract (library kits require `entryPoint`/`philosophy`/`compatibility`/`src/`; tooling kits require `delivery.copy` + a payload dir) is enforced imperatively in `scripts/validate-kit.mjs`, since the hand-rolled schema validator has no `if/then`.
 
 ## Key directories
 
@@ -61,10 +67,11 @@ Note: npm does **not** support token-free OIDC publishing (unlike PyPI). `--prov
 ## Adding a new kit
 
 ```bash
-npm run new-kit
+npm run new-kit -- <kit-name>                 # foundation (library) kit, the default
+npm run new-kit -- <kit-name> --kind tooling  # copy-only kit (ships a files/ payload)
 ```
 
-Follow the prompts. The script scaffolds the kit under `kits/` and updates `registry/`.
+The script scaffolds the kit under `packages/<name>/` from `templates/kit/` (foundation) or `templates/tooling-kit/` (tooling) and updates `packages/cli/registry/index.json`.
 
 ## Constraints and conventions
 

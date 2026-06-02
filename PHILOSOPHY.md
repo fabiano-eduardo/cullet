@@ -1,10 +1,19 @@
 # Filosofia do cullet
 
-Este documento existe para tornar a "filosofia comum" do `cullet` um **artefato verificável**, não um valor declarado em README. Cada kit publicado neste repositório precisa aderir às regras abaixo. Quando um kit divergir, a divergência deve ser explícita no `KIT_CONTEXT.md` do próprio kit, com justificativa.
+Este documento existe para tornar a "filosofia comum" do `cullet` um **artefato verificável**, não um valor declarado em README. Quando um kit divergir, a divergência deve ser explícita no `KIT_CONTEXT.md` do próprio kit, com justificativa.
 
 Checklist operacional, buckets A/B/C e revisão humana obrigatória vivem em `CONTRIBUTING.md`.
 
 Esta filosofia é o critério de curadoria. Se um kit não a respeita, não é cullet.
+
+## A quem estas regras se aplicam: `kind`
+
+`cullet` não é um pacote de starter kits importáveis. Ser um módulo TypeScript importável é uma capacidade **opt-in**, não um invariante do catálogo. Cada kit declara sua natureza em `meta.json` via `kind`, e isso define a quais regras ele responde:
+
+- **`foundation` / `capability`** — kits de biblioteca (o padrão quando `kind` está ausente). São consumidos por import direto ou cópia full-control e **aderem integralmente às sete seções abaixo** (erros, observabilidade, testes, resiliência, segurança, manutenibilidade, DX por IA). É para eles que o gate arquitetural de `validate-kit.mjs` foi escrito.
+- **`tooling`** — kits copy-only (ex.: um harness de agente de IA, configs, hooks, scripts). Não têm `core/`, portas, nem superfície de import; logo as sete seções de arquitetura de software **não se aplicam**. O contrato deles é mínimo: declarar `delivery.copy` (com `placement` e `source`) e trazer um payload que o `npx cullet fc <kit>` mescla no projeto consumidor — inclusive em projetos já em andamento. O que permanece obrigatório é o `KIT_CONTEXT.md` (seção 7) como artefato de DX por IA.
+
+As sete seções a seguir são o contrato dos **kits de biblioteca**. Onde o texto fala em camadas, portas e `Result`, leia "para kits `foundation`/`capability`".
 
 ---
 
@@ -169,10 +178,16 @@ O `KIT_CONTEXT.md` é o artefato que um assistente de IA lê antes de ajudar o u
 
 ## Aderência
 
-Um kit só entra no catálogo `cullet` se:
+Um kit de biblioteca (`foundation` / `capability`) só entra no catálogo `cullet` se:
 
 1. Respeita as sete seções acima, ou documenta a divergência em `KIT_CONTEXT.md`.
 2. Tem `meta.json`, `KIT_CONTEXT.md`, e testes para domínio e aplicação.
 3. Não expõe dependência runtime de lib de observabilidade, log, retry, ou tracing no `package.json` principal.
+
+Um kit `tooling` entra no catálogo se:
+
+1. Tem `meta.json` com `kind: "tooling"` e um `delivery.copy` válido (`placement` + `source`) apontando para um payload existente.
+2. Tem `KIT_CONTEXT.md` real (seção 7).
+3. Declara em `delivery.copy.dependencies` qualquer dependência externa que o consumidor precise instalar após a cópia.
 
 A filosofia é o contrato. O catálogo é a consequência.

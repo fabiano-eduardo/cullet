@@ -2,6 +2,8 @@
 
 Este guia descreve o caminho completo do diretório vazio ao kit publicável. O objetivo aqui não é discutir filosofia em abstrato, mas deixar explícito o que precisa existir para um kit entrar no catálogo sem quebrar os contratos do `cullet`.
 
+> **Escopo:** este guia cobre os kits de biblioteca (`kind: foundation` / `capability`) — os que têm `core/`, portas e superfície de import. Kits `tooling` têm uma forma bem mais enxuta (sem `core/`, sem import): scaffold com `npm run new-kit -- <nome> --kind tooling`, edite o payload em `files/` e ajuste `meta.json → delivery.copy`. Veja o contrato deles em `PHILOSOPHY.md` (seção "A quem estas regras se aplicam") e o template em `templates/tooling-kit/`.
+
 Use este documento junto com:
 
 - `CONTRIBUTING.md` para as regras de revisão humana e o gate de qualidade;

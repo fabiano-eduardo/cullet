@@ -3,7 +3,10 @@ title: Visão geral
 description: Como instalar o cullet e escolher entre import direto e full-control.
 ---
 
-`cullet` publica kits arquiteturais opinativos para TypeScript. Cada kit chega com decisões já tomadas sobre erros, observabilidade, testes, resiliência e manutenibilidade.
+`cullet` publica blocos arquiteturais opinativos para TypeScript. Cada kit declara em `meta.json` o seu `kind`:
+
+- **`foundation` / `capability`** — kits de biblioteca importáveis, com decisões já tomadas sobre erros, observabilidade, testes, resiliência e manutenibilidade. Consumidos por import direto ou cópia full-control (os dois modos abaixo).
+- **`tooling`** — kits copy-only (harness, configs, scripts). Não são importáveis: o `npx cullet fc <kit>` mescla o payload num placement do projeto (ex.: `.claude/`), o que permite adicioná-los a qualquer momento, inclusive a um projeto em andamento.
 
 ## Instalação
 
@@ -14,7 +17,9 @@ npx cullet doctor
 
 O `doctor` valida o cenário mínimo do projeto consumidor: `moduleResolution`, `type: module`, `baseUrl` quando há `paths`, e a versão do TypeScript testada pelo catálogo.
 
-## Dois modos de consumo
+## Dois modos de consumo (kits de biblioteca)
+
+Estes dois modos valem para kits `foundation` / `capability`. Kits `tooling` têm só um caminho: `npx cullet fc <kit>`, que copia o payload para o placement, sem import nem alias.
 
 | Aspecto | Import direto | Full-control |
 | --- | --- | --- |

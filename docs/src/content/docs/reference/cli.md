@@ -32,9 +32,11 @@ npx cullet fc erp-core@1.0.0
 npx cullet fc erp-core@1.0.0 --dry-run
 ```
 
-Copia o kit para `./cullet/<nome>@<versão>/`, ajusta o alias `cullet/<nome>` no `tsconfig.json` e avisa sobre `compatibility.fullControl.dependencies`, com ranges, que precisam ser instaladas manualmente.
+Para um kit de biblioteca (`foundation` / `capability`), copia o kit para `./cullet/<nome>@<versão>/`, ajusta o alias `cullet/<nome>` no `tsconfig.json` e avisa sobre `compatibility.fullControl.dependencies`, com ranges, que precisam ser instaladas manualmente.
 
-Use `--dry-run` para inspecionar destino, amostra de arquivos e alias sem escrever nada.
+Para um kit `tooling`, copia o payload `files/` para o `placement` declarado em `meta.json` (ex.: `.claude/`), mesclando com o conteúdo existente — sem alias de `tsconfig`. É o caminho para adicionar um harness ou conjunto de configs a um projeto em andamento. Dependências externas, quando houver, vêm de `delivery.copy.dependencies`.
+
+Use `--dry-run` para inspecionar destino, amostra de arquivos e alias (ou placement) sem escrever nada.
 
 Quando o destino já existe, o overwrite usa staging + backup temporário antes do swap final. Se a cópia falhar no meio, o diretório anterior é restaurado.
 

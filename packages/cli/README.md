@@ -1,8 +1,11 @@
 # cullet
 
-`cullet` é uma coleção de kits arquiteturais opinativos para TypeScript, publicada como pacote npm. Cada kit entrega uma arquitetura completa e curada para um tipo específico de problema, com decisões já tomadas sobre gestão de erros, observabilidade, testes, resiliência, segurança e manutenibilidade.
+`cullet` é um catálogo opinativo de blocos de construção arquiteturais para TypeScript, publicado como pacote npm. Ser um módulo TypeScript importável **não** é um invariante do catálogo — é uma capacidade opt-in. Cada kit declara sua natureza em `meta.json` via `kind`:
 
-O nome vem de "bala de cobre", uma piada com a frase "não existe bala de prata". Talvez não exista bala de prata, mas pode existir uma bala de cobre: não a solução perfeita universal, mas a arquitetura certa para o problema certo. `cullet` não é framework, não é biblioteca, não é gerador de código — é uma curadoria de arquiteturas prontas para quem não quer começar do zero, mas quer controle total desde o primeiro dia.
+- **`foundation` / `capability`** — kits de biblioteca importáveis (o padrão quando `kind` está ausente). Entregam uma arquitetura curada para um tipo de problema, com decisões já tomadas sobre erros, observabilidade, testes, resiliência, segurança e manutenibilidade. Consumidos por **import direto** (`import { Entity } from 'cullet/erp-core'`) ou por **cópia full-control** (`npx cullet fc erp-core@1.0.0`).
+- **`tooling`** — kits copy-only (ex.: um harness de agente de IA, configs, hooks, scripts). Não são importáveis: declaram um `placement` e trazem um payload `files/` que o `npx cullet fc <kit>` mescla nesse lugar do projeto (ex.: `.claude/`). Sem import, sem alias de `tsconfig`. Por serem cópia, podem ser adicionados a qualquer momento — inclusive a um projeto já em andamento.
+
+O nome vem de "bala de cobre", uma piada com a frase "não existe bala de prata". Talvez não exista bala de prata, mas pode existir uma bala de cobre: não a solução perfeita universal, mas o bloco certo para o problema certo. `cullet` não é framework, não é gerador de código — é uma curadoria de blocos arquiteturais e ferramentas que você adota quando precisar, começando do zero ou plugando num projeto existente, sem abrir mão do controle total.
 
 A filosofia completa (modelo de erros, observabilidade, testes, resiliência, segurança, manutenibilidade) vive em [`PHILOSOPHY.md`](./PHILOSOPHY.md). As regras de versionamento em [`kits/VERSIONING.md`](./kits/VERSIONING.md).
 
@@ -28,7 +31,9 @@ Ele aponta problemas comuns: `moduleResolution` incompatível, `"type": "module"
 
 ## Os dois modos, lado a lado
 
-O `cullet` tem dois modos de consumo. Eles **não são exclusivos**: você pode começar via import direto e migrar um kit específico para full-control quando precisar customizar.
+> Esta seção descreve os kits de biblioteca (`foundation` / `capability`). Kits `tooling` são sempre copy-only: não têm import direto, só o `npx cullet fc <kit>` que mescla o payload no placement do projeto.
+
+Kits de biblioteca têm dois modos de consumo. Eles **não são exclusivos**: você pode começar via import direto e migrar um kit específico para full-control quando precisar customizar.
 
 | Aspecto               | **Import direto** (`cullet/<kit>`)              | **Full-control** (`npx cullet fc <kit>`)                                         |
 | --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -184,7 +189,9 @@ npx cullet fc erp-core@1.0.0
 npx cullet fc erp-core@1.0.0 --dry-run
 ```
 
-Copia o kit para `./cullet/<nome>@<versão>/` e atualiza o alias `cullet/<nome>` no `tsconfig.json`. Avisa se o seu `baseUrl` não é `"."` (porque o `paths` é resolvido relativo a `baseUrl`) e lista `compatibility.fullControl.dependencies`, com ranges, que você precisa instalar manualmente — no full-control, as `peerDependencies` do `cullet` deixam de influenciar: o Node passa a resolver imports pelo `node_modules` do seu projeto.
+Para um kit de biblioteca (`foundation` / `capability`), copia o kit para `./cullet/<nome>@<versão>/` e atualiza o alias `cullet/<nome>` no `tsconfig.json`. Avisa se o seu `baseUrl` não é `"."` (porque o `paths` é resolvido relativo a `baseUrl`) e lista `compatibility.fullControl.dependencies`, com ranges, que você precisa instalar manualmente — no full-control, as `peerDependencies` do `cullet` deixam de influenciar: o Node passa a resolver imports pelo `node_modules` do seu projeto.
+
+Para um kit `tooling`, copia o payload `files/` do kit para o `placement` declarado em `meta.json` (ex.: `.claude/`), mesclando com o que já existir ali — sem alias de `tsconfig`. É assim que se adiciona um harness ou conjunto de configs a um projeto em andamento. As dependências externas, quando houver, vêm de `delivery.copy.dependencies`.
 
 Com `--dry-run`, o CLI mostra o destino, uma amostra dos arquivos que seriam copiados e o alias resultante, sem escrever nada.
 
@@ -282,12 +289,13 @@ O guia operacional completo vive em [`kits/AUTHORING.md`](./kits/AUTHORING.md). 
 Para criar um kit novo, use o template embutido:
 
 ```bash
-npm run new-kit -- <nome-do-kit>
+npm run new-kit -- <nome-do-kit>                 # kit de biblioteca (foundation), o padrão
+npm run new-kit -- <nome-do-kit> --kind tooling  # kit copy-only (ships a files/ payload)
 # opcional:
 npm run new-kit -- <nome-do-kit> --description "Descrição curta do kit"
 ```
 
-O script copia `templates/kit/` para `kits/<nome>/versions/1.0.0/`, faz substituição de placeholders e atualiza `registry/index.json`. Depois disso:
+O script copia `templates/kit/` (foundation) ou `templates/tooling-kit/` (tooling) para o destino do kit, faz substituição de placeholders e atualiza `registry/index.json`. Para um kit de biblioteca, depois disso:
 
 1. Refinar `meta.json` (`compatibility`, `philosophy`, `exports`).
 2. Preencher `KIT_CONTEXT.md` com o sumário prompt-friendly real.
