@@ -15,6 +15,11 @@ interface ToolingFixtureOptions {
   // uses a valid default. (A bare `undefined` cannot distinguish the two.)
   delivery?: unknown | null;
   withPayload?: boolean;
+  // Optional importable surface. `entryPoint` is written to meta.json as-is;
+  // `withEntryFile` controls whether the file actually exists on disk
+  // (defaults to true when `entryPoint` is set).
+  entryPoint?: string;
+  withEntryFile?: boolean;
 }
 
 let schema: unknown;
@@ -62,6 +67,7 @@ async function writeToolingKit(
     docs: { context: "KIT_CONTEXT.md", readme: "README.md" },
   };
   if (delivery !== null) meta.delivery = delivery;
+  if (options.entryPoint !== undefined) meta.entryPoint = options.entryPoint;
 
   await writeFile(join(packageDir, "meta.json"), JSON.stringify(meta), "utf8");
   await writeFile(
@@ -77,6 +83,16 @@ async function writeToolingKit(
     await writeFile(
       join(packageDir, "files", "CLAUDE.md"),
       "# payload\n",
+      "utf8",
+    );
+  }
+
+  if (options.entryPoint !== undefined && (options.withEntryFile ?? true)) {
+    const entryFull = join(packageDir, options.entryPoint);
+    await fs.ensureDir(join(entryFull, ".."));
+    await writeFile(
+      entryFull,
+      "export const defineAgentConfig = (c: unknown) => c;\n",
       "utf8",
     );
   }
@@ -147,5 +163,71 @@ describe("validateKit for tooling kits", () => {
     const { findings } = await validateKit(kit, schema);
 
     expect(errors(findings).join("\n")).toMatch(/payload directory not found/);
+  });
+});
+
+function warnings(
+  findings: Array<{ severity: string; msg: string }>,
+): string[] {
+  return findings.filter((f) => f.severity === "warn").map((f) => f.msg);
+}
+
+describe("validateKit for importable tooling kits", () => {
+  it("accepts a tooling kit that opts into an importable surface", async () => {
+    const packageDir = await writeToolingKit({
+      delivery: {
+        copy: { placement: ".claude/" },
+        import: { peerDependencies: [] },
+      },
+      entryPoint: "src/index.ts",
+    });
+    const kit = await buildOrThrow(packageDir);
+    const { findings } = await validateKit(kit, schema);
+
+    expect(errors(findings)).toEqual([]);
+  });
+
+  it("rejects delivery.import without an entryPoint", async () => {
+    const packageDir = await writeToolingKit({
+      delivery: {
+        copy: { placement: ".claude/" },
+        import: { peerDependencies: [] },
+      },
+    });
+    const kit = await buildOrThrow(packageDir);
+    const { findings } = await validateKit(kit, schema);
+
+    expect(errors(findings).join("\n")).toMatch(
+      /delivery\.import but is missing "entryPoint"/,
+    );
+  });
+
+  it("rejects an importable tooling kit whose entryPoint file is missing", async () => {
+    const packageDir = await writeToolingKit({
+      delivery: {
+        copy: { placement: ".claude/" },
+        import: { peerDependencies: [] },
+      },
+      entryPoint: "src/index.ts",
+      withEntryFile: false,
+    });
+    const kit = await buildOrThrow(packageDir);
+    const { findings } = await validateKit(kit, schema);
+
+    expect(errors(findings).join("\n")).toMatch(/entryPoint: file not found/);
+  });
+
+  it("warns when entryPoint is declared without delivery.import", async () => {
+    const packageDir = await writeToolingKit({
+      delivery: { copy: { placement: ".claude/" } },
+      entryPoint: "src/index.ts",
+    });
+    const kit = await buildOrThrow(packageDir);
+    const { findings } = await validateKit(kit, schema);
+
+    expect(errors(findings)).toEqual([]);
+    expect(warnings(findings).join("\n")).toMatch(
+      /entryPoint" without delivery\.import/,
+    );
   });
 });

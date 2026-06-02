@@ -15,7 +15,7 @@
     "kind": {
       "type": "string",
       "enum": ["foundation", "capability", "tooling"],
-      "description": "Nature of the kit. `foundation`/`capability` are importable TS libraries; `tooling` is a copy-only kit (no entryPoint/exports). Absent ⇒ treated as `foundation`. Library-specific fields (entryPoint, philosophy, compatibility) are required for non-tooling kinds and forbidden of substance for tooling; `delivery.copy` is required for tooling. These conditional rules are enforced by validate-kit.mjs."
+      "description": "Nature of the kit. `foundation`/`capability` are importable TS libraries; `tooling` is copy-first (ships a payload merged into a placement) but MAY opt into an importable surface by declaring `entryPoint` + `delivery.import` (e.g. a typed config helper consumed straight from node_modules). Absent ⇒ treated as `foundation`. Library-specific fields (philosophy, compatibility) are required for non-tooling kinds; `delivery.copy` is required for tooling, and declaring `delivery.import` requires `entryPoint`. These conditional rules are enforced by validate-kit.mjs."
     },
     "delivery": {
       "type": "object",
@@ -25,6 +25,7 @@
         "import": {
           "type": "object",
           "additionalProperties": false,
+          "description": "Opt-in importable surface for a `tooling` kit: declaring this block makes the kit consumable straight from node_modules (`import { ... } from \"@cullet/<kit>\"`) in addition to copy. Requires `entryPoint` to point at the surface, and the kit's package.json must expose it via `exports`/`types`.",
           "properties": {
             "peerDependencies": {
               "type": "array",

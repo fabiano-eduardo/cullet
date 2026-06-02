@@ -15,7 +15,7 @@ Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para 
 ## Como começa
 
 ```ts
-import {} from /* nada exportado ainda */ "cullet/dummy-api";
+import {} from /* nada exportado ainda */ "@cullet/dummy-api";
 ```
 
 Para inspecionar a estrutura sem instalar:

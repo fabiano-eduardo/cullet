@@ -8,7 +8,9 @@ import {
   getCopyDependencies,
   getCopyPlacement,
   getDirectImportPeerDependencies,
+  getImportPeerDependencies,
   isToolingKit,
+  kitExposesImport,
   loadKitContext,
   loadKitDeprecation,
   loadKitMeta,
@@ -187,10 +189,20 @@ export function createInfoCommand(): Command {
           }
 
           const tooling = isToolingKit(meta);
+          // A tooling kit that declares `delivery.import` is copy-first but also
+          // importable straight from node_modules — surface both paths.
+          const importableTooling = tooling && kitExposesImport(meta);
 
           console.log("");
           if (tooling) {
-            console.log(pc.bold("Adicione ao projeto:"));
+            if (importableTooling) {
+              console.log(pc.bold("Importe direto (sem copiar):"));
+              console.log(pc.cyan(`import { ... } from "${importSpecifier}";`));
+              console.log("");
+              console.log(pc.bold("Ou copie para o projeto:"));
+            } else {
+              console.log(pc.bold("Adicione ao projeto:"));
+            }
             console.log(pc.cyan(`npx cullet fc ${parsed.name}@${version}`));
             const placement = getCopyPlacement(meta);
             if (placement !== undefined) {
@@ -206,6 +218,14 @@ export function createInfoCommand(): Command {
           await printPublishedVersions(entry.npmName);
 
           if (tooling) {
+            const importDeps = getImportPeerDependencies(meta);
+            if (importDeps.length > 0) {
+              console.log("");
+              console.log(pc.bold("Peer deps para import direto:"));
+              for (const dependency of importDeps) {
+                console.log(pc.dim(`  ${formatDependency(dependency)}`));
+              }
+            }
             const deps = getCopyDependencies(meta);
             if (deps.length > 0) {
               console.log("");
@@ -243,7 +263,10 @@ export function createInfoCommand(): Command {
             );
           }
 
-          if (tooling) {
+          // Copy-only tooling kits cannot be aliased (they are not imported).
+          // Importable tooling kits fall through to the alias logic below, just
+          // like library kits.
+          if (tooling && !importableTooling) {
             if (options.alias) {
               console.log("");
               console.log(

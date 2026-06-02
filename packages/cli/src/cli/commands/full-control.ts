@@ -25,6 +25,7 @@ import {
   getCopyDependencies,
   getFullControlDependencies,
   isToolingKit,
+  kitExposesImport,
   loadKitDeprecation,
   loadKitMeta,
   loadRegistry,
@@ -575,6 +576,13 @@ async function runToolingFullControl(
       `Os arquivos do kit foram adicionados em ${copy.placement}. Nenhum import nem alias de tsconfig e necessario.`,
     ),
   );
+  if (kitExposesImport(meta)) {
+    console.log(
+      pc.dim(
+        `Este kit tambem expoe uma superficie importavel: voce pode usa-lo direto do node_modules com \`import { ... } from "${entry.npmName}"\`, sem copiar.`,
+      ),
+    );
+  }
 }
 
 async function confirmToolingOverwrite(

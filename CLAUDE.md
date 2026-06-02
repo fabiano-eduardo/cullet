@@ -9,9 +9,9 @@ Being an importable TypeScript module is **not** an invariant of a kit — it is
 - **`foundation` / `capability`** — importable library kits (the default when `kind` is absent). Consumed two ways:
   - **Direct import**: `import { Entity } from 'cullet/erp-core'`
   - **Full-control copy**: `npx cullet fc erp-core@1.0.0` (copies kit `src/` into the consumer project and registers a tsconfig alias)
-- **`tooling`** — copy-only kits (e.g. an AI-agent harness). Not importable; they declare `delivery.copy.placement` and ship a `files/` payload that `npx cullet fc <kit>` merges into that placement (e.g. `.claude/`). No import, no tsconfig alias.
+- **`tooling`** — copy-first kits (e.g. an AI-agent harness). They declare `delivery.copy.placement` and ship a `files/` payload that `npx cullet fc <kit>` merges into that placement (e.g. `.claude/`). Optionally a tooling kit may **also** opt into an importable surface by declaring `entryPoint` + `delivery.import` (e.g. a typed `defineAgentConfig` helper): then it is consumable straight from node_modules (`import { ... } from 'cullet/<kit>'`) with no copy, and `cullet info <kit> --alias` registers the tsconfig alias.
 
-The kind-conditional contract (library kits require `entryPoint`/`philosophy`/`compatibility`/`src/`; tooling kits require `delivery.copy` + a payload dir) is enforced imperatively in `scripts/validate-kit.mjs`, since the hand-rolled schema validator has no `if/then`.
+The kind-conditional contract (library kits require `entryPoint`/`philosophy`/`compatibility`/`src/`; tooling kits require `delivery.copy` + a payload dir, and a tooling kit that declares `delivery.import` must also declare an existing `entryPoint`) is enforced imperatively in `scripts/validate-kit.mjs`, since the hand-rolled schema validator has no `if/then`.
 
 ## Key directories
 

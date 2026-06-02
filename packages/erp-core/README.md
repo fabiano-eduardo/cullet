@@ -41,8 +41,10 @@ import { PolicyResolver } from "@cullet/erp-core";
 Full-control (kit copiado para dentro do projeto, livre para editar):
 
 ```bash
-npx cullet fc @cullet/erp-core@1.0.0
+npx cullet fc erp-core@1.0.0
 ```
+
+O argumento do `fc` é o nome do kit no registry (`erp-core`), não o nome npm com escopo. O comando instala `@cullet/erp-core`, copia o `src/` para `./cullet/erp-core@1.0.0/` e registra o alias `@cullet/erp-core` no `tsconfig.json`.
 
 ## Composicao sem singletons
 

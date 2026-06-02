@@ -762,6 +762,23 @@ export function getCopyDependencies(
   return dependencies !== undefined ? cloneKitDependencies(dependencies) : [];
 }
 
+/**
+ * True when a `tooling` kit opts into an importable surface (e.g. a typed
+ * config helper) by declaring `delivery.import`. Such kits stay copy-first but
+ * can also be consumed straight from node_modules with `import`, no copy.
+ */
+export function kitExposesImport(meta: KitMeta | null | undefined): boolean {
+  return meta?.delivery?.import !== undefined;
+}
+
+/** Peer dependencies a kit's importable surface needs in the consumer. */
+export function getImportPeerDependencies(
+  meta: KitMeta | null | undefined,
+): KitDependency[] {
+  const dependencies = meta?.delivery?.import?.peerDependencies;
+  return dependencies !== undefined ? cloneKitDependencies(dependencies) : [];
+}
+
 export async function loadKitMeta(
   fromMetaUrl: string,
   name: string,

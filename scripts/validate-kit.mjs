@@ -672,6 +672,25 @@ export async function validateKit(kit, schema) {
         msg: `schema: tooling kit requires delivery.copy.placement`,
       });
     }
+
+    // A tooling kit stays copy-first but MAY opt into an importable surface
+    // (e.g. a typed config helper) by declaring `delivery.import`. When it does,
+    // it must also declare `entryPoint` so the import has a real target; an
+    // `entryPoint` without `delivery.import` is most likely a mistake.
+    const declaresImport = meta.delivery?.import !== undefined;
+    const hasEntryPoint = typeof meta.entryPoint === "string";
+    if (declaresImport && !hasEntryPoint) {
+      findings.push({
+        severity: "error",
+        msg: `schema: tooling kit declares delivery.import but is missing "entryPoint" (the importable surface)`,
+      });
+    }
+    if (hasEntryPoint && !declaresImport) {
+      findings.push({
+        severity: "warn",
+        msg: `tooling kit declares "entryPoint" without delivery.import; declare delivery.import to expose the importable surface`,
+      });
+    }
   } else {
     for (const field of ["compatibility", "entryPoint", "philosophy"]) {
       if (meta[field] === undefined) {
@@ -694,7 +713,9 @@ export async function validateKit(kit, schema) {
     ["docs.readme", readmePath],
     ["docs.context", contextPath],
   ];
-  if (!isTooling) {
+  // Library kits always have an entryPoint; tooling kits only when they opt
+  // into an importable surface. In both cases the declared file must exist.
+  if (!isTooling || typeof meta.entryPoint === "string") {
     existenceTargets.push([
       "entryPoint",
       await resolveEntryPointPath(kit, meta.entryPoint),

@@ -3,8 +3,10 @@ import {
   getCopyDelivery,
   getCopyDependencies,
   getCopyPlacement,
+  getImportPeerDependencies,
   getKitKind,
   isToolingKit,
+  kitExposesImport,
   type KitMeta,
 } from "../../packages/cli/src/registry/catalog.js";
 
@@ -80,5 +82,58 @@ describe("getCopyPlacement / getCopyDependencies", () => {
   it("returns sensible empties for non-tooling kits", () => {
     expect(getCopyPlacement({})).toBeUndefined();
     expect(getCopyDependencies({})).toEqual([]);
+  });
+});
+
+describe("kitExposesImport / getImportPeerDependencies", () => {
+  it("is true when the kit declares an import delivery surface", () => {
+    const meta: KitMeta = {
+      kind: "tooling",
+      delivery: {
+        copy: { placement: ".claude/", source: "files", dependencies: [] },
+        import: { peerDependencies: [{ name: "zod", range: ">=3" }] },
+      },
+    };
+    expect(kitExposesImport(meta)).toBe(true);
+    expect(getImportPeerDependencies(meta)).toEqual([
+      { name: "zod", range: ">=3" },
+    ]);
+  });
+
+  it("treats an empty peerDependencies array as importable", () => {
+    const meta: KitMeta = {
+      kind: "tooling",
+      delivery: {
+        copy: { placement: ".claude/", source: "files", dependencies: [] },
+        import: { peerDependencies: [] },
+      },
+    };
+    expect(kitExposesImport(meta)).toBe(true);
+    expect(getImportPeerDependencies(meta)).toEqual([]);
+  });
+
+  it("is false for copy-only tooling and library kits", () => {
+    const copyOnly: KitMeta = {
+      kind: "tooling",
+      delivery: {
+        copy: { placement: ".claude/", source: "files", dependencies: [] },
+      },
+    };
+    expect(kitExposesImport(copyOnly)).toBe(false);
+    expect(kitExposesImport({})).toBe(false);
+    expect(getImportPeerDependencies(copyOnly)).toEqual([]);
+  });
+
+  it("returns a clone that does not leak into the source meta", () => {
+    const meta: KitMeta = {
+      kind: "tooling",
+      delivery: {
+        copy: { placement: ".claude/", source: "files", dependencies: [] },
+        import: { peerDependencies: [{ name: "zod", range: ">=3" }] },
+      },
+    };
+    const deps = getImportPeerDependencies(meta);
+    deps.push({ name: "leak", range: "*" });
+    expect(meta.delivery?.import?.peerDependencies).toHaveLength(1);
   });
 });
