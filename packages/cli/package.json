@@ -1,6 +1,6 @@
 {
   "name": "cullet",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Coleção de kits arquiteturais opinativos para TypeScript",
   "type": "module",
   "license": "MIT",

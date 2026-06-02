@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+### Minor Changes
+
+- 69bc321: Kits `tooling` agora podem opcionalmente expor uma superfície importável (`entryPoint` + `delivery.import`), consumível direto do node_modules sem cópia. `cullet info` mostra os dois caminhos (import direto e `fc`) e `--alias` passa a funcionar para esses kits; `cullet fc` avisa quando o kit também é importável; e `validate-kit` exige um `entryPoint` existente quando `delivery.import` é declarado. Kits copy-only seguem inalterados.
+- 69bc321: Adiciona o `kind` **tooling**: kits copy-only que declaram `delivery.copy` (placement + payload `files/`) e são mesclados no projeto por `npx cullet fc <kit>`, sem import nem alias de tsconfig. `cullet info`/`list` reconhecem o kind, `validate-kit` aplica o contrato condicional por kind (kits de biblioteca exigem `entryPoint`/`philosophy`/`compatibility`; kits tooling exigem `delivery.copy`), e o `npm run new-kit -- <nome> --kind tooling` faz o scaffold a partir de `templates/tooling-kit/`.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
