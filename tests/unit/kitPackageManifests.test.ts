@@ -15,6 +15,7 @@ interface KitPackageManifest {
   types?: string;
   exports?: Record<string, PackageExportValue>;
   peerDependencies?: Record<string, string>;
+  repository?: { type?: string; url?: string; directory?: string };
 }
 
 interface KitMeta {
@@ -138,6 +139,21 @@ describe("kit package manifests", () => {
     }
 
     expect(mismatches).toEqual([]);
+  });
+
+  it("declares a repository field on every kit (required for npm provenance)", async () => {
+    const kits = await collectKitPackageEntries();
+    const missing: string[] = [];
+
+    for (const kit of kits) {
+      const manifest = await readJsonFile<KitPackageManifest>(kit.manifestPath);
+      const url = manifest.repository?.url;
+      if (typeof url !== "string" || !url.includes("cullet")) {
+        missing.push(relative(packagesRoot, kit.manifestPath));
+      }
+    }
+
+    expect(missing).toEqual([]);
   });
 
   it("keeps peerDependencies aligned with meta.json direct-import requirements", async () => {

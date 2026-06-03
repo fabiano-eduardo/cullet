@@ -3,6 +3,11 @@
   "version": "1.0.1",
   "description": "Kit dummy de API para validar o fluxo de criacao",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabiano-eduardo/cullet.git",
+    "directory": "packages/dummy-api"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

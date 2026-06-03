@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "__KIT_DESCRIPTION__",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabiano-eduardo/cullet.git",
+    "directory": "packages/__KIT_NAME__"
+  },
   "files": ["files", "meta.json", "KIT_CONTEXT.md", "README.md"],
   "engines": {
     "node": ">=18.17"
