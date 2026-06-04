@@ -21,6 +21,10 @@ Exemplo:
 }
 ```
 
+## Perfil arquitetural
+
+As tabelas de auditoria abaixo descrevem o **perfil padrão** do `cullet`: clean architecture (camadas `domain` / `application` / `adapters`, portas, `Result`), que é o que os lints default codificam. Nem todo kit de biblioteca é desse perfil — pode ser frontend, SDK, utilitários. Um kit de outro paradigma satisfaz os mesmos **princípios** (ver [`PHILOSOPHY.md`](./PHILOSOPHY.md)) com outra estrutura e declara isso desligando as regras estruturais que não se aplicam (`architectureLayers`, `portsArePure`, `observabilityPorts`, `applicationReturnsResult`, `requiredCoreTests`, …) em `meta.json -> lint`, com a justificativa no `KIT_CONTEXT.md`. As tabelas valem integralmente para o perfil padrão; para os demais, leia "regra" como "regra quando aplicável ao paradigma do kit".
+
 ## Convenções do repositório
 
 - Arquivos e pastas de uma palavra usam lowercase simples: `list.ts`, `doctor.ts`, `registry/`.
