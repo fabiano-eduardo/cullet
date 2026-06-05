@@ -2,7 +2,7 @@
 
 `cullet` é um catálogo opinativo de blocos de construção arquiteturais para TypeScript. O pacote `cullet` é a **CLI + catálogo**: ele descobre, audita, copia e migra kits. Cada kit é publicado como seu **próprio pacote npm** (`@cullet/<kit>`). Ser um módulo TypeScript importável **não** é um invariante do catálogo — é uma capacidade opt-in. Cada kit declara sua natureza em `meta.json` via `kind`:
 
-- **`foundation` / `capability`** — kits de biblioteca importáveis (o padrão quando `kind` está ausente). Entregam uma arquitetura curada para um tipo de problema, com decisões já tomadas sobre erros, observabilidade, testes, resiliência, segurança e manutenibilidade. Não são necessariamente backend ou clean architecture: o perfil padrão é clean-arch (núcleo de domínio), mas um kit pode ser de frontend, um SDK ou utilitários — basta declarar seu paradigma (ver [`PHILOSOPHY.md`](./PHILOSOPHY.md#paradigma-e-perfil-arquitetural)). Cada um é publicado como `@cullet/<kit>` e consumido por **import direto** (`import { Entity } from '@cullet/erp-core'`) ou por **cópia full-control** (`npx cullet fc erp-core@1.0.0`).
+- **`foundation` / `capability`** — kits de biblioteca importáveis (o padrão quando `kind` está ausente). Entregam uma base curada para um tipo de problema, com decisões já tomadas sobre erros, observabilidade, testes, resiliência, segurança e manutenibilidade. `cullet` **não vincula kits a uma arquitetura**: um kit pode ser backend, frontend (React/Vue/Angular), um SDK ou utilitários — cada um cumpre os mesmos **princípios** na estrutura do seu paradigma (ver [`PHILOSOPHY.md`](./PHILOSOPHY.md#princípio-versus-estrutura)). Cada um é publicado como `@cullet/<kit>` e consumido por **import direto** (`import { Entity } from '@cullet/erp-core'`) ou por **cópia full-control** (`npx cullet fc erp-core@1.0.0`).
 - **`tooling`** — kits copy-first (ex.: um harness de agente de IA, configs, hooks, scripts). Declaram um `placement` e trazem um payload `files/` que o `npx cullet fc <kit>` mescla nesse lugar do projeto (ex.: `.claude/`) — podem ser adicionados a qualquer momento, inclusive a um projeto já em andamento. Opcionalmente, um kit tooling pode **também** expor uma superfície importável (declarando `entryPoint` + `delivery.import`): aí ele é consumível direto do `node_modules` (`import { defineAgentConfig } from '@cullet/<kit>'`), sem precisar copiar — útil, por exemplo, para um helper de config tipado em que você injeta sua API key via env.
 
 O nome vem de "bala de cobre", uma piada com a frase "não existe bala de prata". Talvez não exista bala de prata, mas pode existir uma bala de cobre: não a solução perfeita universal, mas o bloco certo para o problema certo. `cullet` não é framework, não é gerador de código — é uma curadoria de blocos arquiteturais e ferramentas que você adota quando precisar, começando do zero ou plugando num projeto existente, sem abrir mão do controle total.
@@ -235,13 +235,13 @@ npm run new-kit -- <nome-do-kit> --description "Descrição curta do kit"
 
 O script copia `templates/kit/` (foundation) ou `templates/tooling-kit/` (tooling) para `packages/<nome-do-kit>/`, faz substituição de placeholders, cria um changeset inicial e atualiza `registry/index.json`. Para um kit de biblioteca, depois disso:
 
-1. Refinar `meta.json` (`compatibility`, `philosophy`, `exports`). Se o kit não for do perfil clean-arch padrão (ex.: frontend, SDK), declarar em `meta.json -> lint` quais regras estruturais não se aplicam.
+1. Refinar `meta.json` (`compatibility`, `philosophy`, `exports`). Se o kit adotar uma arquitetura em camadas e quiser que o catálogo a faça cumprir, **ligar** em `meta.json -> lint` as regras estruturais correspondentes (`architectureLayers`, `portsArePure`, `applicationReturnsResult`, `requiredCoreTests`, `noMocksInCoreTests`).
 2. Preencher `KIT_CONTEXT.md` com o sumário prompt-friendly real, descrevendo as fronteiras reais do kit em `[layers]`.
 3. Atualizar `README.md` seguindo o template (**o que entrega**, **como começa**, **decisões tomadas**, **como evoluir**).
 4. Implementar a lógica do kit em `src/`.
 5. Rodar `npm run validate-kits` e `npm run build`.
 
-Estrutura resultante de um kit de biblioteca **no perfil padrão (clean architecture)** — outros paradigmas organizam `src/` conforme suas próprias fronteiras:
+Estrutura possível de um kit de biblioteca que adota uma **arquitetura em camadas** (clean architecture, hexagonal, …) — outros paradigmas organizam `src/` conforme suas próprias fronteiras:
 
 ```text
 packages/

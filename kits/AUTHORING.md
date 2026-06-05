@@ -2,7 +2,7 @@
 
 Este guia descreve o caminho completo do diretório vazio ao kit publicável. O objetivo aqui não é discutir filosofia em abstrato, mas deixar explícito o que precisa existir para um kit entrar no catálogo sem quebrar os contratos do `cullet`.
 
-> **Escopo:** este guia cobre os kits de biblioteca (`kind: foundation` / `capability`) — os que têm `core/`, portas e superfície de import. Kits `tooling` têm uma forma bem mais enxuta (sem `core/`, sem import): scaffold com `npm run new-kit -- <nome> --kind tooling`, edite o payload em `files/` e ajuste `meta.json → delivery.copy`. Veja o contrato deles em `PHILOSOPHY.md` (seção "A quem estas regras se aplicam") e o template em `templates/tooling-kit/`.
+> **Escopo:** este guia cobre os kits de biblioteca (`kind: foundation` / `capability`) — os que têm superfície de import (e, quando adotam camadas, `core/` e portas). Kits `tooling` têm uma forma bem mais enxuta (sem `core/`, sem import): scaffold com `npm run new-kit -- <nome> --kind tooling`, edite o payload em `files/` e ajuste `meta.json → delivery.copy`. Veja o contrato deles em `PHILOSOPHY.md` (seção "A quem estas regras se aplicam") e o template em `templates/tooling-kit/`.
 
 Use este documento junto com:
 
@@ -12,26 +12,23 @@ Use este documento junto com:
 
 ## 1. Resultado final esperado
 
-Um kit publicável sempre termina mais ou menos assim:
+O que um kit de biblioteca publicável **sempre** precisa ter são quatro peças: o entry point (`index.ts`), `meta.json`, `README.md` e `KIT_CONTEXT.md`. Tudo o mais dentro de `src/` é a estrutura interna do kit, que você organiza conforme o paradigma dele.
 
 ```text
-kits/
+packages/
   nome-do-kit/
-    versions/
-      1.0.0/
-        index.ts
-        meta.json
-        README.md
-        KIT_CONTEXT.md
-        core/
-          application/
-          domain/
-          errors/
-          exceptions/
-          result/
+    package.json
+    meta.json
+    README.md
+    KIT_CONTEXT.md
+    tsdown.config.ts
+    src/
+      index.ts        # entry point — fronteira do import direto
 ```
 
-Nem toda pasta precisa ter implementação já na primeira versão, mas os arquivos de metadado e documentação acima são obrigatórios.
+`cullet` **não vincula kits a uma arquitetura**. Como o `src/` é organizado depende do paradigma do kit: um núcleo de negócio pode usar camadas (clean architecture, hexagonal) sob `core/` (`domain/`, `application/` com `ports/`, `errors/`, `exceptions/`, `result/`); um kit de frontend organiza por estado / UI / dados; um SDK ou utilitários têm outras fronteiras ainda. Nenhuma dessas formas é o padrão do catálogo.
+
+Os lints default verificam apenas **princípios** (testes, observabilidade desacoplada, imports honestos, profundidade/tamanho, contexto para IA). As regras que pressupõem camadas (`architectureLayers`, `portsArePure`, `applicationReturnsResult`, `requiredCoreTests`, `noMocksInCoreTests`) são **opt-in**: um kit que adota camadas as **liga** em `meta.json -> lint`. As seções 6 a 8 abaixo descrevem a forma em camadas; leia-as como "quando o kit adota essa estrutura".
 
 ## 2. Scaffold inicial
 
@@ -102,9 +99,9 @@ O template já sugere a estrutura certa. Antes da primeira release, troque o con
 
 Se o kit tiver dependência runtime, explique ali também como ela entra em import direto e em full-control.
 
-## 6. Implemente o core sem vazar a infraestrutura
+## 6. Estrutura em camadas (opt-in)
 
-O formato exato varia por kit, mas as regras estruturais do catálogo são estáveis:
+Esta seção descreve a forma em **camadas** (clean architecture, hexagonal) — uma das estruturas possíveis, não o padrão do catálogo. Vale para um kit que adota camadas e **liga** as regras estruturais em `meta.json -> lint`; um kit de outro paradigma organiza `src/` de outra forma e simplesmente não liga essas regras. Quando o kit adota camadas, as regras estruturais são estáveis:
 
 - `core/domain/` é modelo puro; não importa runtime externo.
 - `core/application/` consome portas e expõe classes cujo `Output` precisa ser `Result<...>`.

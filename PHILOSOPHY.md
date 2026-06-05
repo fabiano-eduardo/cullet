@@ -8,11 +8,11 @@ Esta filosofia é o critério de curadoria. Se um kit não a respeita, não é c
 
 ## O que é princípio e o que é forma
 
-As sete seções abaixo descrevem **princípios** — erros explícitos, observabilidade desacoplada, núcleo testável sem mock pesado, política de resiliência declarada, validação na borda, manutenibilidade, contexto para IA. Princípios são neutros de paradigma: valem para um núcleo de ERP, para uma biblioteca de componentes de frontend, para um cliente de fila, para o que for.
+O contrato do `cullet` são **princípios**, não uma arquitetura. As sete seções abaixo descrevem esses princípios — erros explícitos, observabilidade desacoplada, núcleo testável sem mock pesado, política de resiliência declarada, validação na borda, manutenibilidade, contexto para IA. Princípios são neutros de paradigma: valem para um núcleo de ERP, para uma biblioteca de componentes React/Vue/Angular, para um SDK, para um cliente de fila, para utilitários — para o que for.
 
-O que **não** é universal é a *forma* que cada princípio assume. A forma de referência do `cullet` é a clean architecture — camadas `domain` / `application` / `adapters`, portas, `Result` — e é ela que os lints **default** de `validate-kit.mjs` codificam. Mas clean architecture é o **perfil padrão**, não um invariante do catálogo. Um kit de outro paradigma satisfaz os mesmos princípios com outra estrutura, e declara isso explicitamente (ver "Paradigma e perfil arquitetural").
+O que **não** é universal é a *forma* que cada princípio assume. `cullet` **não elege uma arquitetura de referência**: cada kit cumpre os princípios na estrutura que faz sentido para o seu paradigma. Arquiteturas em camadas (clean architecture, hexagonal, as camadas típicas de um frontend) são apenas algumas das formas possíveis — nenhuma é o padrão do catálogo. Por isso os lints **default** de `validate-kit.mjs` verificam só os princípios; regras que pressupõem uma arquitetura específica são **opt-in** por kit (ver "Princípio versus estrutura").
 
-Ao longo do texto, onde aparecer `domain` / `application` / `adapters`, "porta" ou "camada", leia como a **expressão clean-architecture do princípio** — a forma default. O princípio é o que está em negrito; a estrutura é uma das maneiras de cumpri-lo.
+Ao longo do texto, quando uma estrutura concreta aparecer (camadas, "porta", `domain` / `application` / `adapters`), leia como **um exemplo de como cumprir o princípio**, não como exigência. O princípio é o que está em negrito; a estrutura é uma escolha do kit.
 
 ## A quem estas regras se aplicam: `kind`
 
@@ -21,25 +21,25 @@ Ao longo do texto, onde aparecer `domain` / `application` / `adapters`, "porta" 
 - **`foundation` / `capability`** — kits de biblioteca (o padrão quando `kind` está ausente). São consumidos por import direto ou cópia full-control e **respondem às sete seções abaixo**, na forma que combina com seu paradigma. É para eles que o gate arquitetural de `validate-kit.mjs` foi escrito.
 - **`tooling`** — kits copy-only (ex.: um harness de agente de IA, configs, hooks, scripts). Não têm núcleo de código, fronteiras, nem superfície de import; logo as sete seções de arquitetura de software **não se aplicam**. O contrato deles é mínimo: declarar `delivery.copy` (com `placement` e `source`) e trazer um payload que o `npx cullet fc <kit>` mescla no projeto consumidor — inclusive em projetos já em andamento. O que permanece obrigatório é o `KIT_CONTEXT.md` (seção 7) como artefato de DX por IA.
 
-As sete seções a seguir são o contrato dos **kits de biblioteca**, lidas através do perfil arquitetural que o kit declarar.
+As sete seções a seguir são o contrato dos **kits de biblioteca**, lidas na forma que o paradigma de cada kit assume.
 
-## Paradigma e perfil arquitetural
+## Princípio versus estrutura
 
 Nem todo kit de biblioteca é um núcleo de domínio backend. Um kit pode ser:
 
-- um núcleo de regras de negócio (backend, clean architecture) — o **perfil padrão**;
-- uma biblioteca de frontend (componentes, hooks, máquinas de estado, design system);
+- um núcleo de regras de negócio backend;
+- uma biblioteca de frontend (componentes React/Vue/Angular, hooks, máquinas de estado, design system);
 - um cliente/SDK, um conjunto de adaptadores de integração, utilitários transversais, etc.
 
-Esses paradigmas têm **fronteiras** diferentes. O perfil padrão separa `domain` (regra pura) / `application` (orquestração de caso de uso) / `adapters` (mundo externo). Um kit de frontend separa, por exemplo, lógica de estado e regras de apresentação / componentes de UI / acesso a dados e efeitos. A separação é o que importa — qual a fronteira concreta depende do paradigma.
+Cada paradigma tem **fronteiras** diferentes, e nenhuma é privilegiada pelo catálogo. Um núcleo de negócio pode separar regra pura / orquestração / mundo externo (a forma de uma arquitetura em camadas). Um kit de frontend separa, por exemplo, lógica de estado e regras de apresentação / componentes de UI / acesso a dados e efeitos. A **separação** é o princípio; quais são as fronteiras concretas depende do kit.
 
-Um kit que não segue o perfil padrão **não está fora do `cullet`**. Ele:
+Como os defaults verificam só princípios, um kit não precisa "anunciar" que diverge — ele já nasce livre de arquitetura. O que um kit faz é o inverso:
 
-1. Declara em `meta.json -> lint` quais regras estruturais não se aplicam (`architectureLayers`, `portsArePure`, `observabilityPorts`, `applicationReturnsResult`, `requiredCoreTests`, … com `off` ou `warn`). Os lints default assumem o perfil padrão; desligá-los é como um kit anuncia outro paradigma.
-2. Documenta no `KIT_CONTEXT.md` (seção `[layers]`) **quais** fronteiras ele realmente tem e por quê, em vez das camadas default.
-3. Continua honrando o **espírito** das sete seções: erros tipados, observabilidade desacoplada, núcleo testável, política explícita, validação na borda, manutenibilidade e contexto para IA não dependem de clean architecture — só mudam de forma.
+1. Se adota uma arquitetura em camadas e quer que o catálogo a faça cumprir, **liga** as regras estruturais correspondentes em `meta.json -> lint` (`architectureLayers`, `portsArePure`, `applicationReturnsResult`, `requiredCoreTests`, `noMocksInCoreTests` com `warn` ou `error`). Ligar essas regras é opt-in.
+2. Documenta no `KIT_CONTEXT.md` (seção `[layers]`) **quais** fronteiras ele realmente tem e por quê.
+3. Honra o **espírito** das sete seções em qualquer caso: erros tipados, observabilidade desacoplada, núcleo testável, política explícita, validação na borda, manutenibilidade e contexto para IA não dependem de nenhuma arquitetura — só mudam de forma.
 
-Override de lint é exceção justificada, não estilo livre. A justificativa vive no `KIT_CONTEXT.md`.
+Tanto ligar uma regra estrutural quanto desligar um lint de princípio é uma decisão consciente, documentada no `KIT_CONTEXT.md`.
 
 ---
 
@@ -49,8 +49,8 @@ Override de lint é exceção justificada, não estilo livre. A justificativa vi
 
 Todo kit reconhece três classes de erro, e nenhuma outra. A divisão é por **natureza**, não por pasta:
 
-- **Erro de regra/invariante** — uma regra do kit foi violada, uma transição de estado é impossível, um valor quebra um invariante. Sinaliza bug ou estado que não deveria existir. No perfil padrão vive em `core/exceptions/` e nunca depende de runtime, rede ou framework.
-- **Erro de operação esperada** — uma operação foi recusada por um motivo conhecido e previsível: não-encontrado, conflito, autorização negada, idempotência violada, entrada inválida na borda. É um resultado, não uma surpresa. No perfil padrão vive em `core/errors/` e implementa `AppError`.
+- **Erro de regra/invariante** — uma regra do kit foi violada, uma transição de estado é impossível, um valor quebra um invariante. Sinaliza bug ou estado que não deveria existir. Num kit em camadas costuma viver em `core/exceptions/`; em qualquer estrutura, nunca depende de runtime, rede ou framework.
+- **Erro de operação esperada** — uma operação foi recusada por um motivo conhecido e previsível: não-encontrado, conflito, autorização negada, idempotência violada, entrada inválida na borda. É um resultado, não uma surpresa. Num kit em camadas costuma viver em `core/errors/` e implementa `AppError` (ou equivalente).
 - **Erro de integração externa** — falha de I/O, integração, serialização, dependência indisponível. Sempre encapsulado em `IntegrationError` (ou equivalente) antes de cruzar a fronteira externa. Stack trace original preservado em `cause`.
 
 A regra é: **invariante é lançado, operação esperada é retornada, falha de integração é traduzida**.
@@ -70,16 +70,16 @@ A regra é: **invariante é lançado, operação esperada é retornada, falha de
 Escolha tomada e fixa para todo o catálogo, em qualquer paradigma:
 
 - **Invariantes** usam **exceções tipadas** (`DomainException` e descendentes). Invariantes não são caminhos felizes — sinalizam bug ou estado impossível, e devem interromper o fluxo. Forçar `Result` aqui mascara invariantes como erros recuperáveis.
-- **Operações que falham de forma previsível** usam **`Result<T, E>`** (`core/result/result.ts`). O chamador precisa enxergar a falha no tipo.
+- **Operações que falham de forma previsível** usam **`Result<T, E>`** (num kit em camadas, p.ex. `core/result/result.ts`). O chamador precisa enxergar a falha no tipo.
 - **Integração externa** pode lançar internamente, mas **expõe `Result`** para quem consome. A tradução é responsabilidade de quem fala com o mundo externo, não do caller.
 
-Não há terceira via. No perfil padrão isso mapeia direto em domínio (exceção) / aplicação (`Result`) / adapter (traduz). Em outros paradigmas, o eixo é o mesmo — só os nomes das fronteiras mudam.
+Não há terceira via. Numa arquitetura em camadas isso mapeia direto em domínio (exceção) / aplicação (`Result`) / adapter (traduz); em outros paradigmas o eixo é o mesmo — só os nomes das fronteiras mudam.
 
 ---
 
 ## 2. Observabilidade
 
-Cada kit que faz trabalho observável DEVE expô-lo via **contratos injetáveis** — nunca acoplado a uma lib específica. No perfil padrão esses contratos são **portas**; em qualquer paradigma a regra é: o kit define a abstração, o consumidor injeta a implementação.
+Cada kit que faz trabalho observável DEVE expô-lo via **contratos injetáveis** — nunca acoplado a uma lib específica. Em arquiteturas em camadas esses contratos costumam ser chamados de **portas**, mas o nome não importa; em qualquer paradigma a regra é: o kit define a abstração, o consumidor injeta a implementação.
 
 ### Logs estruturados
 
@@ -105,9 +105,9 @@ Um kit cujo paradigma não produz telemetria de servidor (ex.: biblioteca de com
 
 ### O núcleo é testável sem mock pesado
 
-- **Lógica pura** (regras, invariantes, decisões — no perfil padrão `core/domain/`, `core/exceptions/`, `core/policies/`) — testada **sem nenhum mock**. Se um teste de regra pura precisa mockar I/O, a regra está acoplada a infra. Bug de design, não de teste.
-- **Lógica de orquestração** (casos de uso — no perfil padrão `core/application/`) — testada com **stubs in-memory dos contratos**. Não usa `jest.mock`, `vi.mock`, ou mocking de módulo. Stubs são objetos tipados que implementam o contrato — vivem em `test/stubs/` quando reusados.
-- **Integrações** (adapters, clientes — no perfil padrão `adapters/*`) — testadas contra o serviço real (Postgres real, Redis real) via testcontainers ou ambiente local. Mocks aqui não provam nada.
+- **Lógica pura** (regras, invariantes, decisões — onde quer que vivam no kit; num kit em camadas, p.ex. `core/domain/`, `core/exceptions/`, `core/policies/`) — testada **sem nenhum mock**. Se um teste de regra pura precisa mockar I/O, a regra está acoplada a infra. Bug de design, não de teste.
+- **Lógica de orquestração** (casos de uso — num kit em camadas, p.ex. `core/application/`) — testada com **stubs in-memory dos contratos**. Não usa `jest.mock`, `vi.mock`, ou mocking de módulo. Stubs são objetos tipados que implementam o contrato — vivem em `test/stubs/` quando reusados.
+- **Integrações** (adapters, clientes — num kit em camadas, p.ex. `adapters/*`) — testadas contra o serviço real (Postgres real, Redis real) via testcontainers ou ambiente local. Mocks aqui não provam nada.
 
 Regra-mãe: **o núcleo de valor do kit não depende de infra mockada**. Se você precisa mockar para testar o núcleo, o núcleo está errado.
 
@@ -126,7 +126,7 @@ Regra-mãe: **o núcleo de valor do kit não depende de infra mockada**. Se voc�
 
 ## 4. Resiliência
 
-A divisão é estrita: **quem decide a política não é quem a executa**. No perfil padrão, portas decidem e adapters implementam; o princípio vale para qualquer fronteira entre intenção e I/O.
+A divisão é estrita: **quem decide a política não é quem a executa**. Numa arquitetura em camadas, portas decidem e adapters implementam; o princípio vale para qualquer fronteira entre intenção e I/O.
 
 ### Quem decide (o contrato / a orquestração)
 
@@ -171,7 +171,7 @@ A divisão é estrita: **quem decide a política não é quem a executa**. No pe
 
 ### Regras de dependência
 
-A direção das dependências é unidirecional: **o que é estável e abstrato não conhece o que é volátil e concreto**. No perfil padrão (clean architecture) isso se expressa como:
+A direção das dependências é unidirecional: **o que é estável e abstrato não conhece o que é volátil e concreto**. Numa arquitetura em camadas (clean architecture, hexagonal, ou as camadas de um frontend) isso costuma se expressar como:
 
 ```
 domain  ←  application  ←  adapters
@@ -184,7 +184,7 @@ domain  ←  application  ←  adapters
 - `adapters/` importa de `ports/` (para implementar) e pode importar de `domain/` apenas para tipos. Nunca de `application/`.
 - `ports/` é o contrato puro: só tipos, sem implementação, sem import de runtime externo.
 
-Em outro paradigma as fronteiras têm outros nomes, mas a invariante é a mesma: dependência aponta para o núcleo estável, nunca o contrário. Import na direção errada é defeito de arquitetura. Um kit cuja estrutura não é em camadas declara isso desligando `architectureLayers`/`portsArePure` em `meta.json -> lint` e descreve a direção real de dependências no `KIT_CONTEXT.md`.
+Em outro paradigma as fronteiras têm outros nomes, mas a invariante é a mesma: dependência aponta para o núcleo estável, nunca o contrário. Import na direção errada é defeito de arquitetura. Um kit em camadas **liga** `architectureLayers`/`portsArePure` em `meta.json -> lint` para o catálogo fazer cumprir essa direção; um kit de outra estrutura simplesmente não as liga e descreve a direção real de dependências no `KIT_CONTEXT.md`.
 
 ---
 
@@ -195,7 +195,7 @@ O diferencial do cullet é ser **prompt-friendly**. Cada kit publica um `KIT_CON
 - **Tamanho**: 200–400 tokens. Curto o suficiente para caber em um prompt de contexto sem dominar a janela, longo o suficiente para que um modelo entenda o desenho sem ler o código.
 - **Conteúdo obrigatório**:
   1. **Propósito** (`[purpose]`) — uma frase: para que problema este kit é a "bala de cobre".
-  2. **Fronteiras** (`[layers]`) — quais existem **neste kit** e o que cada uma resolve. Para o perfil padrão, as camadas clean-arch; para outro paradigma, as fronteiras reais do kit.
+  2. **Fronteiras** (`[layers]`) — quais existem **neste kit** e o que cada uma resolve: camadas, módulos, slices ou o que o paradigma do kit usar.
   3. **Decisões-chave** (`[key-decisions]`) — onde este kit usa `Result`, onde usa exceção, onde fala com contratos, e qual override de lint ele declara e por quê.
   4. **Pontos de extensão** (`[extension-points]`) — quais contratos o usuário implementa para plugar o kit numa stack real.
   5. **Não-objetivos** (`[non-goals]`) — o que o kit deliberadamente **não** faz, para evitar uso indevido.
@@ -208,10 +208,10 @@ O `KIT_CONTEXT.md` é o artefato que um assistente de IA lê antes de ajudar o u
 
 Um kit de biblioteca (`foundation` / `capability`) só entra no catálogo `cullet` se:
 
-1. Respeita o **espírito** das sete seções acima, na forma do seu paradigma, e documenta no `KIT_CONTEXT.md` qualquer divergência do perfil padrão.
+1. Respeita o **espírito** das sete seções acima, na forma do seu paradigma, e documenta no `KIT_CONTEXT.md` as fronteiras e decisões que adota.
 2. Tem `meta.json`, `KIT_CONTEXT.md`, e testes para a lógica de valor do kit.
 3. Não expõe dependência runtime de lib de observabilidade, log, retry, ou tracing no `package.json` principal.
-4. Declara em `meta.json -> lint` quais regras estruturais default não se aplicam ao seu paradigma, com a justificativa no `KIT_CONTEXT.md` — em vez de fingir uma estrutura clean-arch que não tem.
+4. Quando adota uma arquitetura em camadas, **liga** as regras estruturais correspondentes em `meta.json -> lint`; quando desliga um lint de princípio (raro), justifica no `KIT_CONTEXT.md`. Em nenhum caso finge uma estrutura que não tem.
 
 Um kit `tooling` entra no catálogo se:
 

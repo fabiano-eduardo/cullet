@@ -41,7 +41,12 @@
     "nodenextImports": "off",
     "noBareAny": "warn",
     "noExternalImports": "error",
-    "noUpwardImports": "error"
+    "noUpwardImports": "error",
+    "architectureLayers": "error",
+    "portsArePure": "error",
+    "applicationReturnsResult": "error",
+    "requiredCoreTests": "error",
+    "noMocksInCoreTests": "error"
   },
   "exports": [
     "Entity",

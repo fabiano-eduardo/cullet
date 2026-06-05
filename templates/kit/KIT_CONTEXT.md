@@ -8,24 +8,28 @@ Uma frase mais específica do problema-alvo deve substituir a descrição padrã
 
 ## [layers] Camadas
 
-- **`domain/`** — modelo de negócio puro. Sem dependência de runtime externo. Invariantes lançam exceções tipadas.
-- **`exceptions/`** — hierarquia de exceções de domínio derivadas de `DomainException`.
-- **`errors/`** — `AppError` e descendentes para a camada de aplicação. Carregam `code` discriminado.
-- **`result/`** — `Result<T, E>` para retorno tipado da aplicação.
-- **`application/`** — `UseCase` base, `commands/`, `queries/`, `ports/`. Casos de uso consomem portas e retornam `Result`.
+Descreva como o `src/` deste kit está organizado e a responsabilidade de cada fronteira (camadas, módulos, slices — o que o paradigma do kit usar). `cullet` não impõe arquitetura; substitua o exemplo abaixo pela estrutura real antes da primeira release.
+
+Exemplo para um kit organizado em **camadas** (uma das opções; um kit de frontend ou SDK descreveria outras fronteiras):
+
+- **`core/domain/`** — modelo de negócio puro, sem runtime externo; invariantes lançam exceções tipadas.
+- **`core/application/`** — `UseCase`, `commands/`, `queries/`, `ports/`; casos de uso consomem portas e retornam `Result`.
+- **`core/errors/`**, **`core/exceptions/`**, **`core/result/`** — erro de aplicação, exceção de domínio e tipo de retorno.
 
 ## [key-decisions] Decisões-chave
 
-- **Domínio lança, aplicação retorna `Result`, infra traduz.**
-- **Sem lib de log/observabilidade no runtime.** Portas vivem em `application/ports/`; adapters são opt-in.
+Liste as decisões que não devem ser rediscutidas a cada mudança — incluindo qual regra estrutural o kit liga em `meta.json -> lint`, se houver. Exemplos comuns:
+
+- **Falha previsível volta como `Result`; invariante lança exceção tipada; integração externa traduz.**
+- **Sem lib de log/observabilidade no runtime.** A observabilidade é exposta só por contratos injetáveis; implementações são opt-in.
 - **Validação na borda**, uma única vez; tipo carrega a garantia depois.
 
 ## [extension-points] Pontos de extensão
 
-Implemente as portas em `application/ports/` para conectar a stack real:
+Descreva onde o kit aceita extensão sem quebrar sua estrutura — quais contratos o consumidor implementa para plugar o kit numa stack real:
 
-- `LoggerPort`, `MetricsPort`, `TracerPort` — observabilidade.
-- Repositórios específicos do seu domínio, sempre com verbo mínimo.
+- `LoggerPort`, `MetricsPort`, `TracerPort` — observabilidade (quando o kit a produz).
+- Contratos específicos do kit, sempre com o menor verbo necessário.
 
 ## [non-goals] Não-objetivos
 

@@ -133,7 +133,10 @@ function shouldSubstitute(file) {
 }
 
 function mapTemplateRelativePath(relativePath) {
-  if (relativePath === "index.ts" || relativePath.startsWith("core/")) {
+  // Library kits keep their importable source under `src/`. The scaffold ships
+  // only the entry point; how the rest of `src/` is organized (clean-arch
+  // `core/`, or another paradigm's layout) is the author's decision.
+  if (relativePath === "index.ts") {
     return join("src", relativePath);
   }
 
@@ -309,9 +312,9 @@ async function main() {
     )} with the real prompt-friendly summary`,
   );
   console.log(
-    `  3. implement the layers under ${pc.cyan(
-      relative(repoRoot, join(destDir, "src", "core")),
-    )}`,
+    `  3. implement the kit source under ${pc.cyan(
+      relative(repoRoot, join(destDir, "src")),
+    )} (the clean-architecture core/ layout is the default profile, not required)`,
   );
   console.log(`  4. run ${pc.cyan("npm run validate-kits")} to lint your kit`);
   console.log(

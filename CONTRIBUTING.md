@@ -21,9 +21,15 @@ Exemplo:
 }
 ```
 
-## Perfil arquitetural
+## Princípio versus estrutura
 
-As tabelas de auditoria abaixo descrevem o **perfil padrão** do `cullet`: clean architecture (camadas `domain` / `application` / `adapters`, portas, `Result`), que é o que os lints default codificam. Nem todo kit de biblioteca é desse perfil — pode ser frontend, SDK, utilitários. Um kit de outro paradigma satisfaz os mesmos **princípios** (ver [`PHILOSOPHY.md`](./PHILOSOPHY.md)) com outra estrutura e declara isso desligando as regras estruturais que não se aplicam (`architectureLayers`, `portsArePure`, `observabilityPorts`, `applicationReturnsResult`, `requiredCoreTests`, …) em `meta.json -> lint`, com a justificativa no `KIT_CONTEXT.md`. As tabelas valem integralmente para o perfil padrão; para os demais, leia "regra" como "regra quando aplicável ao paradigma do kit".
+As tabelas de auditoria abaixo listam **todas** as checagens do catálogo. A maioria verifica **princípios** neutros de arquitetura (ver [`PHILOSOPHY.md`](./PHILOSOPHY.md)) e vale para qualquer kit de biblioteca — backend, frontend (React/Vue/Angular), SDK ou utilitários.
+
+Algumas regras pressupõem uma arquitetura **em camadas** (um núcleo com `domain` / `application` / `adapters`, portas e `Result`). `cullet` **não elege uma arquitetura padrão**, então essas regras são **opt-in**: só valem para um kit que as **liga** em `meta.json -> lint`:
+
+- `architectureLayers`, `portsArePure`, `applicationReturnsResult`, `requiredCoreTests`, `noMocksInCoreTests`.
+
+Nas tabelas, as linhas que dependem dessas regras valem **só quando o kit as ligou**; para os demais, leia "regra" como "regra quando aplicável à estrutura do kit". As linhas restantes (testes colocalizados, observabilidade desacoplada, validação na borda, profundidade/tamanho de arquivo, contexto para IA, imports honestos) valem para todos os kits, independentemente de arquitetura.
 
 ## Convenções do repositório
 
@@ -43,7 +49,7 @@ Usando os blocos de regra abaixo como unidade de auditoria, o catálogo está co
 | Regra                                                                 | Bucket | Situação atual                                        |
 | --------------------------------------------------------------------- | ------ | ----------------------------------------------------- |
 | O kit declara seu modelo de erro em `meta.json` e respeita schema     | A      | `kit-spec.schema.json` valida `philosophy.errorModel` |
-| Casos de uso da aplicação expõem falha no tipo com `Result`           | B      | `validate-kit.mjs` aplica `applicationReturnsResult`  |
+| Casos de uso da aplicação expõem falha no tipo com `Result`           | B      | `validate-kit.mjs` aplica `applicationReturnsResult` — **opt-in** |
 | `catch` não engole erro; infra sempre traduz antes de cruzar boundary | C      | Revisão humana obrigatória                            |
 
 ### 2. Observabilidade
@@ -57,7 +63,7 @@ Usando os blocos de regra abaixo como unidade de auditoria, o catálogo está co
 
 | Regra                                                                                            | Bucket | Situação atual                                 |
 | ------------------------------------------------------------------------------------------------ | ------ | ---------------------------------------------- |
-| `core/domain` e `core/application` não usam `vi.mock` / `jest.mock`                              | B      | `validate-kit.mjs` aplica `noMocksInCoreTests` |
+| Testes do núcleo não usam `vi.mock` / `jest.mock` (em kit com camadas, `core/domain` e `core/application`) | B      | `validate-kit.mjs` aplica `noMocksInCoreTests` — **opt-in** |
 | Specs usam `.spec.ts`, evitam `__tests__/`, têm `describe` raiz compatível e `it()` em voz ativa | B      | `validate-kit.mjs` aplica `testConventions`    |
 | Helpers, fixtures complexas e adapters testados com serviço real seguem a disciplina descrita    | C      | Revisão humana obrigatória                     |
 
@@ -80,8 +86,9 @@ Usando os blocos de regra abaixo como unidade de auditoria, o catálogo está co
 | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Profundidade estrutural do kit fica em até 5 segmentos a partir da raiz           | B      | `validate-kit.mjs` aplica `folderDepth`                                                                                                      |
 | Arquivos acima de 300 linhas geram warning; acima de 600 exigem atenção imediata  | B      | `validate-kit.mjs` aplica `fileSize`                                                                                                         |
-| Imports externos declarados, imports upward e direção entre camadas são validados | A      | Regras existentes `noExternalImports`, `noUpwardImports`, `nodenextImports` foram mantidas; `architectureLayers` foi acrescentada nesta fase |
-| `ports/` permanece contrato puro, com imports tipados e sem implementação         | B      | `validate-kit.mjs` aplica `portsArePure`                                                                                                     |
+| Imports externos declarados e imports upward são validados                        | A      | `noExternalImports`, `noUpwardImports`, `nodenextImports` valem para todo kit                                                                |
+| Direção entre camadas (quando o kit adota camadas)                                | B      | `validate-kit.mjs` aplica `architectureLayers` — **opt-in** (ligado em `meta.json -> lint`)                                                  |
+| `ports/` permanece contrato puro, com imports tipados e sem implementação         | B      | `validate-kit.mjs` aplica `portsArePure` — **opt-in**                                                                                        |
 
 ### 7. DX assistida por IA
 
@@ -95,7 +102,7 @@ Usando os blocos de regra abaixo como unidade de auditoria, o catálogo está co
 | Regra                                                                                   | Bucket | Situação atual                                         |
 | --------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------ |
 | `meta.json`, `README.md`, `KIT_CONTEXT.md` e `entryPoint` existem e passam no schema    | A      | Existência + schema + `compatibility` já são validados |
-| Kits com código em `core/domain` e `core/application` precisam de specs correspondentes | B      | `validate-kit.mjs` aplica `requiredCoreTests`          |
+| Kits em camadas com código em `core/domain` e `core/application` precisam de specs correspondentes | B      | `validate-kit.mjs` aplica `requiredCoreTests` — **opt-in** |
 | `package.json` do kit não expõe runtime de observabilidade                              | B      | `validate-kit.mjs` aplica `noObservabilityRuntimeDeps` |
 | Divergências de filosofia ficam explicitadas no contexto do kit                         | C      | Revisão humana obrigatória                             |
 
