@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2",
   "name": "erp-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Core ERP com clean architecture, policies, erros e services de aplicação.",
   "compatibility": {
     "engines": {
