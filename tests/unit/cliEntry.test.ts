@@ -11,8 +11,11 @@ import { createInfoCommand } from "../../packages/cli/src/cli/commands/info.js";
 import { createListCommand } from "../../packages/cli/src/cli/commands/list.js";
 import { createMigrateCommand } from "../../packages/cli/src/cli/commands/migrate.js";
 import { createTelemetryCommand } from "../../packages/cli/src/cli/commands/telemetry.js";
+import erpCorePackage from "../../packages/erp-core/package.json" with { type: "json" };
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+// Derive from the kit's package.json so a version bump does not break this test.
+const erpCoreVersion = erpCorePackage.version;
 
 let tempRoot: string;
 
@@ -272,7 +275,9 @@ describe.sequential("cli commands", () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Kit validado: erp-core@1.0.1");
+      expect(result.stdout).toContain(
+        `Kit validado: erp-core@${erpCoreVersion}`,
+      );
       expect(result.stdout).toContain("Importe direto no codigo:");
       expect(result.stdout).toContain('from "@cullet/erp-core"');
       expect(result.stdout).toContain("Alias criado: @cullet/erp-core");

@@ -6,8 +6,8 @@
     "npmName": "@cullet/dummy-api"
   },
   "erp-core": {
-    "versions": ["1.0.0", "1.0.1"],
-    "latest": "1.0.1",
+    "versions": ["1.0.0", "1.0.1", "1.0.2"],
+    "latest": "1.0.2",
     "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
     "npmName": "@cullet/erp-core"
   }
