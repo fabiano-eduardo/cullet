@@ -1,6 +1,6 @@
 {
   "name": "@cullet/erp-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Core ERP with clean architecture, temporality, policies, and rule sets",
   "type": "module",
   "repository": {

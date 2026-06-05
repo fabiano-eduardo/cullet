@@ -1,5 +1,11 @@
 # @cullet/erp-core
 
+## 1.0.2
+
+### Patch Changes
+
+- 7722608: erp-core declara explicitamente os lints de arquitetura em camadas; o catálogo passa a ser neutro de arquitetura.
+
 ## 1.0.1
 
 ### Patch Changes
