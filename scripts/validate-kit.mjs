@@ -22,22 +22,32 @@ const repoRoot = resolve(here, "..");
 const packagesRoot = resolve(repoRoot, "packages");
 const schemaPath = resolve(here, "kit-spec.schema.json");
 
+// cullet enforces architecture-neutral *principles* by default — testability,
+// decoupled observability, honest imports, file/folder hygiene. These apply to
+// every kit regardless of paradigm (backend, frontend, SDK, utilities, …).
+//
+// Rules that assume one specific architecture (a layered domain/application/
+// adapters core with ports and a Result return type) are NOT defaults: a kit
+// opts into them in `meta.json -> lint` when it actually adopts that structure.
+// This keeps the catalog from binding kits to any single architecture.
 const DEFAULT_LINT = {
+  // Principles — on for every kit.
   nodenextImports: "error",
   noBareAny: "error",
   noExternalImports: "error",
   noUpwardImports: "error",
-  applicationReturnsResult: "error",
-  architectureLayers: "error",
-  portsArePure: "error",
-  observabilityPorts: "error",
+  observabilityPorts: "error", // only fires when the kit declares observability
   testConventions: "error",
-  noMocksInCoreTests: "error",
   kitContext: "warn",
-  requiredCoreTests: "error",
   folderDepth: "error",
   fileSize: "warn",
   noObservabilityRuntimeDeps: "error",
+  // Architecture-specific — off by default, opt-in per kit.
+  applicationReturnsResult: "off",
+  architectureLayers: "off",
+  portsArePure: "off",
+  noMocksInCoreTests: "off",
+  requiredCoreTests: "off",
 };
 
 const OBSERVABILITY_RUNTIME_ROOTS = new Set(["pino", "winston", "bunyan"]);

@@ -11,7 +11,7 @@ Para o sumário prompt-friendly do kit veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md)
 Substitua esta seção pela descrição concreta do que vem dentro do kit:
 
 - principais primitives expostas em `index.ts`
-- camadas de `core/` que existem (e o que cada uma resolve)
+- como o `src/` está organizado (as fronteiras que o kit usa — camadas, módulos, slices, …)
 - limites: o que está pronto, o que é só esqueleto
 
 ## Como começa
@@ -30,14 +30,14 @@ O comando copia o kit para `./cullet/__KIT_NAME__@1.0.0/` e registra o alias `@c
 
 ## Decisões tomadas
 
-- **Modelo de erro**: `mixed` — domínio lança exceções tipadas; aplicação retorna `Result<T, AppError>`; infra traduz para `Result`.
-- **Observabilidade**: somente via portas (`LoggerPort`, `MetricsPort`, `TracerPort`). Sem dependência runtime de lib de log/trace.
-- **Validação**: entrada externa validada uma única vez na borda; o domínio assume input já válido em tipo.
-- Adicione aqui as decisões específicas deste kit (escolhas de schema, convenções de naming, opções deliberadamente excluídas).
+- **Modelo de erro**: `mixed` — falha previsível volta como `Result<T, E>`; violação de invariante lança exceção tipada; integração externa traduz para `Result`. (Ajuste em `meta.json` se o kit usar outro modelo.)
+- **Observabilidade**: exposta só por contratos injetáveis, sem dependência runtime de lib de log/trace.
+- **Validação**: entrada externa validada uma única vez na borda; o núcleo assume input já válido em tipo.
+- Adicione aqui as decisões específicas deste kit (estrutura adotada, regras de lint ligadas, convenções de naming, opções deliberadamente excluídas).
 
 ## Como evoluir
 
-- **Novos casos de uso**: crie em `core/application/` consumindo portas existentes; nunca import de `adapters/` dentro de `application/`.
-- **Adicionar uma porta**: crie a interface em `core/application/ports/`, implemente em `adapters/<sua-lib>/`, e mantenha a porta livre de tipos de runtime externo.
+Descreva onde adicionar comportamento conforme as fronteiras do seu `src/`. (Exemplo para um kit em camadas: novos casos de uso vão na camada de aplicação consumindo portas; novos contratos/adapters mantêm a porta livre de runtime externo.)
+
 - **Mudança incompatível**: abra um changeset e publique uma nova major do pacote. Regras completas em [`kits/VERSIONING.md`](../../kits/VERSIONING.md).
 - **Antes de publicar**: rode `npm run validate-kits` para garantir que o kit ainda respeita a filosofia.
