@@ -1,6 +1,6 @@
 # Versionamento e descontinuação de kits
 
-Este documento fixa as regras que todo kit do catálogo `cullet` segue para evoluir sem quebrar consumidores existentes. As regras são curtas, opinativas e auditáveis pelo `npm run validate-kits`.
+Este documento fixa as regras que todo kit do catálogo `cullet` segue para evoluir sem quebrar consumidores existentes. As regras são curtas e opinativas; parte delas é auditada por `npm run validate-kits` e `npm run sync-kit-version:check` (ver §5), e o restante é política operacional de release.
 
 ## 1. SemVer aplicado ao kit, não ao pacote
 
@@ -16,7 +16,7 @@ A versão do pacote npm `cullet` (em `package.json`) segue seu próprio ciclo, n
 
 > Versões antigas **nunca** são removidas do catálogo.
 
-Quando uma versão é publicada, ela vira contrato. Consumidores podem instalar `@cullet/<nome>@<x.y.z>` e esperar o mesmo tarball para sempre. A imutabilidade deixa de ser garantida por um diretório versionado no repo e passa a ser garantida por três artefatos combinados:
+Quando uma versão é publicada, ela vira contrato. Consumidores podem instalar `@cullet/<nome>@<x.y.z>` e esperar o mesmo tarball para sempre. A imutabilidade não é garantida por um diretório versionado no repo; ela é garantida por três artefatos combinados:
 
 1. o tarball publicado no npm,
 2. a tag git que corresponde à release,
@@ -80,7 +80,7 @@ A motivação é dupla: usuários veem o aviso no fluxo natural, e o catálogo n
 
 ### Primeira versão de um kit novo
 
-Na topologia de workspace, um kit nasce em `packages/<nome>/` com `package.json`, `tsdown.config.ts`, `src/`, `meta.json`, `README.md` e `KIT_CONTEXT.md`. O scaffold automático ainda está sendo alinhado à nova estrutura; até a conclusão dessa migração, use `templates/kit/` como base e registre o kit manualmente em `registry/index.json`.
+Na topologia de workspace, um kit nasce em `packages/<nome>/` com `package.json`, `tsdown.config.ts`, `src/`, `meta.json`, `README.md` e `KIT_CONTEXT.md`. Use `npm run new-kit -- <nome>` (ou `--kind tooling`): o script faz o scaffold a partir de `templates/kit/` e já registra o kit em `packages/cli/registry/index.json`.
 
 ### Nova MAJOR de um kit existente
 
@@ -95,16 +95,20 @@ Não há atalho de CLI para isso — é uma decisão de catálogo. Faça manualm
 
 ## 5. Validação contínua
 
-Durante a transição para o monorepo por pacote, `npm run validate-kits` ainda está sendo adaptado para deixar de varrer `kits/*/versions/*/` e passar a validar `packages/*/meta.json`. A regra de catálogo, porém, já é a mesma:
+`npm run validate-kits` valida cada kit em `packages/*/meta.json` (o script `scripts/validate-kit.mjs` varre os pacotes do workspace; a antiga varredura de `kits/*/versions/*/` foi descontinuada). Ele cobre:
 
-- Conformidade com `kits/kit-spec.schema.json` (inclui o formato de `deprecated`).
+- Conformidade com `scripts/kit-spec.schema.json` (inclui o formato de `deprecated`).
 - Existência de `README.md`, `KIT_CONTEXT.md` e `entryPoint`.
 - Regras de lint declaradas no kit (`noExternalImports`, `noUpwardImports`, etc.).
 
-CI deve rodar este comando em todo PR. Erros bloqueiam merge; warnings ficam visíveis no log.
+Além disso, `npm run sync-kit-version:check` garante que a versão do `package.json` esteja projetada nos três lugares que a espelham: `src/version.ts`, `meta.json` e o `packages/cli/registry/index.json` (`versions`/`latest`). A projeção no registry é **aditiva** — a versão do pacote é acrescentada a `versions` (nenhuma versão antiga é removida, §2) e `latest` passa a apontá-la. Rode `npm run sync-kit-version` (sem `--check`) para aplicar a projeção; o release já a executa via `changeset:version`.
 
-## 6. Migração planejada para pacotes por kit
+CI deve rodar estes comandos em todo PR. Erros bloqueiam merge; warnings ficam visíveis no log.
 
-O catálogo está em migração para o modelo (c) descrito em `tmp/plano-migracao-c-cli-registry-29.05.2026.md`: `cullet` permanece como CLI + registry, e cada kit passa a existir como pacote npm próprio no escopo `@cullet/*`.
+> **Lacuna conhecida:** a *semântica* do bump (uma mudança incompatível recebeu MAJOR? uma adição recebeu MINOR?) não é auditada automaticamente — continua sendo responsabilidade de quem escreve o changeset.
 
-Nesta fase, os kits já vivem em `packages/<nome>/` e a versão publicada passa a ser a do `package.json` do pacote. A migração restante cobre o scaffold, a validação e a resolução do CLI; enquanto isso, o princípio de imutabilidade já deve ser tratado como regra operacional de release, não mais como uma garantia estrutural de diretórios `versions/` no repo.
+## 6. Topologia: pacotes por kit
+
+O catálogo adota o modelo em que `cullet` é a CLI + registry e cada kit é um pacote npm próprio no escopo `@cullet/*`. Os kits vivem em `packages/<nome>/` e a versão publicada é a do `package.json` do pacote; `meta.json` e `registry/index.json` espelham essa versão para o catálogo.
+
+O princípio de imutabilidade (§2) é, portanto, uma regra operacional de release — garantida pelo tarball npm e pela tag git —, não uma garantia estrutural de diretórios `versions/` no repo. O resolver do CLI ainda sonda um caminho legado `kits/<nome>/versions/<v>/` apenas como compatibilidade retroativa.
