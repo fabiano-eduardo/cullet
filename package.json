@@ -1,75 +1,75 @@
 {
-  "name": "cullet-workspace",
-  "version": "0.2.0",
-  "description": "Coleção de kits arquiteturais opinativos para TypeScript",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
-  "type": "module",
-  "license": "MIT",
-  "author": "Fabiano Eduardo",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fabiano-eduardo/cullet.git"
-  },
-  "bugs": {
-    "url": "https://github.com/fabiano-eduardo/cullet/issues"
-  },
-  "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
-  "keywords": [
-    "typescript",
-    "architecture",
-    "clean-architecture",
-    "ddd",
-    "cli",
-    "starter-kit"
-  ],
-  "scripts": {
-    "changeset": "changeset",
-    "changeset:status": "changeset status --since=origin/main",
-    "changeset:version": "changeset version && npm run sync-kit-version",
-    "validate-kits": "node ./scripts/validate-kit.mjs",
-    "sync-kit-deps": "node ./scripts/sync-kit-deps.mjs",
-    "sync-kit-deps:check": "node ./scripts/sync-kit-deps.mjs --check",
-    "sync-kit-version": "node ./scripts/sync-kit-version.mjs",
-    "sync-kit-version:check": "node ./scripts/sync-kit-version.mjs --check",
-    "new-kit": "node ./scripts/new-kit.mjs",
-    "build": "npm run build --workspaces --if-present",
-    "dev": "npm --workspace cullet run dev",
-    "cli": "npm --workspace cullet run cli",
-    "format": "prettier --write package.json pnpm-workspace.yaml .github/workflows/ci.yml packages scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
-    "format:check": "prettier --check package.json pnpm-workspace.yaml .github/workflows/ci.yml packages scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
-    "format:check:changed": "node ./scripts/check-format-changed.mjs",
-    "lint": "eslint packages/*/src packages/*/tsdown.config.ts scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
-    "lint:fix": "npm run lint -- --fix",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "test:e2e:publish": "CULLET_E2E_PUBLISH=1 vitest run --config vitest.e2e.config.ts tests/e2e/publish-flow.test.ts",
-    "test:kits": "vitest run --config vitest.kits.config.ts",
-    "docs:dev": "npm --prefix docs run dev",
-    "docs:build": "npm --prefix docs run build",
-    "release:dry-run": "npm run build && node ./scripts/check-pack-contents.mjs --all",
-    "release": "npm run release:dry-run && changeset publish"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.29.7",
-    "@eslint/js": "^9.28.0",
-    "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.10.2",
-    "@vitest/coverage-v8": "^4.1.7",
-    "eslint": "^9.28.0",
-    "eslint-config-prettier": "^10.1.5",
-    "globals": "^16.2.0",
-    "prettier": "^3.5.3",
-    "tsdown": "^0.12.9",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.33.0",
-    "verdaccio": "^6.7.2",
-    "vitest": "^4.1.7",
-    "zod": "^3.25.76"
-  }
+    "name": "cullet-workspace",
+    "version": "0.2.0",
+    "description": "Catálogo opinativo de blocos arquiteturais para TypeScript — bibliotecas importáveis e ferramentas copy-first via CLI",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "type": "module",
+    "license": "MIT",
+    "author": "Fabiano Eduardo",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fabiano-eduardo/cullet.git"
+    },
+    "bugs": {
+        "url": "https://github.com/fabiano-eduardo/cullet/issues"
+    },
+    "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
+    "keywords": [
+        "typescript",
+        "architecture",
+        "clean-architecture",
+        "ddd",
+        "cli",
+        "starter-kit"
+    ],
+    "scripts": {
+        "changeset": "changeset",
+        "changeset:status": "changeset status --since=origin/main",
+        "changeset:version": "changeset version && npm run sync-kit-version",
+        "validate-kits": "node ./scripts/validate-kit.mjs",
+        "sync-kit-deps": "node ./scripts/sync-kit-deps.mjs",
+        "sync-kit-deps:check": "node ./scripts/sync-kit-deps.mjs --check",
+        "sync-kit-version": "node ./scripts/sync-kit-version.mjs",
+        "sync-kit-version:check": "node ./scripts/sync-kit-version.mjs --check",
+        "new-kit": "node ./scripts/new-kit.mjs",
+        "build": "npm run build --workspaces --if-present",
+        "dev": "npm --workspace cullet run dev",
+        "cli": "npm --workspace cullet run cli",
+        "format": "prettier --write package.json pnpm-workspace.yaml .github/workflows/ci.yml packages scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
+        "format:check": "prettier --check package.json pnpm-workspace.yaml .github/workflows/ci.yml packages scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
+        "format:check:changed": "node ./scripts/check-format-changed.mjs",
+        "lint": "eslint packages/*/src packages/*/tsdown.config.ts scripts tests tsconfig.json tsconfig.test.json vitest.config.base.ts vitest.config.ts vitest.e2e.config.ts vitest.kits.config.ts eslint.config.mjs prettier.config.mjs",
+        "lint:fix": "npm run lint -- --fix",
+        "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "test:e2e": "vitest run --config vitest.e2e.config.ts",
+        "test:e2e:publish": "CULLET_E2E_PUBLISH=1 vitest run --config vitest.e2e.config.ts tests/e2e/publish-flow.test.ts",
+        "test:kits": "vitest run --config vitest.kits.config.ts",
+        "docs:dev": "npm --prefix docs run dev",
+        "docs:build": "npm --prefix docs run build",
+        "release:dry-run": "npm run build && node ./scripts/check-pack-contents.mjs --all",
+        "release": "npm run release:dry-run && changeset publish"
+    },
+    "devDependencies": {
+        "@changesets/cli": "^2.29.7",
+        "@eslint/js": "^9.28.0",
+        "@types/fs-extra": "^11.0.4",
+        "@types/node": "^22.10.2",
+        "@vitest/coverage-v8": "^4.1.7",
+        "eslint": "^9.28.0",
+        "eslint-config-prettier": "^10.1.5",
+        "globals": "^16.2.0",
+        "prettier": "^3.5.3",
+        "tsdown": "^0.12.9",
+        "typescript": "^5.7.3",
+        "typescript-eslint": "^8.33.0",
+        "verdaccio": "^6.7.2",
+        "vitest": "^4.1.7",
+        "zod": "^3.25.76"
+    }
 }

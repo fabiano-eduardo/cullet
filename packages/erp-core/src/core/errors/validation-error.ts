@@ -10,25 +10,25 @@ import type { AppErrorOptions } from "./types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ValidationError extends AppError {
-  constructor(
-    field: ValidationField,
-    code: ValidationCode,
-    message: string,
-    options?: AppErrorOptions,
-  ) {
-    const baseMetadata = {
-      field: field.value,
-      validationCode: code.value,
-    };
-    const mergedMetadata = options?.metadata
-      ? { ...baseMetadata, ...options.metadata }
-      : baseMetadata;
+    constructor(
+        field: ValidationField,
+        code: ValidationCode,
+        message: string,
+        options?: AppErrorOptions,
+    ) {
+        const baseMetadata = {
+            field: field.value,
+            validationCode: code.value,
+        };
+        const mergedMetadata = options?.metadata
+            ? { ...baseMetadata, ...options.metadata }
+            : baseMetadata;
 
-    super(message, ErrorCodes.validation, {
-      ...options,
-      metadata: mergedMetadata,
-    });
-  }
+        super(message, ErrorCodes.validation, {
+            ...options,
+            metadata: mergedMetadata,
+        });
+    }
 }
 
 export { ValidationError };

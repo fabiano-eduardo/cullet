@@ -4,38 +4,38 @@
 // structurally dependent on gate/v1.
 
 export type ConditionOp =
-  | "eq"
-  | "neq"
-  | "gt"
-  | "gte"
-  | "lt"
-  | "lte"
-  | "in"
-  | "notIn"
-  | "isNull"
-  | "isNotNull";
+    | "eq"
+    | "neq"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "in"
+    | "notIn"
+    | "isNull"
+    | "isNotNull";
 
 export interface ConditionLeafNode {
-  readonly field: string;
-  readonly op: ConditionOp;
-  readonly value: unknown;
-  readonly allowNull?: true;
+    readonly field: string;
+    readonly op: ConditionOp;
+    readonly value: unknown;
+    readonly allowNull?: true;
 }
 
 export interface ConditionAndNode {
-  readonly and: readonly ConditionNode[];
+    readonly and: readonly ConditionNode[];
 }
 
 export interface ConditionOrNode {
-  readonly or: readonly ConditionNode[];
+    readonly or: readonly ConditionNode[];
 }
 
 export interface ConditionNotNode {
-  readonly not: ConditionNode;
+    readonly not: ConditionNode;
 }
 
 export type ConditionNode =
-  | ConditionLeafNode
-  | ConditionAndNode
-  | ConditionOrNode
-  | ConditionNotNode;
+    | ConditionLeafNode
+    | ConditionAndNode
+    | ConditionOrNode
+    | ConditionNotNode;

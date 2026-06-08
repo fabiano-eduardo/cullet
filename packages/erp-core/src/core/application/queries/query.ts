@@ -8,10 +8,10 @@ import type { Result } from "../../result/result";
  * Use as `Output` when the query returns a collection with pagination metadata.
  */
 interface Page<T> {
-  readonly items: readonly T[];
-  readonly total: number;
-  readonly page: number;
-  readonly pageSize: number;
+    readonly items: readonly T[];
+    readonly total: number;
+    readonly page: number;
+    readonly pageSize: number;
 }
 
 /**
@@ -19,9 +19,9 @@ interface Page<T> {
  * Infrastructure reads this value to decide whether and how to cache the result.
  */
 type CacheStrategy =
-  | { readonly kind: "NO_CACHE" }
-  | { readonly kind: "TIME_TO_LIVE"; readonly ttlMs: number }
-  | { readonly kind: "STALE_WHILE_REVALIDATE"; readonly ttlMs: number };
+    | { readonly kind: "NO_CACHE" }
+    | { readonly kind: "TIME_TO_LIVE"; readonly ttlMs: number }
+    | { readonly kind: "STALE_WHILE_REVALIDATE"; readonly ttlMs: number };
 
 type QueryOutput = object | string | number | boolean | bigint | symbol | null;
 
@@ -40,13 +40,13 @@ type QueryOutput = object | string | number | boolean | bigint | symbol | null;
  */
 @version("1.0")
 abstract class Query<
-  Input = void,
-  Data extends QueryOutput = never,
-  Failure = AppError,
+    Input = void,
+    Data extends QueryOutput = never,
+    Failure = AppError,
 > extends UseCase<Input, Result<Data, Failure>> {
-  protected cacheStrategy(): CacheStrategy {
-    return { kind: "NO_CACHE" };
-  }
+    protected cacheStrategy(): CacheStrategy {
+        return { kind: "NO_CACHE" };
+    }
 }
 
 export type { CacheStrategy, Page, QueryOutput };

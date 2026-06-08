@@ -13,53 +13,53 @@ const NON_SERIALIZABLE_PLACEHOLDER = "[NonSerializable]";
 // ─────────────────────────────────────────────────────────────────────────────
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object") return false;
-  const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
+    if (value === null || typeof value !== "object") return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
 }
 
 function sanitizeValue(value: unknown): JsonSafeValue {
-  // Null passthrough
-  if (value === null) return null;
+    // Null passthrough
+    if (value === null) return null;
 
-  const type = typeof value;
+    const type = typeof value;
 
-  // Primitives
-  if (type === "string" || type === "number" || type === "boolean") {
-    return value as JsonSafeValue;
-  }
+    // Primitives
+    if (type === "string" || type === "number" || type === "boolean") {
+        return value as JsonSafeValue;
+    }
 
-  // Non-serializable primitives
-  if (
-    type === "bigint" ||
-    type === "function" ||
-    type === "symbol" ||
-    value === undefined
-  ) {
-    return NON_SERIALIZABLE_PLACEHOLDER;
-  }
+    // Non-serializable primitives
+    if (
+        type === "bigint" ||
+        type === "function" ||
+        type === "symbol" ||
+        value === undefined
+    ) {
+        return NON_SERIALIZABLE_PLACEHOLDER;
+    }
 
-  // Arrays (recursive)
-  if (Array.isArray(value)) {
-    return value.map(sanitizeValue);
-  }
+    // Arrays (recursive)
+    if (Array.isArray(value)) {
+        return value.map(sanitizeValue);
+    }
 
-  // Date → placeholder (could also use .toISOString() if preferred)
-  if (value instanceof Date) {
-    return NON_SERIALIZABLE_PLACEHOLDER;
-  }
+    // Date → placeholder (could also use .toISOString() if preferred)
+    if (value instanceof Date) {
+        return NON_SERIALIZABLE_PLACEHOLDER;
+    }
 
-  // Class instances and non-plain objects → placeholder
-  if (!isPlainObject(value)) {
-    return NON_SERIALIZABLE_PLACEHOLDER;
-  }
+    // Class instances and non-plain objects → placeholder
+    if (!isPlainObject(value)) {
+        return NON_SERIALIZABLE_PLACEHOLDER;
+    }
 
-  // Plain object (recursive)
-  const result: Record<string, JsonSafeValue> = {};
-  for (const [key, val] of Object.entries(value)) {
-    result[key] = sanitizeValue(val);
-  }
-  return result;
+    // Plain object (recursive)
+    const result: Record<string, JsonSafeValue> = {};
+    for (const [key, val] of Object.entries(value)) {
+        result[key] = sanitizeValue(val);
+    }
+    return result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,17 +77,17 @@ function sanitizeValue(value: unknown): JsonSafeValue {
  * @throws {TypeError} If `input` is not a plain object at the root level.
  */
 function assertJsonSafeMetadata(input: unknown): JsonSafeRecord {
-  if (input === undefined) {
-    return {};
-  }
+    if (input === undefined) {
+        return {};
+    }
 
-  if (!isPlainObject(input)) {
-    throw new TypeError(
-      "metadata must be a plain object (Record<string, unknown>).",
-    );
-  }
+    if (!isPlainObject(input)) {
+        throw new TypeError(
+            "metadata must be a plain object (Record<string, unknown>).",
+        );
+    }
 
-  return sanitizeValue(input) as JsonSafeRecord;
+    return sanitizeValue(input) as JsonSafeRecord;
 }
 
 export { assertJsonSafeMetadata, NON_SERIALIZABLE_PLACEHOLDER };

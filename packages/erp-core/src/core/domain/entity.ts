@@ -4,66 +4,66 @@ import { assertValidDate, cloneDate } from "../shared/temporal-guards";
 import { type ContractVersion, version } from "../versioning/version";
 
 interface EntityState<TIdentifier> {
-  readonly id: TIdentifier;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-  readonly aggregateVersion: number;
+    readonly id: TIdentifier;
+    readonly createdAt: Date;
+    readonly updatedAt: Date;
+    readonly aggregateVersion: number;
 }
 
 @version("1.0")
 abstract class Entity<TIdentifier> {
-  public static readonly CONTRACT_VERSION: ContractVersion;
+    public static readonly CONTRACT_VERSION: ContractVersion;
 
-  private readonly _id: TIdentifier;
-  private readonly _createdAt: Date;
-  private _updatedAt: Date;
-  private _aggregateVersion: number;
+    private readonly _id: TIdentifier;
+    private readonly _createdAt: Date;
+    private _updatedAt: Date;
+    private _aggregateVersion: number;
 
-  protected constructor(state: EntityState<TIdentifier>) {
-    assertValidDate("createdAt", state.createdAt);
-    assertValidDate("updatedAt", state.updatedAt);
-    assertValidAggregateVersion(state.aggregateVersion);
+    protected constructor(state: EntityState<TIdentifier>) {
+        assertValidDate("createdAt", state.createdAt);
+        assertValidDate("updatedAt", state.updatedAt);
+        assertValidAggregateVersion(state.aggregateVersion);
 
-    if (state.updatedAt.getTime() < state.createdAt.getTime()) {
-      throw new InvariantViolationException(
-        "updatedAt cannot be earlier than createdAt",
-      );
+        if (state.updatedAt.getTime() < state.createdAt.getTime()) {
+            throw new InvariantViolationException(
+                "updatedAt cannot be earlier than createdAt",
+            );
+        }
+
+        this._id = state.id;
+        this._createdAt = cloneDate(state.createdAt);
+        this._updatedAt = cloneDate(state.updatedAt);
+        this._aggregateVersion = state.aggregateVersion;
     }
 
-    this._id = state.id;
-    this._createdAt = cloneDate(state.createdAt);
-    this._updatedAt = cloneDate(state.updatedAt);
-    this._aggregateVersion = state.aggregateVersion;
-  }
+    public get id(): TIdentifier {
+        return this._id;
+    }
 
-  public get id(): TIdentifier {
-    return this._id;
-  }
+    public get createdAt(): Date {
+        return cloneDate(this._createdAt);
+    }
 
-  public get createdAt(): Date {
-    return cloneDate(this._createdAt);
-  }
+    public get updatedAt(): Date {
+        return cloneDate(this._updatedAt);
+    }
 
-  public get updatedAt(): Date {
-    return cloneDate(this._updatedAt);
-  }
+    public get aggregateVersion(): number {
+        return this._aggregateVersion;
+    }
 
-  public get aggregateVersion(): number {
-    return this._aggregateVersion;
-  }
+    public get contractVersion(): ContractVersion {
+        return Entity.CONTRACT_VERSION;
+    }
 
-  public get contractVersion(): ContractVersion {
-    return Entity.CONTRACT_VERSION;
-  }
+    protected markAsModified(updatedAt: Date = new Date()): number {
+        assertValidDate("updatedAt", updatedAt);
 
-  protected markAsModified(updatedAt: Date = new Date()): number {
-    assertValidDate("updatedAt", updatedAt);
+        this._updatedAt = cloneDate(updatedAt);
+        this._aggregateVersion += 1;
 
-    this._updatedAt = cloneDate(updatedAt);
-    this._aggregateVersion += 1;
-
-    return this._aggregateVersion;
-  }
+        return this._aggregateVersion;
+    }
 }
 
 export { Entity, type EntityState };

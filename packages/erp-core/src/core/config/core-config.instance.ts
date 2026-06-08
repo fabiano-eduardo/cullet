@@ -10,5 +10,5 @@ import { SilentPolicyReporter } from "./silent-policy-reporter";
  * `coreConfig.configure({ observability: { reporter } })`.
  */
 export const coreConfig = new CoreConfig({
-  observability: { reporter: new SilentPolicyReporter() },
+    observability: { reporter: new SilentPolicyReporter() },
 });

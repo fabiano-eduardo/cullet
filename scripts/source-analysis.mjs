@@ -7,10 +7,10 @@ const DEFAULT_IGNORED_DIRECTORIES = new Set(["node_modules"]);
 
 /** @type {ReadonlySet<string>} */
 export const TYPESCRIPT_SOURCE_EXTENSIONS = new Set([
-  ".cts",
-  ".mts",
-  ".ts",
-  ".tsx",
+    ".cts",
+    ".mts",
+    ".ts",
+    ".tsx",
 ]);
 
 /**
@@ -35,22 +35,22 @@ export const TYPESCRIPT_SOURCE_EXTENSIONS = new Set([
  * @returns {boolean}
  */
 function shouldSkipEntry(entryName, ignoredDirectories, ignoreDotEntries) {
-  return (
-    ignoredDirectories.has(entryName) ||
-    (ignoreDotEntries && entryName.startsWith("."))
-  );
+    return (
+        ignoredDirectories.has(entryName) ||
+        (ignoreDotEntries && entryName.startsWith("."))
+    );
 }
 
 /**
  * @param {WalkOptions} [options]
  */
 function resolveWalkOptions(options = {}) {
-  return {
-    extensions: options.extensions,
-    ignoredDirectories:
-      options.ignoredDirectories ?? DEFAULT_IGNORED_DIRECTORIES,
-    ignoreDotEntries: options.ignoreDotEntries ?? true,
-  };
+    return {
+        extensions: options.extensions,
+        ignoredDirectories:
+            options.ignoredDirectories ?? DEFAULT_IGNORED_DIRECTORIES,
+        ignoreDotEntries: options.ignoreDotEntries ?? true,
+    };
 }
 
 /**
@@ -59,7 +59,7 @@ function resolveWalkOptions(options = {}) {
  * @returns {boolean}
  */
 function matchesExtensions(filePath, extensions) {
-  return extensions === undefined || extensions.has(extname(filePath));
+    return extensions === undefined || extensions.has(extname(filePath));
 }
 
 /**
@@ -68,33 +68,39 @@ function matchesExtensions(filePath, extensions) {
  * @returns {Promise<string[]>}
  */
 export async function walkFiles(rootDir, options = {}) {
-  const files = [];
-  const { extensions, ignoredDirectories, ignoreDotEntries } =
-    resolveWalkOptions(options);
+    const files = [];
+    const { extensions, ignoredDirectories, ignoreDotEntries } =
+        resolveWalkOptions(options);
 
-  const walk = async (currentDir) => {
-    for (const entry of await readdir(currentDir, {
-      withFileTypes: true,
-    })) {
-      if (shouldSkipEntry(entry.name, ignoredDirectories, ignoreDotEntries)) {
-        continue;
-      }
+    const walk = async (currentDir) => {
+        for (const entry of await readdir(currentDir, {
+            withFileTypes: true,
+        })) {
+            if (
+                shouldSkipEntry(
+                    entry.name,
+                    ignoredDirectories,
+                    ignoreDotEntries,
+                )
+            ) {
+                continue;
+            }
 
-      const entryPath = join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        await walk(entryPath);
-        continue;
-      }
+            const entryPath = join(currentDir, entry.name);
+            if (entry.isDirectory()) {
+                await walk(entryPath);
+                continue;
+            }
 
-      if (entry.isFile() && matchesExtensions(entryPath, extensions)) {
-        files.push(entryPath);
-      }
-    }
-  };
+            if (entry.isFile() && matchesExtensions(entryPath, extensions)) {
+                files.push(entryPath);
+            }
+        }
+    };
 
-  await walk(rootDir);
+    await walk(rootDir);
 
-  return files;
+    return files;
 }
 
 /**
@@ -103,31 +109,37 @@ export async function walkFiles(rootDir, options = {}) {
  * @returns {string[]}
  */
 export function walkFilesSync(rootDir, options = {}) {
-  const files = [];
-  const { extensions, ignoredDirectories, ignoreDotEntries } =
-    resolveWalkOptions(options);
+    const files = [];
+    const { extensions, ignoredDirectories, ignoreDotEntries } =
+        resolveWalkOptions(options);
 
-  const walk = (currentDir) => {
-    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
-      if (shouldSkipEntry(entry.name, ignoredDirectories, ignoreDotEntries)) {
-        continue;
-      }
+    const walk = (currentDir) => {
+        for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+            if (
+                shouldSkipEntry(
+                    entry.name,
+                    ignoredDirectories,
+                    ignoreDotEntries,
+                )
+            ) {
+                continue;
+            }
 
-      const entryPath = join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        walk(entryPath);
-        continue;
-      }
+            const entryPath = join(currentDir, entry.name);
+            if (entry.isDirectory()) {
+                walk(entryPath);
+                continue;
+            }
 
-      if (entry.isFile() && matchesExtensions(entryPath, extensions)) {
-        files.push(entryPath);
-      }
-    }
-  };
+            if (entry.isFile() && matchesExtensions(entryPath, extensions)) {
+                files.push(entryPath);
+            }
+        }
+    };
 
-  walk(rootDir);
+    walk(rootDir);
 
-  return files;
+    return files;
 }
 
 /**
@@ -136,16 +148,16 @@ export function walkFilesSync(rootDir, options = {}) {
  * @returns {import("typescript").SourceFile}
  */
 export function parseTsSource(
-  sourcePath,
-  sourceText = readFileSync(sourcePath, "utf8"),
-) {
-  return ts.createSourceFile(
     sourcePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+    sourceText = readFileSync(sourcePath, "utf8"),
+) {
+    return ts.createSourceFile(
+        sourcePath,
+        sourceText,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS,
+    );
 }
 
 /**
@@ -153,8 +165,8 @@ export function parseTsSource(
  * @param {(node: import("typescript").Node) => void} cb
  */
 function visit(node, cb) {
-  cb(node);
-  ts.forEachChild(node, (child) => visit(child, cb));
+    cb(node);
+    ts.forEachChild(node, (child) => visit(child, cb));
 }
 
 /**
@@ -163,41 +175,41 @@ function visit(node, cb) {
  * @returns {string[]}
  */
 export function collectModuleSpecifiers(sourceFile, options = {}) {
-  const specifiers = [];
-  const includeDynamicImports = options.includeDynamicImports ?? true;
-  const includeImportEquals = options.includeImportEquals ?? true;
+    const specifiers = [];
+    const includeDynamicImports = options.includeDynamicImports ?? true;
+    const includeImportEquals = options.includeImportEquals ?? true;
 
-  visit(sourceFile, (node) => {
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier !== undefined &&
-      ts.isStringLiteralLike(node.moduleSpecifier)
-    ) {
-      specifiers.push(node.moduleSpecifier.text);
-      return;
-    }
+    visit(sourceFile, (node) => {
+        if (
+            (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+            node.moduleSpecifier !== undefined &&
+            ts.isStringLiteralLike(node.moduleSpecifier)
+        ) {
+            specifiers.push(node.moduleSpecifier.text);
+            return;
+        }
 
-    if (
-      includeImportEquals &&
-      ts.isImportEqualsDeclaration(node) &&
-      ts.isExternalModuleReference(node.moduleReference) &&
-      node.moduleReference.expression !== undefined &&
-      ts.isStringLiteral(node.moduleReference.expression)
-    ) {
-      specifiers.push(node.moduleReference.expression.text);
-      return;
-    }
+        if (
+            includeImportEquals &&
+            ts.isImportEqualsDeclaration(node) &&
+            ts.isExternalModuleReference(node.moduleReference) &&
+            node.moduleReference.expression !== undefined &&
+            ts.isStringLiteral(node.moduleReference.expression)
+        ) {
+            specifiers.push(node.moduleReference.expression.text);
+            return;
+        }
 
-    if (
-      includeDynamicImports &&
-      ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteralLike(node.arguments[0])
-    ) {
-      specifiers.push(node.arguments[0].text);
-    }
-  });
+        if (
+            includeDynamicImports &&
+            ts.isCallExpression(node) &&
+            node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+            node.arguments.length === 1 &&
+            ts.isStringLiteralLike(node.arguments[0])
+        ) {
+            specifiers.push(node.arguments[0].text);
+        }
+    });
 
-  return specifiers;
+    return specifiers;
 }

@@ -1,64 +1,64 @@
 {
-  "name": "@cullet/erp-core",
-  "version": "1.0.2",
-  "description": "Core ERP with clean architecture, temporality, policies, and rule sets",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fabiano-eduardo/cullet.git",
-    "directory": "packages/erp-core"
-  },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    "name": "@cullet/erp-core",
+    "version": "1.0.2",
+    "description": "Core ERP with clean architecture, temporality, policies, and rule sets",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fabiano-eduardo/cullet.git",
+        "directory": "packages/erp-core"
     },
-    "./errors": {
-      "types": "./dist/errors/index.d.ts",
-      "import": "./dist/errors/index.js"
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./errors": {
+            "types": "./dist/errors/index.d.ts",
+            "import": "./dist/errors/index.js"
+        },
+        "./policies": {
+            "types": "./dist/policies/index.d.ts",
+            "import": "./dist/policies/index.js"
+        },
+        "./policies/engines": {
+            "types": "./dist/policies/engines/index.d.ts",
+            "import": "./dist/policies/engines/index.js"
+        },
+        "./policies/engines/v1/gate": {
+            "types": "./dist/policies/engines/v1/gate/index.d.ts",
+            "import": "./dist/policies/engines/v1/gate/index.js"
+        },
+        "./exceptions/validation-field": {
+            "types": "./dist/exceptions/validation-field.d.ts",
+            "import": "./dist/exceptions/validation-field.js"
+        },
+        "./package.json": "./package.json"
     },
-    "./policies": {
-      "types": "./dist/policies/index.d.ts",
-      "import": "./dist/policies/index.js"
+    "scripts": {
+        "build": "tsdown --config tsdown.config.ts",
+        "dev": "tsdown --config tsdown.config.ts --watch"
     },
-    "./policies/engines": {
-      "types": "./dist/policies/engines/index.d.ts",
-      "import": "./dist/policies/engines/index.js"
+    "files": [
+        "dist",
+        "src",
+        "!src/**/*.spec.ts",
+        "!src/**/*.test.ts",
+        "meta.json",
+        "KIT_CONTEXT.md",
+        "README.md"
+    ],
+    "sideEffects": false,
+    "engines": {
+        "node": ">=18.17"
     },
-    "./policies/engines/v1/gate": {
-      "types": "./dist/policies/engines/v1/gate/index.d.ts",
-      "import": "./dist/policies/engines/v1/gate/index.js"
+    "peerDependencies": {
+        "zod": ">=3.22.0 <5"
     },
-    "./exceptions/validation-field": {
-      "types": "./dist/exceptions/validation-field.d.ts",
-      "import": "./dist/exceptions/validation-field.js"
+    "publishConfig": {
+        "access": "public"
     },
-    "./package.json": "./package.json"
-  },
-  "scripts": {
-    "build": "tsdown --config tsdown.config.ts",
-    "dev": "tsdown --config tsdown.config.ts --watch"
-  },
-  "files": [
-    "dist",
-    "src",
-    "!src/**/*.spec.ts",
-    "!src/**/*.test.ts",
-    "meta.json",
-    "KIT_CONTEXT.md",
-    "README.md"
-  ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18.17"
-  },
-  "peerDependencies": {
-    "zod": ">=3.22.0 <5"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "license": "MIT"
+    "license": "MIT"
 }

@@ -1,8 +1,8 @@
 import { Result } from "../../result/result";
 
 import {
-  ContextResolverRegistry,
-  registerNamespacedContextResolversIn,
+    ContextResolverRegistry,
+    registerNamespacedContextResolversIn,
 } from "./context-registry";
 
 import type { ContextValueResolver } from "./context-resolver";
@@ -15,12 +15,12 @@ import type { ContextValueResolver } from "./context-resolver";
 export const contextResolverRegistry = new ContextResolverRegistry();
 
 export function registerNamespacedContextResolvers(
-  namespace: string,
-  resolvers: readonly ContextValueResolver[],
+    namespace: string,
+    resolvers: readonly ContextValueResolver[],
 ): Result<ContextResolverRegistry, string> {
-  return registerNamespacedContextResolversIn(
-    contextResolverRegistry,
-    namespace,
-    resolvers,
-  );
+    return registerNamespacedContextResolversIn(
+        contextResolverRegistry,
+        namespace,
+        resolvers,
+    );
 }

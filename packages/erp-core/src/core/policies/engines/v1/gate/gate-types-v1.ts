@@ -5,8 +5,8 @@
 import type { ConditionNode } from "../condition-types";
 
 export type GatePayloadV1 =
-  | { readonly condition: ConditionNode }
-  | {
-      readonly allowIf: ConditionNode;
-      readonly defaultOutcome: "ALLOW" | "DENY";
-    };
+    | { readonly condition: ConditionNode }
+    | {
+          readonly allowIf: ConditionNode;
+          readonly defaultOutcome: "ALLOW" | "DENY";
+      };

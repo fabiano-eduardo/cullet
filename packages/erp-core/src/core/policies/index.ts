@@ -15,62 +15,62 @@ export { Outcome } from "../result/outcome";
 // ─── Utils ──────────────────────────────────────────────────────────────────
 export { PolicyHashing } from "./utils";
 export type {
-  PolicyDecisionId,
-  PolicyDefinitionId,
-  SchoolId,
-  TenantId,
+    PolicyDecisionId,
+    PolicyDefinitionId,
+    SchoolId,
+    TenantId,
 } from "./policy-ids";
 export {
-  asPolicyDecisionId,
-  asPolicyDefinitionId,
-  asSchoolId,
-  asTenantId,
+    asPolicyDecisionId,
+    asPolicyDefinitionId,
+    asSchoolId,
+    asTenantId,
 } from "./policy-ids";
 
 // ─── Catalog ────────────────────────────────────────────────────────────────
 export type {
-  AsOfSource,
-  PolicyCatalogEntryProps,
-  PolicyKind,
-  PolicyOwner,
-  PolicyScopeLevel,
+    AsOfSource,
+    PolicyCatalogEntryProps,
+    PolicyKind,
+    PolicyOwner,
+    PolicyScopeLevel,
 } from "./catalog";
 export { PolicyCatalog, PolicyCatalogFactory, PolicyKey } from "./catalog";
 
 // ─── Definitions ────────────────────────────────────────────────────────────
 export type {
-  BasePolicyDefinitionProps,
-  ComputePolicyDefinitionProps,
-  FindCandidatesParams,
-  GatePolicyDefinitionProps,
-  PolicyDefinitionProps,
-  PolicyDefinitionStatus,
-  PolicyScope,
-  ScopeChain,
+    BasePolicyDefinitionProps,
+    ComputePolicyDefinitionProps,
+    FindCandidatesParams,
+    GatePolicyDefinitionProps,
+    PolicyDefinitionProps,
+    PolicyDefinitionStatus,
+    PolicyScope,
+    ScopeChain,
 } from "./defs";
 export {
-  InMemoryPolicyDefinitionRepository,
-  PolicyDefinition,
-  PolicyScopeMatcher,
+    InMemoryPolicyDefinitionRepository,
+    PolicyDefinition,
+    PolicyScopeMatcher,
 } from "./defs";
 
 // ─── Context ────────────────────────────────────────────────────────────────
 export type {
-  ContextResolverCircuitBreakerOptions,
-  ContextResolverResilienceOptions,
-  ContextResolverRetryOptions,
-  ContextSeed,
-  ContextValueResolver,
-  PolicyContextBuilderOptions,
+    ContextResolverCircuitBreakerOptions,
+    ContextResolverResilienceOptions,
+    ContextResolverRetryOptions,
+    ContextSeed,
+    ContextValueResolver,
+    PolicyContextBuilderOptions,
 } from "./context";
 export {
-  ContextSeedValidator,
-  ContextResolverRegistry,
-  contextResolverRegistry,
-  PolicyContextBuilder,
-  PolicyContextPath,
-  registerNamespacedContextResolvers,
-  registerNamespacedContextResolversIn,
+    ContextSeedValidator,
+    ContextResolverRegistry,
+    contextResolverRegistry,
+    PolicyContextBuilder,
+    PolicyContextPath,
+    registerNamespacedContextResolvers,
+    registerNamespacedContextResolversIn,
 } from "./context";
 
 // ─── AsOf ───────────────────────────────────────────────────────────────────
@@ -79,39 +79,39 @@ export { PolicyAsOfResolver } from "./asof";
 
 // ─── Engines ────────────────────────────────────────────────────────────────
 export type {
-  ConditionEvaluationCause,
-  ConditionEvaluationOptions,
-  ConditionEvaluationReport,
-  ConditionEvaluationReportLevel,
-  ConditionEvaluationReportTag,
-  ConditionEvaluatorReporter,
-  GateOutcome,
-  GateOutcomeData,
-  GatePayload,
-  GateStatus,
-  GateTraceLeafSnapshot,
-  GateTraceNodeSnapshot,
-  GateViolationTrace,
-  PolicyContext,
-  PolicyViolation,
-  VersionedGateEngine,
+    ConditionEvaluationCause,
+    ConditionEvaluationOptions,
+    ConditionEvaluationReport,
+    ConditionEvaluationReportLevel,
+    ConditionEvaluationReportTag,
+    ConditionEvaluatorReporter,
+    GateOutcome,
+    GateOutcomeData,
+    GatePayload,
+    GateStatus,
+    GateTraceLeafSnapshot,
+    GateTraceNodeSnapshot,
+    GateViolationTrace,
+    PolicyContext,
+    PolicyViolation,
+    VersionedGateEngine,
 } from "./engines";
 export type {
-  ComputeEvaluator,
-  ComputeEvaluatorRegistration,
-  ComputeOutcome,
-  ComputeOutcomeData,
-  ComputeStatus,
-  VersionedComputeEngine,
+    ComputeEvaluator,
+    ComputeEvaluatorRegistration,
+    ComputeOutcome,
+    ComputeOutcomeData,
+    ComputeStatus,
+    VersionedComputeEngine,
 } from "./engines";
 export {
-  ComputeEngineRegistry,
-  ComputeEvaluatorRegistry,
-  ComputePayloadParsers,
-  ComputePayloadParserRegistry,
-  ComputeRegistry,
-  GateEngineRegistry,
-  GatePayloadParsers,
+    ComputeEngineRegistry,
+    ComputeEvaluatorRegistry,
+    ComputePayloadParsers,
+    ComputePayloadParserRegistry,
+    ComputeRegistry,
+    GateEngineRegistry,
+    GatePayloadParsers,
 } from "./engines";
 
 // ─── Resolver ───────────────────────────────────────────────────────────────
@@ -119,12 +119,12 @@ export { PolicyResolver } from "./resolver";
 
 // ─── Service ────────────────────────────────────────────────────────────────
 export type {
-  EvaluateInput,
-  PolicyDecision,
-  PolicyEvaluationError,
-  PolicyEvaluationResult,
-  PolicyServiceParams,
-  PolicyServiceOptions,
+    EvaluateInput,
+    PolicyDecision,
+    PolicyEvaluationError,
+    PolicyEvaluationResult,
+    PolicyServiceParams,
+    PolicyServiceOptions,
 } from "./service";
 export { PolicyEvaluationErrors, PolicyService } from "./service";
 

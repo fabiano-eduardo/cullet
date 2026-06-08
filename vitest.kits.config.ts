@@ -7,12 +7,12 @@ import { baseVitestConfig } from "./vitest.config.base";
 // cross-suite worker contention that made the repo suite flaky when both ran
 // in a single invocation.
 export default mergeConfig(
-  baseVitestConfig,
-  defineConfig({
-    test: {
-      include: ["packages/*/src/**/*.spec.ts"],
-      exclude: ["node_modules", "dist"],
-      testTimeout: 15_000,
-    },
-  }),
+    baseVitestConfig,
+    defineConfig({
+        test: {
+            include: ["packages/*/src/**/*.spec.ts"],
+            exclude: ["node_modules", "dist"],
+            testTimeout: 15_000,
+        },
+    }),
 );

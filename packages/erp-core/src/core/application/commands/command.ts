@@ -5,7 +5,7 @@ import type { Result } from "../../result/result";
 import { RequestedBy } from "./requested-by";
 
 interface CommandInput {
-  readonly requestedBy: RequestedBy;
+    readonly requestedBy: RequestedBy;
 }
 
 /**
@@ -20,8 +20,8 @@ interface CommandInput {
  */
 @version("1.0")
 abstract class Command<
-  Input extends CommandInput,
-  Output extends Result<unknown, unknown> = Result<void, never>,
+    Input extends CommandInput,
+    Output extends Result<unknown, unknown> = Result<void, never>,
 > extends UseCase<Input, Output> {}
 
 export type { CommandInput };

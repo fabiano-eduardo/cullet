@@ -1,27 +1,29 @@
 import {
-  DomainException,
-  type ValueObjectRuleset,
+    DomainException,
+    type ValueObjectRuleset,
 } from "../../../core/domain/rulesets/value-object-ruleset.contracts";
 import { CPFRulesV1 } from "./cpf-rules-v1";
 
 class CPFBlocklistError extends DomainException {}
 
 class CPFRulesV2 implements ValueObjectRuleset<string> {
-  readonly id = "cpf-rules@2.0" as const;
-  readonly description =
-    "CPF validation with check-digit algorithm and blocklist";
+    readonly id = "cpf-rules@2.0" as const;
+    readonly description =
+        "CPF validation with check-digit algorithm and blocklist";
 
-  private readonly v1 = new CPFRulesV1();
+    private readonly v1 = new CPFRulesV1();
 
-  constructor(private readonly blocklist: readonly string[]) {}
+    constructor(private readonly blocklist: readonly string[]) {}
 
-  validate(value: string): void {
-    this.v1.validate(value);
+    validate(value: string): void {
+        this.v1.validate(value);
 
-    if (this.blocklist.includes(value)) {
-      throw new CPFBlocklistError(`CPF "${value}" appears on the blocklist.`);
+        if (this.blocklist.includes(value)) {
+            throw new CPFBlocklistError(
+                `CPF "${value}" appears on the blocklist.`,
+            );
+        }
     }
-  }
 }
 
 export { CPFRulesV2 };

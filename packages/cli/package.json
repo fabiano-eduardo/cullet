@@ -1,60 +1,60 @@
 {
-  "name": "cullet",
-  "version": "0.4.0",
-  "description": "Coleção de kits arquiteturais opinativos para TypeScript",
-  "type": "module",
-  "license": "MIT",
-  "author": "Fabiano Eduardo",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fabiano-eduardo/cullet.git"
-  },
-  "bugs": {
-    "url": "https://github.com/fabiano-eduardo/cullet/issues"
-  },
-  "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
-  "keywords": [
-    "typescript",
-    "architecture",
-    "clean-architecture",
-    "ddd",
-    "cli",
-    "starter-kit"
-  ],
-  "bin": {
-    "cullet": "./dist/cli/index.js"
-  },
-  "exports": {
-    "./registry": {
-      "types": "./dist/registry/index.d.ts",
-      "import": "./dist/registry/index.js",
-      "default": "./dist/registry/index.js"
+    "name": "cullet",
+    "version": "0.4.0",
+    "description": "Catálogo opinativo de blocos arquiteturais para TypeScript — bibliotecas importáveis e ferramentas copy-first via CLI",
+    "type": "module",
+    "license": "MIT",
+    "author": "Fabiano Eduardo",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fabiano-eduardo/cullet.git"
+    },
+    "bugs": {
+        "url": "https://github.com/fabiano-eduardo/cullet/issues"
+    },
+    "homepage": "https://github.com/fabiano-eduardo/cullet#readme",
+    "keywords": [
+        "typescript",
+        "architecture",
+        "clean-architecture",
+        "ddd",
+        "cli",
+        "starter-kit"
+    ],
+    "bin": {
+        "cullet": "./dist/cli/index.js"
+    },
+    "exports": {
+        "./registry": {
+            "types": "./dist/registry/index.d.ts",
+            "import": "./dist/registry/index.js",
+            "default": "./dist/registry/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "registry/index.json",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "tsdown --config tsdown.config.ts",
+        "dev": "tsdown --config tsdown.config.ts --watch",
+        "cli": "npm run build && node ./index.js",
+        "release:dry-run": "npm run build && npm pack && node ../../scripts/check-pack-contents.mjs",
+        "release": "npm run release:dry-run && changeset publish"
+    },
+    "dependencies": {
+        "commander": "^13.1.0",
+        "fs-extra": "^11.3.0",
+        "jsonc-parser": "^3.3.1",
+        "picocolors": "^1.1.1"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "publishConfig": {
+        "access": "public"
     }
-  },
-  "files": [
-    "dist",
-    "registry/index.json",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "tsdown --config tsdown.config.ts",
-    "dev": "tsdown --config tsdown.config.ts --watch",
-    "cli": "npm run build && node ./index.js",
-    "release:dry-run": "npm run build && npm pack && node ../../scripts/check-pack-contents.mjs",
-    "release": "npm run release:dry-run && changeset publish"
-  },
-  "dependencies": {
-    "commander": "^13.1.0",
-    "fs-extra": "^11.3.0",
-    "jsonc-parser": "^3.3.1",
-    "picocolors": "^1.1.1"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "publishConfig": {
-    "access": "public"
-  }
 }

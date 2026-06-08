@@ -1,39 +1,39 @@
 {
-  "schemaVersion": "2",
-  "name": "dummy-api",
-  "version": "1.0.1",
-  "description": "Kit dummy de API para validar o fluxo de criacao",
-  "compatibility": {
-    "engines": {
-      "node": ">=18",
-      "typescript": ">=5.0.0"
+    "schemaVersion": "2",
+    "name": "dummy-api",
+    "version": "1.0.1",
+    "description": "Kit dummy de API para validar o fluxo de criacao",
+    "compatibility": {
+        "engines": {
+            "node": ">=18",
+            "typescript": ">=5.0.0"
+        },
+        "directImport": {
+            "peerDependencies": []
+        },
+        "fullControl": {
+            "dependencies": []
+        }
     },
-    "directImport": {
-      "peerDependencies": []
+    "entryPoint": "index.ts",
+    "philosophy": {
+        "errorModel": "mixed",
+        "observability": [],
+        "testStyle": "vitest-no-mocks-in-core",
+        "externalDeps": [],
+        "testDeps": ["vitest"]
     },
-    "fullControl": {
-      "dependencies": []
-    }
-  },
-  "entryPoint": "index.ts",
-  "philosophy": {
-    "errorModel": "mixed",
-    "observability": [],
-    "testStyle": "vitest-no-mocks-in-core",
-    "externalDeps": [],
-    "testDeps": ["vitest"]
-  },
-  "docs": {
-    "context": "KIT_CONTEXT.md",
-    "readme": "README.md"
-  },
-  "lint": {
-    "nodenextImports": "warn",
-    "noBareAny": "warn",
-    "noExternalImports": "error",
-    "noUpwardImports": "error"
-  },
-  "exports": [],
-  "changelog": ["1.0.0 - Initial scaffold."],
-  "deprecated": false
+    "docs": {
+        "context": "KIT_CONTEXT.md",
+        "readme": "README.md"
+    },
+    "lint": {
+        "nodenextImports": "warn",
+        "noBareAny": "warn",
+        "noExternalImports": "error",
+        "noUpwardImports": "error"
+    },
+    "exports": [],
+    "changelog": ["1.0.0 - Initial scaffold."],
+    "deprecated": false
 }

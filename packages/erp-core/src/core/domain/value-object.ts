@@ -3,28 +3,28 @@ import { type ContractVersion, version } from "../versioning/version";
 
 @version("1.0")
 abstract class ValueObject<T, P> {
-  public static readonly CONTRACT_VERSION: ContractVersion;
-  public readonly value: DeepReadonly<T>;
+    public static readonly CONTRACT_VERSION: ContractVersion;
+    public readonly value: DeepReadonly<T>;
 
-  protected constructor(value: T) {
-    this.value = makeImmutable(value);
-  }
+    protected constructor(value: T) {
+        this.value = makeImmutable(value);
+    }
 
-  public get contractVersion(): ContractVersion {
-    return ValueObject.CONTRACT_VERSION;
-  }
+    public get contractVersion(): ContractVersion {
+        return ValueObject.CONTRACT_VERSION;
+    }
 
-  protected finalize(): void {
-    Object.freeze(this);
-  }
+    protected finalize(): void {
+        Object.freeze(this);
+    }
 
-  public toJSON(): P {
-    return this.toPrimitive();
-  }
+    public toJSON(): P {
+        return this.toPrimitive();
+    }
 
-  public abstract equals(other: this): boolean;
+    public abstract equals(other: this): boolean;
 
-  public abstract toPrimitive(): P;
+    public abstract toPrimitive(): P;
 }
 
 export { type DeepReadonly, ValueObject };
