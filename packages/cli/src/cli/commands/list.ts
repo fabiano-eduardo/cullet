@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import pc from "picocolors";
+import { listKits } from "../../registry/index.js";
 import {
   describeKitSuccessor,
   getKitKind,
   loadKitDeprecation,
   loadKitMeta,
-  loadRegistry,
 } from "../utils/resolve.js";
 import { runCommandWithTelemetry } from "../utils/telemetry.js";
 
@@ -17,36 +17,32 @@ export function createListCommand(): Command {
         fromMetaUrl: import.meta.url,
         command: "list",
         async handler(tracker) {
-          const registry = await loadRegistry(import.meta.url);
-          const names = Object.keys(registry).sort((left, right) =>
-            left.localeCompare(right),
-          );
-          tracker.set("kitCount", names.length);
+          const kits = await listKits();
+          tracker.set("kitCount", kits.length);
 
-          if (names.length === 0) {
+          if (kits.length === 0) {
             console.log(pc.yellow("Nenhum kit foi encontrado no registry."));
             return;
           }
 
           console.log(pc.bold(pc.cyan("Kits disponiveis")));
 
-          for (const name of names) {
-            const entry = registry[name];
+          for (const kit of kits) {
             const [deprecation, meta] = await Promise.all([
-              loadKitDeprecation(import.meta.url, name, entry.latest),
-              loadKitMeta(import.meta.url, name, entry.latest),
+              loadKitDeprecation(import.meta.url, kit.name, kit.latest),
+              loadKitMeta(import.meta.url, kit.name, kit.latest),
             ]);
             const kind = getKitKind(meta);
             const kindMarker = pc.dim(` [${kind}]`);
             const marker = deprecation ? pc.yellow(" [deprecated]") : "";
 
             console.log(
-              `${pc.green(name)} ${pc.dim(
-                `(latest: ${entry.latest})`,
+              `${pc.green(kit.name)} ${pc.dim(
+                `(latest: ${kit.latest})`,
               )}${kindMarker}${marker}`,
             );
-            console.log(`  ${entry.description}`);
-            console.log(`  versoes: ${pc.bold(entry.versions.join(", "))}`);
+            console.log(`  ${kit.description}`);
+            console.log(`  versoes: ${pc.bold(kit.versions.join(", "))}`);
 
             if (deprecation) {
               console.log(

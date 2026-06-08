@@ -3,6 +3,7 @@ import pc from "picocolors";
 import { formatDependency } from "../utils/formatDependency.js";
 import { fetchPublishedPackageInfo } from "../utils/npm-registry.js";
 import { kitNodeModulesEntry } from "../utils/paths.js";
+import { loadKit, type CatalogKitContext } from "../../registry/index.js";
 import {
   describeKitSuccessor,
   getCopyDependencies,
@@ -11,15 +12,9 @@ import {
   getImportPeerDependencies,
   isToolingKit,
   kitExposesImport,
-  loadKitContext,
-  loadKitDeprecation,
-  loadKitMeta,
-  loadRegistry,
   parseKitArg,
-  resolveRegistryEntry,
-  resolveVersion,
+  type KitMeta,
 } from "../utils/resolve.js";
-import { parseKitContextDocument } from "../utils/kit-context.js";
 import { runCommandWithTelemetry } from "../utils/telemetry.js";
 import { upsertPathAlias } from "../utils/tsconfig.js";
 
@@ -45,9 +40,7 @@ function summarizeBody(body: string, maxLines: number): string {
   return trimmedLines.join("\n");
 }
 
-function printCompatibility(
-  meta: Awaited<ReturnType<typeof loadKitMeta>>,
-): void {
+function printCompatibility(meta: KitMeta | null): void {
   const engines = meta?.compatibility?.engines;
   const dependencies = getDirectImportPeerDependencies(meta);
 
@@ -72,12 +65,14 @@ function printCompatibility(
   }
 }
 
-function printKitContext(raw: string, options: { full: boolean }): void {
-  const document = parseKitContextDocument(raw);
-  const sections = document.sections;
+function printKitContext(
+  context: CatalogKitContext,
+  options: { full: boolean },
+): void {
+  const sections = context.sections;
 
   if (sections.length === 0) {
-    console.log(pc.dim(raw.trim()));
+    console.log(pc.dim(context.raw.trim()));
     return;
   }
 
@@ -154,29 +149,22 @@ export function createInfoCommand(): Command {
           tracker.set("full", Boolean(options.full));
 
           const parsed = parseKitArg(kit);
-          const registry = await loadRegistry(import.meta.url);
-          const entry = resolveRegistryEntry(registry, parsed.name);
-          const version = resolveVersion(parsed.name, entry, parsed.version);
-          const importSpecifier = entry.npmName;
-          tracker.set("kit", parsed.name);
+          const { name, version, npmName, meta, context, deprecation } =
+            await loadKit(parsed.name, parsed.version);
+          const importSpecifier = npmName;
+          tracker.set("kit", name);
           tracker.set("resolvedVersion", version);
 
-          console.log(pc.green(`Kit validado: ${parsed.name}@${version}`));
+          console.log(pc.green(`Kit validado: ${name}@${version}`));
 
-          const meta = await loadKitMeta(import.meta.url, parsed.name, version);
           if (meta?.description) {
             console.log(pc.dim(meta.description));
           }
 
-          const deprecation = await loadKitDeprecation(
-            import.meta.url,
-            parsed.name,
-            version,
-          );
           if (deprecation) {
             console.log(
               pc.yellow(
-                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
+                `Aviso: ${name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
               ),
             );
             if (deprecation.successor) {
@@ -203,7 +191,7 @@ export function createInfoCommand(): Command {
             } else {
               console.log(pc.bold("Adicione ao projeto:"));
             }
-            console.log(pc.cyan(`npx cullet fc ${parsed.name}@${version}`));
+            console.log(pc.cyan(`npx cullet fc ${name}@${version}`));
             const placement = getCopyPlacement(meta);
             if (placement !== undefined) {
               console.log(
@@ -215,7 +203,7 @@ export function createInfoCommand(): Command {
             console.log(pc.cyan(`import { ... } from "${importSpecifier}";`));
           }
 
-          await printPublishedVersions(entry.npmName);
+          await printPublishedVersions(npmName);
 
           if (tooling) {
             const importDeps = getImportPeerDependencies(meta);
@@ -237,12 +225,6 @@ export function createInfoCommand(): Command {
           } else {
             printCompatibility(meta);
           }
-
-          const context = await loadKitContext(
-            import.meta.url,
-            parsed.name,
-            version,
-          );
 
           if (context !== null) {
             printKitContext(context, {
@@ -278,7 +260,7 @@ export function createInfoCommand(): Command {
             console.log("");
             console.log(
               pc.dim(
-                `Dica: rode \`npx cullet fc ${parsed.name}\` para copiar o kit para dentro do projeto.`,
+                `Dica: rode \`npx cullet fc ${name}\` para copiar o kit para dentro do projeto.`,
               ),
             );
             return;
@@ -296,8 +278,8 @@ export function createInfoCommand(): Command {
 
           const aliasResult = await upsertPathAlias(
             process.cwd(),
-            entry.npmName,
-            kitNodeModulesEntry(entry.npmName),
+            npmName,
+            kitNodeModulesEntry(npmName),
           );
 
           if (aliasResult.status === "missing-tsconfig") {
@@ -318,7 +300,7 @@ export function createInfoCommand(): Command {
 
           console.log(
             pc.green(
-              `Alias ${actionLabel}: ${entry.npmName} -> ${aliasResult.target}`,
+              `Alias ${actionLabel}: ${npmName} -> ${aliasResult.target}`,
             ),
           );
         },
