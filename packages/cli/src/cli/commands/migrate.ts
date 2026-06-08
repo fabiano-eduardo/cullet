@@ -5,13 +5,7 @@ import {
   loadKitMigrationPlan,
   runKitMigrationCodemod,
 } from "../utils/migration.js";
-import {
-  formatKitSuccessor,
-  loadRegistry,
-  parseKitArg,
-  resolveRegistryEntry,
-  resolveVersion,
-} from "../utils/resolve.js";
+import { formatKitSuccessor, resolveKitFromArg } from "../utils/resolve.js";
 import { runCommandWithTelemetry } from "../utils/telemetry.js";
 
 interface MigrateCommandOptions {
@@ -101,23 +95,23 @@ export function createMigrateCommand(): Command {
           tracker.set("apply", Boolean(options.apply));
           tracker.set("dryRun", Boolean(options.dryRun));
 
-          const parsed = parseKitArg(kit);
-          const registry = await loadRegistry(import.meta.url);
-          const entry = resolveRegistryEntry(registry, parsed.name);
-          const version = resolveVersion(parsed.name, entry, parsed.version);
-          tracker.set("kit", parsed.name);
+          const { name, version } = await resolveKitFromArg(
+            import.meta.url,
+            kit,
+          );
+          tracker.set("kit", name);
           tracker.set("resolvedVersion", version);
 
           const plan = await loadKitMigrationPlan(
             import.meta.url,
-            parsed.name,
+            name,
             version,
           );
 
           if (plan === null) {
             console.log(
               pc.yellow(
-                `Nenhum caminho de migracao foi codificado para ${parsed.name}@${version}.`,
+                `Nenhum caminho de migracao foi codificado para ${name}@${version}.`,
               ),
             );
             return;
