@@ -22,12 +22,12 @@ Import direto (sempre a versão `latest` exportada pelo pacote):
 
 ```ts
 import {
-  Entity,
-  ValueObject,
-  PolicyCatalog,
-  PolicyService,
-  mapPolicyEvaluationError,
-  type PolicyDecision,
+    Entity,
+    ValueObject,
+    PolicyCatalog,
+    PolicyService,
+    mapPolicyEvaluationError,
+    type PolicyDecision,
 } from "@cullet/erp-core";
 ```
 
@@ -53,33 +53,33 @@ dos exports globais `coreConfig` e `contextResolverRegistry`:
 
 ```ts
 import {
-  ComputeRegistry,
-  ContextResolverRegistry,
-  CoreConfig,
-  GateEngineRegistry,
-  PolicyContextBuilder,
-  Result,
-  registerNamespacedContextResolversIn,
+    ComputeRegistry,
+    ContextResolverRegistry,
+    CoreConfig,
+    GateEngineRegistry,
+    PolicyContextBuilder,
+    Result,
+    registerNamespacedContextResolversIn,
 } from "@cullet/erp-core";
 import { GateEngineV1 } from "@cullet/erp-core/policies/engines/v1/gate";
 
 const coreConfig = new CoreConfig({
-  observability: { reporter },
+    observability: { reporter },
 });
 
 const resolverRegistry = new ContextResolverRegistry();
 registerNamespacedContextResolversIn(resolverRegistry, "billing", [
-  {
-    path: "student.contractStatus",
-    resilience: {
-      timeoutMs: 200,
-      retry: { maxAttempts: 3, initialDelayMs: 25, maxDelayMs: 100 },
-      circuitBreaker: { failureThreshold: 5, cooldownMs: 1_000 },
+    {
+        path: "student.contractStatus",
+        resilience: {
+            timeoutMs: 200,
+            retry: { maxAttempts: 3, initialDelayMs: 25, maxDelayMs: 100 },
+            circuitBreaker: { failureThreshold: 5, cooldownMs: 1_000 },
+        },
+        async resolve(seed) {
+            return Result.ok(seed.fields.contractStatus);
+        },
     },
-    async resolve(seed) {
-      return Result.ok(seed.fields.contractStatus);
-    },
-  },
 ]);
 
 const contextBuilder = new PolicyContextBuilder(resolverRegistry);

@@ -11,7 +11,7 @@ import type { ComputeEvaluatorRegistration } from "../engines";
  * - evaluators:    compute evaluator registrations keyed by policy/version.
  */
 export interface PolicyPackage {
-  readonly catalogEntries: readonly PolicyCatalogEntryProps[];
-  readonly definitions: readonly PolicyDefinition[];
-  readonly evaluators: readonly ComputeEvaluatorRegistration[];
+    readonly catalogEntries: readonly PolicyCatalogEntryProps[];
+    readonly definitions: readonly PolicyDefinition[];
+    readonly evaluators: readonly ComputeEvaluatorRegistration[];
 }

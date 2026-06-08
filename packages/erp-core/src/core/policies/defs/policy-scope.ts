@@ -5,9 +5,9 @@ import type { SchoolId, TenantId } from "../policy-ids";
  * Scope attached to a PolicyDefinition — defines where it applies.
  */
 export interface PolicyScope {
-  readonly level: PolicyScopeLevel;
-  readonly tenantId: TenantId | null;
-  readonly schoolId: SchoolId | null;
+    readonly level: PolicyScopeLevel;
+    readonly tenantId: TenantId | null;
+    readonly schoolId: SchoolId | null;
 }
 
 /**
@@ -29,25 +29,27 @@ export type ScopeChain = readonly PolicyScope[];
  * Numeric weight for scope specificity (higher = more specific).
  */
 const SCOPE_WEIGHT: Record<PolicyScopeLevel, number> = {
-  SCHOOL: 3,
-  TENANT: 2,
-  GLOBAL: 1,
+    SCHOOL: 3,
+    TENANT: 2,
+    GLOBAL: 1,
 };
 
 export class PolicyScopeMatcher {
-  static weight(level: PolicyScopeLevel): number {
-    return SCOPE_WEIGHT[level];
-  }
+    static weight(level: PolicyScopeLevel): number {
+        return SCOPE_WEIGHT[level];
+    }
 
-  static matchesChain(defScope: PolicyScope, chain: ScopeChain): boolean {
-    return chain.some((scope) => PolicyScopeMatcher.equals(defScope, scope));
-  }
+    static matchesChain(defScope: PolicyScope, chain: ScopeChain): boolean {
+        return chain.some((scope) =>
+            PolicyScopeMatcher.equals(defScope, scope),
+        );
+    }
 
-  static equals(a: PolicyScope, b: PolicyScope): boolean {
-    return (
-      a.level === b.level &&
-      a.tenantId === b.tenantId &&
-      a.schoolId === b.schoolId
-    );
-  }
+    static equals(a: PolicyScope, b: PolicyScope): boolean {
+        return (
+            a.level === b.level &&
+            a.tenantId === b.tenantId &&
+            a.schoolId === b.schoolId
+        );
+    }
 }

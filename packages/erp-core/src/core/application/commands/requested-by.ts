@@ -16,81 +16,81 @@ type RequestedByKind = "user" | "system";
 const REQUESTED_BY_FIELD = ValidationField.of("requestedBy");
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // system:<job> where <job> starts with a lowercase letter and may have hyphens between segments
 const SYSTEM_IDENTITY_PATTERN = /^system:[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 class RequestedBy {
-  readonly kind: RequestedByKind;
-  readonly raw: string;
+    readonly kind: RequestedByKind;
+    readonly raw: string;
 
-  private constructor(kind: RequestedByKind, raw: string) {
-    this.kind = kind;
-    this.raw = raw;
-    Object.freeze(this);
-  }
-
-  /** Builds from a human user ID (must be a UUID). */
-  static fromUser(userId: string): RequestedBy {
-    if (!UUID_PATTERN.test(userId)) {
-      throw new InvalidValueException(
-        REQUESTED_BY_FIELD,
-        ValidationCode.INVALID_FORMAT,
-        `requestedBy: user identity must be a UUID, got "${userId}"`,
-      );
+    private constructor(kind: RequestedByKind, raw: string) {
+        this.kind = kind;
+        this.raw = raw;
+        Object.freeze(this);
     }
 
-    return new RequestedBy("user", userId);
-  }
+    /** Builds from a human user ID (must be a UUID). */
+    static fromUser(userId: string): RequestedBy {
+        if (!UUID_PATTERN.test(userId)) {
+            throw new InvalidValueException(
+                REQUESTED_BY_FIELD,
+                ValidationCode.INVALID_FORMAT,
+                `requestedBy: user identity must be a UUID, got "${userId}"`,
+            );
+        }
 
-  /**
-   * Builds from a system identity.
-   * Only accepts the format "system:<job>", where <job> matches [a-z][a-z0-9]*(-[a-z0-9]+)*.
-   */
-  static fromSystem(systemIdentity: string): RequestedBy {
-    if (!SYSTEM_IDENTITY_PATTERN.test(systemIdentity)) {
-      throw new InvalidValueException(
-        REQUESTED_BY_FIELD,
-        ValidationCode.INVALID_FORMAT,
-        `requestedBy: system identity must match "system:<job>" (e.g. "system:late-fee-job"), got "${systemIdentity}"`,
-      );
+        return new RequestedBy("user", userId);
     }
 
-    return new RequestedBy("system", systemIdentity);
-  }
+    /**
+     * Builds from a system identity.
+     * Only accepts the format "system:<job>", where <job> matches [a-z][a-z0-9]*(-[a-z0-9]+)*.
+     */
+    static fromSystem(systemIdentity: string): RequestedBy {
+        if (!SYSTEM_IDENTITY_PATTERN.test(systemIdentity)) {
+            throw new InvalidValueException(
+                REQUESTED_BY_FIELD,
+                ValidationCode.INVALID_FORMAT,
+                `requestedBy: system identity must match "system:<job>" (e.g. "system:late-fee-job"), got "${systemIdentity}"`,
+            );
+        }
 
-  /**
-   * Infers the kind from the raw value.
-   * Use when the origin (user vs system) is not known at the call-site.
-   */
-  static parse(raw: string): RequestedBy {
-    if (UUID_PATTERN.test(raw)) {
-      return new RequestedBy("user", raw);
+        return new RequestedBy("system", systemIdentity);
     }
 
-    if (SYSTEM_IDENTITY_PATTERN.test(raw)) {
-      return new RequestedBy("system", raw);
+    /**
+     * Infers the kind from the raw value.
+     * Use when the origin (user vs system) is not known at the call-site.
+     */
+    static parse(raw: string): RequestedBy {
+        if (UUID_PATTERN.test(raw)) {
+            return new RequestedBy("user", raw);
+        }
+
+        if (SYSTEM_IDENTITY_PATTERN.test(raw)) {
+            return new RequestedBy("system", raw);
+        }
+
+        throw new InvalidValueException(
+            REQUESTED_BY_FIELD,
+            ValidationCode.INVALID_FORMAT,
+            `requestedBy must be a UUID (user) or "system:<job>" (system), got "${raw}"`,
+        );
     }
 
-    throw new InvalidValueException(
-      REQUESTED_BY_FIELD,
-      ValidationCode.INVALID_FORMAT,
-      `requestedBy must be a UUID (user) or "system:<job>" (system), got "${raw}"`,
-    );
-  }
+    get isUser(): boolean {
+        return this.kind === "user";
+    }
 
-  get isUser(): boolean {
-    return this.kind === "user";
-  }
+    get isSystem(): boolean {
+        return this.kind === "system";
+    }
 
-  get isSystem(): boolean {
-    return this.kind === "system";
-  }
-
-  toString(): string {
-    return this.raw;
-  }
+    toString(): string {
+        return this.raw;
+    }
 }
 
 export type { RequestedByKind };

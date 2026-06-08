@@ -8,42 +8,42 @@ import type { GatePayload } from "./gate-payload";
 export type PolicyContext = Record<string, unknown>;
 
 export interface GateTraceLeafSnapshot {
-  readonly kind: "LEAF";
-  readonly field: string;
-  readonly op: string;
-  readonly allowNull?: true;
+    readonly kind: "LEAF";
+    readonly field: string;
+    readonly op: string;
+    readonly allowNull?: true;
 }
 
 export type GateTraceNodeSnapshot =
-  | GateTraceLeafSnapshot
-  | {
-      readonly kind: "AND" | "OR";
-      readonly childCount: number;
-    }
-  | {
-      readonly kind: "NOT";
-    };
+    | GateTraceLeafSnapshot
+    | {
+          readonly kind: "AND" | "OR";
+          readonly childCount: number;
+      }
+    | {
+          readonly kind: "NOT";
+      };
 
 export interface GateViolationTrace {
-  readonly conditionPath: string;
-  readonly decisiveNode: GateTraceNodeSnapshot;
-  readonly lastEvaluatedLeaf: GateTraceLeafSnapshot;
-  readonly lastEvaluatedLeafPath: string;
-  readonly lastEvaluatedLeafResult: boolean;
-  readonly field: string;
-  readonly op: string;
+    readonly conditionPath: string;
+    readonly decisiveNode: GateTraceNodeSnapshot;
+    readonly lastEvaluatedLeaf: GateTraceLeafSnapshot;
+    readonly lastEvaluatedLeafPath: string;
+    readonly lastEvaluatedLeafResult: boolean;
+    readonly field: string;
+    readonly op: string;
 }
 
 export interface PolicyViolation {
-  readonly code: string;
-  readonly message: string;
-  readonly trace?: GateViolationTrace;
+    readonly code: string;
+    readonly message: string;
+    readonly trace?: GateViolationTrace;
 }
 
 export type GateStatus = "ALLOW" | "DENY";
 
 export interface GateOutcomeData {
-  readonly violations: readonly PolicyViolation[];
+    readonly violations: readonly PolicyViolation[];
 }
 
 /** Semantic outcome of a GATE policy evaluation. */
@@ -55,9 +55,9 @@ export type GateOutcome = Outcome<GateStatus, GateOutcomeData>;
  * the registry's responsibility via `parseGatePayload`.
  */
 export interface VersionedGateEngine {
-  readonly version: number;
-  evaluate(
-    payload: GatePayload,
-    context: PolicyContext,
-  ): Result<GateOutcome, string>;
+    readonly version: number;
+    evaluate(
+        payload: GatePayload,
+        context: PolicyContext,
+    ): Result<GateOutcome, string>;
 }

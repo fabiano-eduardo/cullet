@@ -1,58 +1,58 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  asSchoolId,
-  asTenantId,
-  type SchoolId,
-  type TenantId,
+    asSchoolId,
+    asTenantId,
+    type SchoolId,
+    type TenantId,
 } from "../policy-ids";
 import { ContextSeedValidator } from "./context-seed";
 
 function unsafeTenantId(value: string): TenantId {
-  return value as TenantId;
+    return value as TenantId;
 }
 
 function unsafeSchoolId(value: string): SchoolId {
-  return value as SchoolId;
+    return value as SchoolId;
 }
 
 describe("validateContextSeed", () => {
-  it("rejects an empty tenantId", () => {
-    const result = ContextSeedValidator.validate({
-      tenantId: unsafeTenantId("   "),
-      schoolId: asSchoolId("school-1"),
-      fields: {},
+    it("rejects an empty tenantId", () => {
+        const result = ContextSeedValidator.validate({
+            tenantId: unsafeTenantId("   "),
+            schoolId: asSchoolId("school-1"),
+            fields: {},
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe(
+            "ContextSeed tenantId must be a non-empty string",
+        );
     });
 
-    expect(result.isErr()).toBe(true);
-    expect(result.errorOrNull()).toBe(
-      "ContextSeed tenantId must be a non-empty string",
-    );
-  });
+    it("rejects an empty schoolId", () => {
+        const result = ContextSeedValidator.validate({
+            tenantId: asTenantId("tenant-1"),
+            schoolId: unsafeSchoolId(""),
+            fields: {},
+        });
 
-  it("rejects an empty schoolId", () => {
-    const result = ContextSeedValidator.validate({
-      tenantId: asTenantId("tenant-1"),
-      schoolId: unsafeSchoolId(""),
-      fields: {},
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe(
+            "ContextSeed schoolId must be a non-empty string",
+        );
     });
 
-    expect(result.isErr()).toBe(true);
-    expect(result.errorOrNull()).toBe(
-      "ContextSeed schoolId must be a non-empty string",
-    );
-  });
+    it("accepts non-empty ids", () => {
+        const seed = {
+            tenantId: asTenantId("tenant-1"),
+            schoolId: asSchoolId("school-1"),
+            fields: {},
+        };
 
-  it("accepts non-empty ids", () => {
-    const seed = {
-      tenantId: asTenantId("tenant-1"),
-      schoolId: asSchoolId("school-1"),
-      fields: {},
-    };
+        const result = ContextSeedValidator.validate(seed);
 
-    const result = ContextSeedValidator.validate(seed);
-
-    expect(result.isOk()).toBe(true);
-    expect(result.getOrNull()).toBe(seed);
-  });
+        expect(result.isOk()).toBe(true);
+        expect(result.getOrNull()).toBe(seed);
+    });
 });

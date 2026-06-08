@@ -10,17 +10,17 @@
 //   successor.ts      — KitSuccessor formatting helpers
 
 export type {
-  Registry,
-  RegistryEntry,
-  KitDeprecation,
-  KitSuccessorCodemod,
-  KitSuccessor,
-  KitDependency,
-  KitCompatibility,
-  KitKind,
-  KitCopyDelivery,
-  KitDelivery,
-  KitMeta,
+    Registry,
+    RegistryEntry,
+    KitDeprecation,
+    KitSuccessorCodemod,
+    KitSuccessor,
+    KitDependency,
+    KitCompatibility,
+    KitKind,
+    KitCopyDelivery,
+    KitDelivery,
+    KitMeta,
 } from "./types.js";
 export { DEFAULT_KIT_KIND, DEFAULT_COPY_SOURCE_DIR } from "./types.js";
 
@@ -29,25 +29,25 @@ export { findCulletPackageRoot } from "./paths.js";
 export { matchKitArg } from "./parse.js";
 
 export {
-  loadRegistry,
-  resolveRegistryEntry,
-  resolveVersion,
-  loadKitDeprecation,
-  loadKitMeta,
-  loadKitContext,
-  resolveBuiltKitDir,
+    loadRegistry,
+    resolveRegistryEntry,
+    resolveVersion,
+    loadKitDeprecation,
+    loadKitMeta,
+    loadKitContext,
+    resolveBuiltKitDir,
 } from "./loaders.js";
 
 export {
-  getDirectImportPeerDependencies,
-  getFullControlDependencies,
-  getKitKind,
-  isToolingKit,
-  getCopyDelivery,
-  getCopyPlacement,
-  getCopyDependencies,
-  kitExposesImport,
-  getImportPeerDependencies,
+    getDirectImportPeerDependencies,
+    getFullControlDependencies,
+    getKitKind,
+    isToolingKit,
+    getCopyDelivery,
+    getCopyPlacement,
+    getCopyDependencies,
+    kitExposesImport,
+    getImportPeerDependencies,
 } from "./meta-accessors.js";
 
 export { formatKitSuccessor, describeKitSuccessor } from "./successor.js";

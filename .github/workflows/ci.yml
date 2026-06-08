@@ -1,134 +1,134 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  repository:
-    name: Repository checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    repository:
+        name: Repository checks
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - run: npm ci
+            - run: npm ci
 
-      - name: Require a changeset on pull requests
-        if: github.event_name == 'pull_request'
-        run: npx changeset status --since=origin/${{ github.base_ref }}
+            - name: Require a changeset on pull requests
+              if: github.event_name == 'pull_request'
+              run: npx changeset status --since=origin/${{ github.base_ref }}
 
-      - name: Prettier (changed files)
-        if: github.event_name == 'pull_request'
-        env:
-          FORMAT_BASE_REF: origin/${{ github.base_ref }}
-        run: npm run format:check:changed
+            - name: Prettier (changed files)
+              if: github.event_name == 'pull_request'
+              env:
+                  FORMAT_BASE_REF: origin/${{ github.base_ref }}
+              run: npm run format:check:changed
 
-      - name: Prettier (changed files)
-        if: github.event_name != 'pull_request'
-        env:
-          FORMAT_BASE_REF: ${{ github.event.before }}
-        run: npm run format:check:changed
+            - name: Prettier (changed files)
+              if: github.event_name != 'pull_request'
+              env:
+                  FORMAT_BASE_REF: ${{ github.event.before }}
+              run: npm run format:check:changed
 
-      - name: ESLint
-        run: npm run lint
+            - name: ESLint
+              run: npm run lint
 
-      - name: Verify kit peerDependencies are in sync
-        run: npm run sync-kit-deps:check
+            - name: Verify kit peerDependencies are in sync
+              run: npm run sync-kit-deps:check
 
-      - name: Verify kit version constants are in sync
-        run: npm run sync-kit-version:check
+            - name: Verify kit version constants are in sync
+              run: npm run sync-kit-version:check
 
-  packages:
-    name: Package ${{ matrix.package }}
-    needs: repository
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - package: cli
-            build_command: npm run build --workspace cullet
-            typecheck_command: npm run typecheck
-            test_command: npm run test
-            validate_command: 'node -e "console.log(''Skipping validate-kit for cullet: packages/cli has no meta.json.'')"'
-          - package: erp-core
-            build_command: npm run build --workspace @cullet/erp-core
-            typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/erp-core/src -name '*.ts' -print) packages/erp-core/tsdown.config.ts
-            test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/erp-core/src/
-            validate_command: npm run validate-kits -- --filter @cullet/erp-core
-          - package: dummy-api
-            build_command: npm run build --workspace @cullet/dummy-api
-            typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/dummy-api/src -name '*.ts' -print) packages/dummy-api/tsdown.config.ts
-            test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/dummy-api/src/ --passWithNoTests
-            validate_command: npm run validate-kits -- --filter @cullet/dummy-api
-    steps:
-      - uses: actions/checkout@v4
+    packages:
+        name: Package ${{ matrix.package }}
+        needs: repository
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - package: cli
+                      build_command: npm run build --workspace cullet
+                      typecheck_command: npm run typecheck
+                      test_command: npm run test
+                      validate_command: 'node -e "console.log(''Skipping validate-kit for cullet: packages/cli has no meta.json.'')"'
+                    - package: erp-core
+                      build_command: npm run build --workspace @cullet/erp-core
+                      typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/erp-core/src -name '*.ts' -print) packages/erp-core/tsdown.config.ts
+                      test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/erp-core/src/
+                      validate_command: npm run validate-kits -- --filter @cullet/erp-core
+                    - package: dummy-api
+                      build_command: npm run build --workspace @cullet/dummy-api
+                      typecheck_command: npm exec tsc -- --noEmit --pretty false --target ES2020 --module ESNext --moduleResolution Bundler --resolveJsonModule --allowJs --strict --experimentalDecorators --verbatimModuleSyntax --esModuleInterop --skipLibCheck --types node $(find packages/dummy-api/src -name '*.ts' -print) packages/dummy-api/tsdown.config.ts
+                      test_command: npm exec vitest -- run --config vitest.kits.config.ts packages/dummy-api/src/ --passWithNoTests
+                      validate_command: npm run validate-kits -- --filter @cullet/dummy-api
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - run: npm ci
+            - run: npm ci
 
-      - name: Build package
-        run: ${{ matrix.build_command }}
+            - name: Build package
+              run: ${{ matrix.build_command }}
 
-      - name: Typecheck package slice
-        run: ${{ matrix.typecheck_command }}
+            - name: Typecheck package slice
+              run: ${{ matrix.typecheck_command }}
 
-      - name: Test package slice
-        run: ${{ matrix.test_command }}
+            - name: Test package slice
+              run: ${{ matrix.test_command }}
 
-      - name: Validate package slice
-        run: ${{ matrix.validate_command }}
+            - name: Validate package slice
+              run: ${{ matrix.validate_command }}
 
-  integration:
-    name: Integration E2E
-    needs: packages
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    integration:
+        name: Integration E2E
+        needs: packages
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - run: npm ci
+            - run: npm ci
 
-      - name: Build workspace
-        run: npm run build
+            - name: Build workspace
+              run: npm run build
 
-      - name: E2E smoke tests
-        run: npm run test:e2e
+            - name: E2E smoke tests
+              run: npm run test:e2e
 
-  pack:
-    name: Release dry run
-    needs: repository
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    pack:
+        name: Release dry run
+        needs: repository
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - run: npm ci
+            - run: npm ci
 
-      - name: Verify publishable tarball
-        run: npm run release:dry-run
+            - name: Verify publishable tarball
+              run: npm run release:dry-run

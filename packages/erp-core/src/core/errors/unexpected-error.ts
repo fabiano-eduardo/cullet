@@ -7,16 +7,16 @@ import type { AppErrorOptions } from "./types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 class UnexpectedError extends AppError {
-  constructor(
-    message = "Unexpected error",
-    cause?: unknown,
-    options?: Omit<AppErrorOptions, "cause">,
-  ) {
-    super(message, ErrorCodes.unexpected, {
-      cause,
-      ...options,
-    });
-  }
+    constructor(
+        message = "Unexpected error",
+        cause?: unknown,
+        options?: Omit<AppErrorOptions, "cause">,
+    ) {
+        super(message, ErrorCodes.unexpected, {
+            cause,
+            ...options,
+        });
+    }
 }
 
 export { UnexpectedError };

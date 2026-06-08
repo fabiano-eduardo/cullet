@@ -1,325 +1,352 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cullet.dev/schemas/kit-spec.schema.json",
-  "title": "Cullet kit-spec",
-  "description": "Schema for a kit's meta.json. Versioned via schemaVersion.",
-  "type": "object",
-  "required": ["schemaVersion", "name", "version", "description", "docs"],
-  "additionalProperties": true,
-  "properties": {
-    "schemaVersion": {
-      "type": "string",
-      "enum": ["2", "3"],
-      "description": "Version of this schema. Bump when breaking changes are made. \"2\" = library kit (entryPoint/philosophy/compatibility). \"3\" adds `kind` and `delivery` for copy-only kits."
-    },
-    "kind": {
-      "type": "string",
-      "enum": ["foundation", "capability", "tooling"],
-      "description": "Nature of the kit. `foundation`/`capability` are importable TS libraries; `tooling` is copy-first (ships a payload merged into a placement) but MAY opt into an importable surface by declaring `entryPoint` + `delivery.import` (e.g. a typed config helper consumed straight from node_modules). Absent ⇒ treated as `foundation`. Library-specific fields (philosophy, compatibility) are required for non-tooling kinds; `delivery.copy` is required for tooling, and declaring `delivery.import` requires `entryPoint`. These conditional rules are enforced by validate-kit.mjs."
-    },
-    "delivery": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Declared delivery modes. Used primarily by `tooling` kits (which have no `compatibility`). For library kits, `compatibility` remains the source of truth.",
-      "properties": {
-        "import": {
-          "type": "object",
-          "additionalProperties": false,
-          "description": "Opt-in importable surface for a `tooling` kit: declaring this block makes the kit consumable straight from node_modules (`import { ... } from \"@cullet/<kit>\"`) in addition to copy. Requires `entryPoint` to point at the surface, and the kit's package.json must expose it via `exports`/`types`.",
-          "properties": {
-            "peerDependencies": {
-              "type": "array",
-              "uniqueItems": true,
-              "items": {
-                "type": "object",
-                "required": ["name", "range"],
-                "additionalProperties": false,
-                "properties": {
-                  "name": { "type": "string", "minLength": 1 },
-                  "range": { "type": "string", "minLength": 1 },
-                  "optional": { "type": "boolean" },
-                  "notes": { "type": "string", "minLength": 1 }
-                }
-              }
-            }
-          }
-        },
-        "copy": {
-          "type": "object",
-          "required": ["placement"],
-          "additionalProperties": false,
-          "properties": {
-            "placement": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Destination directory in the consumer project, relative to its cwd (e.g. \".claude/\")."
-            },
-            "source": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Directory inside the kit package holding the payload to copy. Defaults to \"files\"."
-            },
-            "postInstall": {
-              "type": "string",
-              "pattern": "\\.(mjs|js)$",
-              "description": "Optional script (relative to the copied payload) run once after the copy."
-            },
-            "dependencies": {
-              "type": "array",
-              "uniqueItems": true,
-              "items": {
-                "type": "object",
-                "required": ["name", "range"],
-                "additionalProperties": false,
-                "properties": {
-                  "name": { "type": "string", "minLength": 1 },
-                  "range": { "type": "string", "minLength": 1 },
-                  "optional": { "type": "boolean" },
-                  "notes": { "type": "string", "minLength": 1 }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "name": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9-]*$"
-    },
-    "version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$"
-    },
-    "description": {
-      "type": "string",
-      "minLength": 10
-    },
-    "compatibility": {
-      "type": "object",
-      "required": ["engines", "directImport", "fullControl"],
-      "additionalProperties": false,
-      "properties": {
-        "engines": {
-          "type": "object",
-          "required": ["node", "typescript"],
-          "additionalProperties": false,
-          "properties": {
-            "node": {
-              "type": "string",
-              "minLength": 1
-            },
-            "typescript": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        },
-        "directImport": {
-          "type": "object",
-          "required": ["peerDependencies"],
-          "additionalProperties": false,
-          "properties": {
-            "peerDependencies": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["name", "range"],
-                "additionalProperties": false,
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "range": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "optional": {
-                    "type": "boolean"
-                  },
-                  "notes": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                }
-              },
-              "uniqueItems": true
-            }
-          }
-        },
-        "fullControl": {
-          "type": "object",
-          "required": ["dependencies"],
-          "additionalProperties": false,
-          "properties": {
-            "dependencies": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["name", "range"],
-                "additionalProperties": false,
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "range": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "optional": {
-                    "type": "boolean"
-                  },
-                  "notes": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                }
-              },
-              "uniqueItems": true
-            }
-          }
-        }
-      }
-    },
-    "entryPoint": {
-      "type": "string",
-      "pattern": "\\.ts$"
-    },
-    "philosophy": {
-      "type": "object",
-      "required": ["errorModel", "observability", "testStyle", "externalDeps"],
-      "additionalProperties": false,
-      "properties": {
-        "errorModel": {
-          "type": "string",
-          "enum": ["typed-result", "typed-exceptions", "mixed"]
-        },
-        "observability": {
-          "type": "array",
-          "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://cullet.dev/schemas/kit-spec.schema.json",
+    "title": "Cullet kit-spec",
+    "description": "Schema for a kit's meta.json. Versioned via schemaVersion.",
+    "type": "object",
+    "required": ["schemaVersion", "name", "version", "description", "docs"],
+    "additionalProperties": true,
+    "properties": {
+        "schemaVersion": {
             "type": "string",
-            "enum": ["log-port", "metric-port", "trace-port"]
-          },
-          "uniqueItems": true
+            "enum": ["2", "3"],
+            "description": "Version of this schema. Bump when breaking changes are made. \"2\" = library kit (entryPoint/philosophy/compatibility). \"3\" adds `kind` and `delivery` for copy-only kits."
         },
-        "testStyle": {
-          "type": "string"
+        "kind": {
+            "type": "string",
+            "enum": ["foundation", "capability", "tooling"],
+            "description": "Nature of the kit. `foundation`/`capability` are importable TS libraries; `tooling` is copy-first (ships a payload merged into a placement) but MAY opt into an importable surface by declaring `entryPoint` + `delivery.import` (e.g. a typed config helper consumed straight from node_modules). Absent ⇒ treated as `foundation`. Library-specific fields (philosophy, compatibility) are required for non-tooling kinds; `delivery.copy` is required for tooling, and declaring `delivery.import` requires `entryPoint`. These conditional rules are enforced by validate-kit.mjs."
         },
-        "externalDeps": {
-          "type": "array",
-          "items": { "type": "string" },
-          "uniqueItems": true
-        },
-        "testDeps": {
-          "type": "array",
-          "items": { "type": "string" },
-          "uniqueItems": true,
-          "default": []
-        }
-      }
-    },
-    "docs": {
-      "type": "object",
-      "required": ["context", "readme"],
-      "additionalProperties": false,
-      "properties": {
-        "context": { "type": "string", "pattern": "\\.md$" },
-        "readme": { "type": "string", "pattern": "\\.md$" }
-      }
-    },
-    "lint": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "nodenextImports": { "enum": ["off", "warn", "error"] },
-        "noBareAny": { "enum": ["off", "warn", "error"] },
-        "noExternalImports": { "enum": ["off", "warn", "error"] },
-        "noUpwardImports": { "enum": ["off", "warn", "error"] },
-        "applicationReturnsResult": { "enum": ["off", "warn", "error"] },
-        "architectureLayers": { "enum": ["off", "warn", "error"] },
-        "portsArePure": { "enum": ["off", "warn", "error"] },
-        "observabilityPorts": { "enum": ["off", "warn", "error"] },
-        "testConventions": { "enum": ["off", "warn", "error"] },
-        "noMocksInCoreTests": { "enum": ["off", "warn", "error"] },
-        "kitContext": { "enum": ["off", "warn", "error"] },
-        "requiredCoreTests": { "enum": ["off", "warn", "error"] },
-        "folderDepth": { "enum": ["off", "warn", "error"] },
-        "fileSize": { "enum": ["off", "warn", "error"] },
-        "noObservabilityRuntimeDeps": { "enum": ["off", "warn", "error"] }
-      }
-    },
-    "exports": { "type": "array", "items": { "type": "string" } },
-    "changelog": { "type": "array", "items": { "type": "string" } },
-    "deprecated": {
-      "description": "false when active. Object form announces deprecation: when, why, and which kit/version supersedes this one.",
-      "oneOf": [
-        { "type": "boolean" },
-        {
-          "type": "object",
-          "required": ["since", "reason"],
-          "additionalProperties": false,
-          "properties": {
-            "since": {
-              "type": "string",
-              "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$",
-              "description": "Version of the kit at which this version became deprecated."
-            },
-            "reason": {
-              "type": "string",
-              "minLength": 1
-            },
-            "successor": {
-              "description": "Replacement kit reference. String form remains for backwards compatibility; object form can point to a guide and codemod.",
-              "oneOf": [
-                {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9-]*([/@]\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?)$"
-                },
-                {
-                  "type": "object",
-                  "required": ["name", "version"],
-                  "additionalProperties": false,
-                  "properties": {
-                    "name": {
-                      "type": "string",
-                      "pattern": "^[a-z][a-z0-9-]*$"
-                    },
-                    "version": {
-                      "type": "string",
-                      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$"
-                    },
-                    "notes": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "guide": {
-                      "type": "string",
-                      "pattern": "\\.md$"
-                    },
-                    "codemod": {
-                      "type": "object",
-                      "required": ["path"],
-                      "additionalProperties": false,
-                      "properties": {
-                        "path": {
-                          "type": "string",
-                          "pattern": "\\.(mjs|js)$"
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1
+        "delivery": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Declared delivery modes. Used primarily by `tooling` kits (which have no `compatibility`). For library kits, `compatibility` remains the source of truth.",
+            "properties": {
+                "import": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Opt-in importable surface for a `tooling` kit: declaring this block makes the kit consumable straight from node_modules (`import { ... } from \"@cullet/<kit>\"`) in addition to copy. Requires `entryPoint` to point at the surface, and the kit's package.json must expose it via `exports`/`types`.",
+                    "properties": {
+                        "peerDependencies": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "range"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "range": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "optional": { "type": "boolean" },
+                                    "notes": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
                         }
-                      }
                     }
-                  }
+                },
+                "copy": {
+                    "type": "object",
+                    "required": ["placement"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "placement": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Destination directory in the consumer project, relative to its cwd (e.g. \".claude/\")."
+                        },
+                        "source": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Directory inside the kit package holding the payload to copy. Defaults to \"files\"."
+                        },
+                        "postInstall": {
+                            "type": "string",
+                            "pattern": "\\.(mjs|js)$",
+                            "description": "Optional script (relative to the copied payload) run once after the copy."
+                        },
+                        "dependencies": {
+                            "type": "array",
+                            "uniqueItems": true,
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "range"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "range": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "optional": { "type": "boolean" },
+                                    "notes": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-              ]
             }
-          }
+        },
+        "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$"
+        },
+        "description": {
+            "type": "string",
+            "minLength": 10
+        },
+        "compatibility": {
+            "type": "object",
+            "required": ["engines", "directImport", "fullControl"],
+            "additionalProperties": false,
+            "properties": {
+                "engines": {
+                    "type": "object",
+                    "required": ["node", "typescript"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "node": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "typescript": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    }
+                },
+                "directImport": {
+                    "type": "object",
+                    "required": ["peerDependencies"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "peerDependencies": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "range"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "range": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "optional": {
+                                        "type": "boolean"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    }
+                                }
+                            },
+                            "uniqueItems": true
+                        }
+                    }
+                },
+                "fullControl": {
+                    "type": "object",
+                    "required": ["dependencies"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "dependencies": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "range"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "range": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    },
+                                    "optional": {
+                                        "type": "boolean"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "minLength": 1
+                                    }
+                                }
+                            },
+                            "uniqueItems": true
+                        }
+                    }
+                }
+            }
+        },
+        "entryPoint": {
+            "type": "string",
+            "pattern": "\\.ts$"
+        },
+        "philosophy": {
+            "type": "object",
+            "required": [
+                "errorModel",
+                "observability",
+                "testStyle",
+                "externalDeps"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "errorModel": {
+                    "type": "string",
+                    "enum": ["typed-result", "typed-exceptions", "mixed"]
+                },
+                "observability": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["log-port", "metric-port", "trace-port"]
+                    },
+                    "uniqueItems": true
+                },
+                "testStyle": {
+                    "type": "string"
+                },
+                "externalDeps": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true
+                },
+                "testDeps": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "uniqueItems": true,
+                    "default": []
+                }
+            }
+        },
+        "docs": {
+            "type": "object",
+            "required": ["context", "readme"],
+            "additionalProperties": false,
+            "properties": {
+                "context": { "type": "string", "pattern": "\\.md$" },
+                "readme": { "type": "string", "pattern": "\\.md$" }
+            }
+        },
+        "lint": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "nodenextImports": { "enum": ["off", "warn", "error"] },
+                "noBareAny": { "enum": ["off", "warn", "error"] },
+                "noExternalImports": { "enum": ["off", "warn", "error"] },
+                "noUpwardImports": { "enum": ["off", "warn", "error"] },
+                "applicationReturnsResult": {
+                    "enum": ["off", "warn", "error"]
+                },
+                "architectureLayers": { "enum": ["off", "warn", "error"] },
+                "portsArePure": { "enum": ["off", "warn", "error"] },
+                "observabilityPorts": { "enum": ["off", "warn", "error"] },
+                "testConventions": { "enum": ["off", "warn", "error"] },
+                "noMocksInCoreTests": { "enum": ["off", "warn", "error"] },
+                "kitContext": { "enum": ["off", "warn", "error"] },
+                "requiredCoreTests": { "enum": ["off", "warn", "error"] },
+                "folderDepth": { "enum": ["off", "warn", "error"] },
+                "fileSize": { "enum": ["off", "warn", "error"] },
+                "noObservabilityRuntimeDeps": {
+                    "enum": ["off", "warn", "error"]
+                }
+            }
+        },
+        "exports": { "type": "array", "items": { "type": "string" } },
+        "changelog": { "type": "array", "items": { "type": "string" } },
+        "deprecated": {
+            "description": "false when active. Object form announces deprecation: when, why, and which kit/version supersedes this one.",
+            "oneOf": [
+                { "type": "boolean" },
+                {
+                    "type": "object",
+                    "required": ["since", "reason"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "since": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$",
+                            "description": "Version of the kit at which this version became deprecated."
+                        },
+                        "reason": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "successor": {
+                            "description": "Replacement kit reference. String form remains for backwards compatibility; object form can point to a guide and codemod.",
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9-]*([/@]\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?)$"
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["name", "version"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "pattern": "^[a-z][a-z0-9-]*$"
+                                        },
+                                        "version": {
+                                            "type": "string",
+                                            "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.-]+)?$"
+                                        },
+                                        "notes": {
+                                            "type": "string",
+                                            "minLength": 1
+                                        },
+                                        "guide": {
+                                            "type": "string",
+                                            "pattern": "\\.md$"
+                                        },
+                                        "codemod": {
+                                            "type": "object",
+                                            "required": ["path"],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "path": {
+                                                    "type": "string",
+                                                    "pattern": "\\.(mjs|js)$"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
         }
-      ]
     }
-  }
 }

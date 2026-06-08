@@ -13,9 +13,9 @@ type ErrorSeverity = "low" | "medium" | "high" | "critical";
 type JsonSafePrimitive = string | number | boolean | null;
 
 type JsonSafeValue =
-  | JsonSafePrimitive
-  | JsonSafeValue[]
-  | { [key: string]: JsonSafeValue };
+    | JsonSafePrimitive
+    | JsonSafeValue[]
+    | { [key: string]: JsonSafeValue };
 
 type JsonSafeRecord = Record<string, JsonSafeValue>;
 
@@ -28,47 +28,47 @@ type JsonSafeRecord = Record<string, JsonSafeValue>;
  * Subclasses can extend or pick from this type.
  */
 type AppErrorOptions = {
-  /** Original error or exception that caused this error. */
-  cause?: unknown;
+    /** Original error or exception that caused this error. */
+    cause?: unknown;
 
-  /** Arbitrary key-value metadata (will be sanitized to JSON-safe values). */
-  metadata?: Record<string, unknown>;
+    /** Arbitrary key-value metadata (will be sanitized to JSON-safe values). */
+    metadata?: Record<string, unknown>;
 
-  /** Error category/type for grouping (e.g., "authentication", "validation"). */
-  type?: string;
+    /** Error category/type for grouping (e.g., "authentication", "validation"). */
+    type?: string;
 
-  /** severity level for alerting/logging prioritization. */
-  severity?: ErrorSeverity;
+    /** severity level for alerting/logging prioritization. */
+    severity?: ErrorSeverity;
 
-  /**
-   * Identifies a single execution "story" in the system. All operations
-   * related to the same logical flow must share the same correlationId.
-   */
-  correlationId?: string;
+    /**
+     * Identifies a single execution "story" in the system. All operations
+     * related to the same logical flow must share the same correlationId.
+     */
+    correlationId?: string;
 
-  /**
-   * Identifies a specific technical request attempt (each retry may produce
-   * a new requestId), even when the correlationId stays the same.
-   */
-  requestId?: string;
+    /**
+     * Identifies a specific technical request attempt (each retry may produce
+     * a new requestId), even when the correlationId stays the same.
+     */
+    requestId?: string;
 
-  /**
-   * Identifies a unique business intent (idempotency key); stays the same
-   * across technical retries and multiple requests that represent the same intent.
-   */
-  commandId?: string;
+    /**
+     * Identifies a unique business intent (idempotency key); stays the same
+     * across technical retries and multiple requests that represent the same intent.
+     */
+    commandId?: string;
 
-  /** ISO timestamp of when the error was created (defaults to now). */
-  createdAtIso?: string;
+    /** ISO timestamp of when the error was created (defaults to now). */
+    createdAtIso?: string;
 
-  /** Safe message that can be exposed to end users (no internal details). */
-  publicMessage?: string;
+    /** Safe message that can be exposed to end users (no internal details). */
+    publicMessage?: string;
 };
 
 export type {
-  AppErrorOptions,
-  ErrorSeverity,
-  JsonSafePrimitive,
-  JsonSafeRecord,
-  JsonSafeValue,
+    AppErrorOptions,
+    ErrorSeverity,
+    JsonSafePrimitive,
+    JsonSafeRecord,
+    JsonSafeValue,
 };

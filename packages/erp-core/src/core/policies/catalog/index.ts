@@ -1,8 +1,8 @@
 export type {
-  AsOfSource,
-  PolicyKind,
-  PolicyOwner,
-  PolicyScopeLevel,
+    AsOfSource,
+    PolicyKind,
+    PolicyOwner,
+    PolicyScopeLevel,
 } from "./catalog-types";
 export type { PolicyCatalogEntryProps } from "./policy-catalog-entry";
 export { PolicyCatalogEntry } from "./policy-catalog-entry";

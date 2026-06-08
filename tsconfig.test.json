@@ -1,20 +1,20 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "types": ["node"],
-    "allowJs": true,
-    "paths": {
-      "@cullet/erp-core": ["./packages/erp-core/src/index.ts"],
-      "@cullet/erp-core/*": ["./packages/erp-core/src/*"]
-    }
-  },
-  "include": [
-    "tests/**/*.ts",
-    "scripts/**/*.d.mts",
-    "scripts/**/*.mjs",
-    "vitest.config.ts",
-    "vitest.e2e.config.ts"
-  ],
-  "exclude": ["dist", "node_modules"]
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "types": ["node"],
+        "allowJs": true,
+        "paths": {
+            "@cullet/erp-core": ["./packages/erp-core/src/index.ts"],
+            "@cullet/erp-core/*": ["./packages/erp-core/src/*"]
+        }
+    },
+    "include": [
+        "tests/**/*.ts",
+        "scripts/**/*.d.mts",
+        "scripts/**/*.mjs",
+        "vitest.config.ts",
+        "vitest.e2e.config.ts"
+    ],
+    "exclude": ["dist", "node_modules"]
 }

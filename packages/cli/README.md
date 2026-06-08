@@ -58,12 +58,12 @@ npm install @cullet/erp-core
 ```ts
 // modo: import direto
 import {
-  Entity,
-  ValueObject,
-  PolicyCatalog,
-  PolicyService,
-  mapPolicyEvaluationError,
-  type PolicyDecision,
+    Entity,
+    ValueObject,
+    PolicyCatalog,
+    PolicyService,
+    mapPolicyEvaluationError,
+    type PolicyDecision,
 } from "@cullet/erp-core";
 ```
 
@@ -74,12 +74,12 @@ O `fc` instala `@cullet/erp-core`, copia o `src/` do kit para `./cullet/erp-core
 ```ts
 // modo: full-control (alias @cullet/erp-core -> ./cullet/erp-core@1.0.0/index.ts)
 import {
-  Entity,
-  ValueObject,
-  PolicyCatalog,
-  PolicyService,
-  mapPolicyEvaluationError,
-  type PolicyDecision,
+    Entity,
+    ValueObject,
+    PolicyCatalog,
+    PolicyService,
+    mapPolicyEvaluationError,
+    type PolicyDecision,
 } from "@cullet/erp-core";
 ```
 

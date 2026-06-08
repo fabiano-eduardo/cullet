@@ -17,11 +17,11 @@ const repoRoot = resolve(dirname(scriptPath), "..");
  * @returns {string}
  */
 export function expectedTarballName(manifest) {
-  const normalizedName = manifest.name.startsWith("@")
-    ? manifest.name.slice(1).replace(/\//g, "-")
-    : manifest.name.replace(/\//g, "-");
+    const normalizedName = manifest.name.startsWith("@")
+        ? manifest.name.slice(1).replace(/\//g, "-")
+        : manifest.name.replace(/\//g, "-");
 
-  return `${normalizedName}-${manifest.version}.tgz`;
+    return `${normalizedName}-${manifest.version}.tgz`;
 }
 
 /**
@@ -29,7 +29,7 @@ export function expectedTarballName(manifest) {
  * @returns {PackageManifest}
  */
 export function readPackageManifest(manifestPath) {
-  return JSON.parse(readFileSync(manifestPath, "utf8"));
+    return JSON.parse(readFileSync(manifestPath, "utf8"));
 }
 
 /**
@@ -37,15 +37,17 @@ export function readPackageManifest(manifestPath) {
  * @returns {string}
  */
 export function expectedTarballNameForRepo(rootDir = repoRoot) {
-  return expectedTarballName(
-    readPackageManifest(resolve(rootDir, "package.json")),
-  );
+    return expectedTarballName(
+        readPackageManifest(resolve(rootDir, "package.json")),
+    );
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
-  const manifestPath = process.argv[2]
-    ? resolve(process.cwd(), process.argv[2])
-    : resolve(repoRoot, "package.json");
+    const manifestPath = process.argv[2]
+        ? resolve(process.cwd(), process.argv[2])
+        : resolve(repoRoot, "package.json");
 
-  process.stdout.write(expectedTarballName(readPackageManifest(manifestPath)));
+    process.stdout.write(
+        expectedTarballName(readPackageManifest(manifestPath)),
+    );
 }
