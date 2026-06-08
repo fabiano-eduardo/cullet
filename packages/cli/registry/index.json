@@ -1,23 +1,14 @@
 {
-  "dummy-api": {
-    "versions": [
-      "1.0.0",
-      "1.0.1",
-      "1.0.2"
-    ],
-    "latest": "1.0.2",
-    "description": "Kit dummy de API para validar o fluxo de criacao",
-    "npmName": "@cullet/dummy-api"
-  },
-  "erp-core": {
-    "versions": [
-      "1.0.0",
-      "1.0.1",
-      "1.0.2",
-      "1.0.3"
-    ],
-    "latest": "1.0.3",
-    "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
-    "npmName": "@cullet/erp-core"
-  }
+    "dummy-api": {
+        "versions": ["1.0.0", "1.0.1", "1.0.2"],
+        "latest": "1.0.2",
+        "description": "Kit dummy de API para validar o fluxo de criacao",
+        "npmName": "@cullet/dummy-api"
+    },
+    "erp-core": {
+        "versions": ["1.0.0", "1.0.1", "1.0.2", "1.0.3"],
+        "latest": "1.0.3",
+        "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
+        "npmName": "@cullet/erp-core"
+    }
 }
