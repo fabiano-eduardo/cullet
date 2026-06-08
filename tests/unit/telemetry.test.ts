@@ -519,7 +519,7 @@ describe("runCommandWithTelemetry", () => {
         await expect(
             runCommandWithTelemetry({
                 fromMetaUrl: cliMetaUrl,
-                command: "migrate",
+                command: "fc",
                 env,
                 async handler(tracker) {
                     tracker.set("kit", "erp-core");
@@ -550,7 +550,7 @@ describe("runCommandWithTelemetry", () => {
             },
         });
         expect(lines[1]).toMatchObject({
-            command: "migrate",
+            command: "fc",
             success: false,
             properties: {
                 kit: "erp-core",

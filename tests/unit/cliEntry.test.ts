@@ -1,7 +1,6 @@
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,11 +8,9 @@ import { createDoctorCommand } from "../../packages/cli/src/cli/commands/doctor.
 import { createFullControlCommand } from "../../packages/cli/src/cli/commands/full-control.js";
 import { createInfoCommand } from "../../packages/cli/src/cli/commands/info.js";
 import { createListCommand } from "../../packages/cli/src/cli/commands/list.js";
-import { createMigrateCommand } from "../../packages/cli/src/cli/commands/migrate.js";
 import { createTelemetryCommand } from "../../packages/cli/src/cli/commands/telemetry.js";
 import erpCorePackage from "../../packages/erp-core/package.json" with { type: "json" };
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 // Derive from the kit's package.json so a version bump does not break this test.
 const erpCoreVersion = erpCorePackage.version;
 
@@ -156,90 +153,6 @@ async function runCommand(
     }
 }
 
-async function createTemporaryMigrationFixture(): Promise<{
-    kitName: string;
-    cleanup(): Promise<void>;
-}> {
-    const sourceVersion = "1.0.0";
-    const targetVersion = "2.0.0";
-    const kitName = `coverage-migrate-${Date.now()}`;
-    const registryPath = join(
-        repoRoot,
-        "packages",
-        "cli",
-        "registry",
-        "index.json",
-    );
-    const originalRegistry = await readFile(registryPath, "utf8");
-    const kitRoot = join(repoRoot, "kits", kitName);
-    const versionRoot = join(kitRoot, "versions", sourceVersion);
-    const codemodPath = join(
-        versionRoot,
-        "codemods",
-        `${sourceVersion}-to-${targetVersion}.mjs`,
-    );
-
-    await mkdir(join(versionRoot, "codemods"), { recursive: true });
-    await writeFile(join(versionRoot, "index.ts"), "export {};\n", "utf8");
-    await writeFile(join(versionRoot, "MIGRATION.md"), "# Migration\n", "utf8");
-    await writeJson(join(versionRoot, "meta.json"), {
-        deprecated: {
-            since: targetVersion,
-            reason: "Fixture temporaria para cobertura do comando migrate.",
-            successor: {
-                name: kitName,
-                version: targetVersion,
-                guide: "MIGRATION.md",
-                notes: "Aplique o codemod para concluir a migracao.",
-                codemod: {
-                    path: `codemods/${sourceVersion}-to-${targetVersion}.mjs`,
-                    description: "Aplica a migracao de cobertura",
-                },
-            },
-        },
-    });
-    await writeFile(
-        codemodPath,
-        [
-            'import { writeFile } from "node:fs/promises";',
-            'import { join } from "node:path";',
-            "",
-            "export async function run(context) {",
-            "  context.report(`executando ${context.source.version} -> ${context.target.version}`);",
-            "  if (!context.dryRun) {",
-            '    await writeFile(join(context.projectDir, "migration-applied.txt"), "migrated\\n", "utf8");',
-            "  }",
-            "  return {",
-            '    summary: context.dryRun ? "dry-run" : "applied",',
-            '    changedFiles: [join(context.projectDir, "migration-applied.txt")],',
-            "  };",
-            "}",
-            "",
-        ].join("\n"),
-        "utf8",
-    );
-
-    const registry = JSON.parse(originalRegistry) as Record<string, unknown>;
-    registry[kitName] = {
-        versions: [sourceVersion, targetVersion],
-        latest: targetVersion,
-        description: "Temporary coverage fixture",
-    };
-    await writeFile(
-        registryPath,
-        `${JSON.stringify(registry, null, 2)}\n`,
-        "utf8",
-    );
-
-    return {
-        kitName,
-        async cleanup() {
-            await writeFile(registryPath, originalRegistry, "utf8");
-            await rm(kitRoot, { recursive: true, force: true });
-        },
-    };
-}
-
 beforeEach(async () => {
     tempRoot = await mkdtemp(join(tmpdir(), "cullet-cli-entry-"));
 });
@@ -360,39 +273,6 @@ describe.sequential("cli commands", () => {
                     },
                 ),
             ).rejects.toThrow(/nao esta instalado e --no-install/);
-        });
-
-        it("runs migrate in dry-run mode for a temporary deprecated fixture", async () => {
-            const projectDir = await makeProject("migrate-project");
-            const fixture = await createTemporaryMigrationFixture();
-
-            try {
-                const result = await runCommand(
-                    createMigrateCommand(),
-                    [
-                        "migrate",
-                        `${fixture.kitName}@1.0.0`,
-                        "--dry-run",
-                        "--cwd",
-                        projectDir,
-                    ],
-                    {
-                        cwd: repoRoot,
-                        env: makeTelemetryEnv(tempRoot),
-                    },
-                );
-
-                expect(result.exitCode).toBe(0);
-                expect(result.stdout).toContain(
-                    `Migracao codificada: ${fixture.kitName}@1.0.0 -> ${fixture.kitName}@2.0.0`,
-                );
-                expect(result.stdout).toContain(
-                    `Codemod executado em modo simulacao para ${projectDir}.`,
-                );
-                expect(result.stdout).toContain("migration-applied.txt");
-            } finally {
-                await fixture.cleanup();
-            }
         });
 
         it("runs telemetry enable and writes the opt-in config", async () => {

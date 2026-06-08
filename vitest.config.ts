@@ -18,6 +18,11 @@ export default mergeConfig(
                 "packages/*/src/**/*.spec.ts",
                 "packages/**/dist",
             ],
+            // Some suites mutate shared build output under `packages/cli/dist`
+            // (e.g. scriptEntrypoints rebuilds it via `npm run build` with
+            // tsdown `clean: true`, while cliShim renames `dist/cli/index.js`).
+            // Run test files serially so they cannot race over the filesystem.
+            fileParallelism: false,
             testTimeout: 15_000,
             coverage: {
                 provider: "v8",

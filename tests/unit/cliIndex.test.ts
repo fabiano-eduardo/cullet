@@ -58,7 +58,6 @@ describe("cli index", () => {
             list: { name: "list" },
             info: { name: "info" },
             fc: { name: "fc" },
-            migrate: { name: "migrate" },
             telemetry: { name: "telemetry" },
             doctor: { name: "doctor" },
         };
@@ -88,9 +87,6 @@ describe("cli index", () => {
                 createFullControlCommand: vi.fn().mockReturnValue(commands.fc),
             }),
         );
-        vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
-            createMigrateCommand: vi.fn().mockReturnValue(commands.migrate),
-        }));
         vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
             createTelemetryCommand: vi.fn().mockReturnValue(commands.telemetry),
         }));
@@ -107,7 +103,6 @@ describe("cli index", () => {
             commands.list,
             commands.info,
             commands.fc,
-            commands.migrate,
             commands.telemetry,
             commands.doctor,
         ]);
@@ -144,9 +139,6 @@ describe("cli index", () => {
                 createFullControlCommand: vi.fn().mockReturnValue({}),
             }),
         );
-        vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
-            createMigrateCommand: vi.fn().mockReturnValue({}),
-        }));
         vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
             createTelemetryCommand: vi.fn().mockReturnValue({}),
         }));
@@ -194,9 +186,6 @@ describe("cli index", () => {
                 createFullControlCommand: vi.fn().mockReturnValue({}),
             }),
         );
-        vi.doMock("../../packages/cli/src/cli/commands/migrate.js", () => ({
-            createMigrateCommand: vi.fn().mockReturnValue({}),
-        }));
         vi.doMock("../../packages/cli/src/cli/commands/telemetry.js", () => ({
             createTelemetryCommand: vi.fn().mockReturnValue({}),
         }));

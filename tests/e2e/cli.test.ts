@@ -23,14 +23,6 @@ interface RunResult {
     status: number | null;
 }
 
-interface TemporaryMigrationFixture {
-    kitName: string;
-    sourceVersion: string;
-    targetVersion: string;
-    changedFile: string;
-    cleanup(): void;
-}
-
 function runCli(
     args: string[],
     cwd: string,
@@ -122,92 +114,6 @@ function makeProject(tag: string): string {
     return dir;
 }
 
-function createTemporaryMigrationFixture(): TemporaryMigrationFixture {
-    const sourceVersion = "1.0.0";
-    const targetVersion = "2.0.0";
-    const changedFile = "migration-applied.txt";
-    const kitName = `e2e-migrate-${process.pid}-${Date.now()}`;
-    const registryPath = join(
-        repoRoot,
-        "packages",
-        "cli",
-        "registry",
-        "index.json",
-    );
-    const originalRegistry = readFileSync(registryPath, "utf8");
-    const kitRoot = join(repoRoot, "kits", kitName);
-    const versionRoot = join(kitRoot, "versions", sourceVersion);
-    const codemodPath = join(
-        versionRoot,
-        "codemods",
-        `${sourceVersion}-to-${targetVersion}.mjs`,
-    );
-
-    rmSync(kitRoot, { recursive: true, force: true });
-    mkdirSync(join(versionRoot, "codemods"), { recursive: true });
-    writeFileSync(join(versionRoot, "index.ts"), "export {};\n");
-    writeFileSync(join(versionRoot, "MIGRATION.md"), "# Migration\n");
-    writeFileSync(
-        join(versionRoot, "meta.json"),
-        JSON.stringify(
-            {
-                deprecated: {
-                    since: targetVersion,
-                    reason: "Fixture temporaria para o e2e do migrate.",
-                    successor: {
-                        name: kitName,
-                        version: targetVersion,
-                        guide: "MIGRATION.md",
-                        notes: "Aplique o codemod para atualizar o projeto.",
-                        codemod: {
-                            path: `codemods/${sourceVersion}-to-${targetVersion}.mjs`,
-                            description: "Aplica a migracao e2e",
-                        },
-                    },
-                },
-            },
-            null,
-            2,
-        ),
-    );
-    writeFileSync(
-        codemodPath,
-        [
-            'import { writeFile } from "node:fs/promises";',
-            'import { join } from "node:path";',
-            "",
-            "export async function run(context) {",
-            "  context.report(`aplicando ${context.source.version} -> ${context.target.version}`);",
-            `  await writeFile(join(context.projectDir, "${changedFile}"), "migrated\\n", "utf8");`,
-            "  return {",
-            '    summary: "applied e2e",',
-            `    changedFiles: [join(context.projectDir, "${changedFile}")],`,
-            "  };",
-            "}",
-            "",
-        ].join("\n"),
-    );
-
-    const registry = JSON.parse(originalRegistry) as Record<string, unknown>;
-    registry[kitName] = {
-        versions: [sourceVersion, targetVersion],
-        latest: targetVersion,
-        description: "Temporary migrate fixture",
-    };
-    writeFileSync(registryPath, `${JSON.stringify(registry, null, 2)}\n`);
-
-    return {
-        kitName,
-        sourceVersion,
-        targetVersion,
-        changedFile,
-        cleanup() {
-            writeFileSync(registryPath, originalRegistry);
-            rmSync(kitRoot, { recursive: true, force: true });
-        },
-    };
-}
-
 describe("cullet CLI e2e", () => {
     let project: string;
 
@@ -290,36 +196,6 @@ describe("cullet CLI e2e", () => {
         expect(second.status).toBe(0);
         expect(second.stdout).toMatch(/Operacao cancelada/);
         expect(existsSync(join(kitDir, "__sentinel__"))).toBe(true);
-    });
-
-    it("cullet migrate --apply runs the declared codemod in the target project", async () => {
-        const fixture = createTemporaryMigrationFixture();
-
-        try {
-            const result = await runCli(
-                [
-                    "migrate",
-                    `${fixture.kitName}@${fixture.sourceVersion}`,
-                    "--apply",
-                ],
-                project,
-            );
-
-            expect(result.status).toBe(0);
-            expect(result.stdout).toMatch(
-                new RegExp(
-                    `Migracao codificada: ${fixture.kitName}@${fixture.sourceVersion} -> ${fixture.kitName}@${fixture.targetVersion}`,
-                ),
-            );
-            expect(result.stdout).toMatch(/Codemod aplicado em /);
-            expect(result.stdout).toMatch(/Arquivos afetados:/);
-            expect(result.stdout).toContain(fixture.changedFile);
-            expect(
-                readFileSync(join(project, fixture.changedFile), "utf8"),
-            ).toBe("migrated\n");
-        } finally {
-            fixture.cleanup();
-        }
     });
 });
 
