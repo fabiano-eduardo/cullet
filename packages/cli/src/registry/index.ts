@@ -75,9 +75,19 @@ export interface CatalogKit {
   latest: string;
   versions: string[];
   version: string;
+  npmName: string;
   meta: KitMeta | null;
   context: CatalogKitContext | null;
   deprecation: KitDeprecation | null;
+}
+
+export interface LoadKitOptions {
+  /**
+   * Load and parse the kit's `KIT_CONTEXT.md`. Defaults to `true`. Pass `false`
+   * when the caller only needs meta/deprecation (e.g. `cullet fc`), to skip the
+   * context read entirely.
+   */
+  context?: boolean;
 }
 
 export async function loadRegistry(): Promise<Registry> {
@@ -101,13 +111,17 @@ export async function listKits(): Promise<CatalogKitSummary[]> {
 export async function loadKit(
   name: string,
   requestedVersion?: string,
+  options: LoadKitOptions = {},
 ): Promise<CatalogKit> {
+  const includeContext = options.context ?? true;
   const registry = await loadRegistry();
   const entry = resolveRegistryEntry(registry, name);
   const version = resolveVersion(name, entry, requestedVersion);
   const [meta, contextRaw, deprecation] = await Promise.all([
     loadKitMeta(import.meta.url, name, version),
-    loadKitContext(import.meta.url, name, version),
+    includeContext
+      ? loadKitContext(import.meta.url, name, version)
+      : Promise.resolve(null),
     loadKitDeprecation(import.meta.url, name, version),
   ]);
 
@@ -117,6 +131,7 @@ export async function loadKit(
     latest: entry.latest,
     versions: [...entry.versions],
     version,
+    npmName: entry.npmName,
     meta,
     context:
       contextRaw === null
