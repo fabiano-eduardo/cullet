@@ -204,7 +204,7 @@ async function syncRegistry({
     if (registryChanged && !check) {
         await writeFile(
             registryPath,
-            `${JSON.stringify(registry, null, 2)}\n`,
+            `${JSON.stringify(registry, null, 4)}\n`,
             "utf8",
         );
         updated.push(relative(packagesRoot, registryPath));

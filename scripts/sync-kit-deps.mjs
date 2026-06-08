@@ -124,7 +124,7 @@ export async function syncKitPeerDependencies(
 
         await writeFile(
             kit.packageJsonPath,
-            JSON.stringify(packageJson, null, 2) + "\n",
+            JSON.stringify(packageJson, null, 4) + "\n",
             "utf8",
         );
         updated.push(relative(packagesRoot, kit.packageJsonPath));
