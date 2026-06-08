@@ -1,6 +1,6 @@
 {
     "name": "@cullet/dummy-api",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Kit dummy de API para validar o fluxo de criacao",
     "type": "module",
     "repository": {
