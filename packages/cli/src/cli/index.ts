@@ -8,7 +8,6 @@ import { createDoctorCommand } from "./commands/doctor.js";
 import { createFullControlCommand } from "./commands/full-control.js";
 import { createInfoCommand } from "./commands/info.js";
 import { createListCommand } from "./commands/list.js";
-import { createMigrateCommand } from "./commands/migrate.js";
 import { createTelemetryCommand } from "./commands/telemetry.js";
 import { findCulletPackageRoot } from "./utils/resolve.js";
 
@@ -39,7 +38,6 @@ async function main(): Promise<void> {
     program.addCommand(createListCommand());
     program.addCommand(createInfoCommand());
     program.addCommand(createFullControlCommand());
-    program.addCommand(createMigrateCommand());
     program.addCommand(createTelemetryCommand());
     program.addCommand(createDoctorCommand());
 

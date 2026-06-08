@@ -118,11 +118,11 @@ export async function loadKit(
     const entry = resolveRegistryEntry(registry, name);
     const version = resolveVersion(name, entry, requestedVersion);
     const [meta, contextRaw, deprecation] = await Promise.all([
-        loadKitMeta(import.meta.url, name, version),
+        loadKitMeta(import.meta.url, name),
         includeContext
-            ? loadKitContext(import.meta.url, name, version)
+            ? loadKitContext(import.meta.url, name)
             : Promise.resolve(null),
-        loadKitDeprecation(import.meta.url, name, version),
+        loadKitDeprecation(import.meta.url, name),
     ]);
 
     return {

@@ -3,37 +3,6 @@ import { dirname, join, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveRepoRoot } from "../shared/repo-root.js";
 
-const KITS_DIR = "kits";
-const DIST_KITS_DIR = "dist/kits";
-
-export function kitSrcDir(
-    packageRoot: string,
-    name: string,
-    version: string,
-): string {
-    return join(
-        resolveRepoRoot(packageRoot),
-        KITS_DIR,
-        name,
-        "versions",
-        version,
-    );
-}
-
-export function kitDistDir(
-    packageRoot: string,
-    name: string,
-    version: string,
-): string {
-    return join(
-        resolveRepoRoot(packageRoot),
-        DIST_KITS_DIR,
-        name,
-        "versions",
-        version,
-    );
-}
-
 export function kitPackageDir(packageRoot: string, name: string): string {
     return join(resolveRepoRoot(packageRoot), "packages", name);
 }

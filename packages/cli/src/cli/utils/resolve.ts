@@ -20,7 +20,6 @@ import {
     loadKitMeta,
     loadRegistry,
     matchKitArg,
-    resolveBuiltKitDir as resolveSharedBuiltKitDir,
     resolveRegistryEntry,
     resolveVersion,
     type KitCompatibility,
@@ -115,14 +114,6 @@ export async function resolveKitFromArg(
     const entry = resolveRegistryEntry(registry, parsed.name);
     const version = resolveVersion(parsed.name, entry, parsed.version);
     return { name: parsed.name, version, entry };
-}
-
-export async function resolveBuiltKitDir(
-    fromMetaUrl: string,
-    name: string,
-    version: string,
-): Promise<string> {
-    return resolveSharedBuiltKitDir(fromMetaUrl, name, version);
 }
 
 /**

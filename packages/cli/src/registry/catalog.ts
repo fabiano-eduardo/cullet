@@ -35,7 +35,6 @@ export {
     loadKitDeprecation,
     loadKitMeta,
     loadKitContext,
-    resolveBuiltKitDir,
 } from "./loaders.js";
 
 export {

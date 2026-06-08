@@ -31,12 +31,8 @@ export function createListCommand(): Command {
 
                     for (const kit of kits) {
                         const [deprecation, meta] = await Promise.all([
-                            loadKitDeprecation(
-                                import.meta.url,
-                                kit.name,
-                                kit.latest,
-                            ),
-                            loadKitMeta(import.meta.url, kit.name, kit.latest),
+                            loadKitDeprecation(import.meta.url, kit.name),
+                            loadKitMeta(import.meta.url, kit.name),
                         ]);
                         const kind = getKitKind(meta);
                         const kindMarker = pc.dim(` [${kind}]`);
