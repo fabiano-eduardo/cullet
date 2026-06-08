@@ -19,6 +19,7 @@ import {
   loadKitDeprecation,
   loadKitMeta,
   loadRegistry,
+  matchKitArg,
   resolveBuiltKitDir as resolveSharedBuiltKitDir,
   resolveRegistryEntry,
   resolveVersion,
@@ -72,11 +73,11 @@ export interface ParsedKitArg {
   version?: string;
 }
 
-const BARE_LEADING_AT_NAME_PATTERN = /^@[^@/\s]+$/u;
-const SCOPED_KIT_ARG_PATTERN =
-  /^(?<name>@[^/\s]+\/[^@\s]+)(?:@(?<version>[^@\s]+))?$/u;
-const UNSCOPED_KIT_ARG_PATTERN = /^(?<name>[^@\s]+)(?:@(?<version>[^@\s]+))?$/u;
-
+/**
+ * CLI-facing parser for a `nome` / `nome@versao` argument. Wraps the shared
+ * {@link matchKitArg} core, turning its `null` result into the friendly error
+ * messages the CLI surfaces (distinguishing an empty arg from a malformed one).
+ */
 export function parseKitArg(rawValue: string): ParsedKitArg {
   const value = rawValue.trim();
 
@@ -84,23 +85,36 @@ export function parseKitArg(rawValue: string): ParsedKitArg {
     throw new Error("Informe um kit no formato nome ou nome@versao.");
   }
 
-  if (value.startsWith("@") && !value.includes("/")) {
-    if (!BARE_LEADING_AT_NAME_PATTERN.test(value)) {
-      throw new Error("Formato invalido. Use nome ou nome@versao.");
-    }
+  const parsed = matchKitArg(value);
 
-    return { name: value };
-  }
-
-  const match =
-    SCOPED_KIT_ARG_PATTERN.exec(value) ?? UNSCOPED_KIT_ARG_PATTERN.exec(value);
-
-  if (match === null || match.groups?.name === undefined) {
+  if (parsed === null) {
     throw new Error("Formato invalido. Use nome ou nome@versao.");
   }
 
-  const { name, version } = match.groups;
-  return version === undefined ? { name } : { name, version };
+  return parsed;
+}
+
+export interface ResolvedKitArg {
+  name: string;
+  version: string;
+  entry: RegistryEntry;
+}
+
+/**
+ * Parse a `nome@versao` argument and resolve it against the registry in one
+ * step: validates the arg, loads the registry, locates the entry and pins the
+ * concrete version. Shared by the single-kit commands so the resolution
+ * preamble lives in one place.
+ */
+export async function resolveKitFromArg(
+  fromMetaUrl: string,
+  kit: string,
+): Promise<ResolvedKitArg> {
+  const parsed = parseKitArg(kit);
+  const registry = await loadRegistry(fromMetaUrl);
+  const entry = resolveRegistryEntry(registry, parsed.name);
+  const version = resolveVersion(parsed.name, entry, parsed.version);
+  return { name: parsed.name, version, entry };
 }
 
 export async function resolveBuiltKitDir(

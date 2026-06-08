@@ -19,6 +19,7 @@ import {
   kitFullControlDir,
   kitToolingDestinationDir,
 } from "../utils/paths.js";
+import { loadKit } from "../../registry/index.js";
 import {
   describeKitSuccessor,
   getCopyDelivery,
@@ -26,18 +27,12 @@ import {
   getFullControlDependencies,
   isToolingKit,
   kitExposesImport,
-  loadKitDeprecation,
-  loadKitMeta,
-  loadRegistry,
   parseKitArg,
   type KitDependency,
   type KitMeta,
-  type RegistryEntry,
   resolveInstalledKitVersion,
   resolveKitPayloadDir,
   resolveKitSourceDir,
-  resolveRegistryEntry,
-  resolveVersion,
 } from "../utils/resolve.js";
 import {
   runCommandWithTelemetry,
@@ -186,9 +181,9 @@ export async function copyDirectoryTransactional(
 }
 
 interface FullControlContext {
-  parsed: { name: string; version?: string };
-  entry: RegistryEntry;
+  name: string;
   version: string;
+  npmName: string;
   meta: KitMeta | null;
   installSpec: string;
   alreadyInstalled: boolean;
@@ -219,22 +214,20 @@ export function createFullControlCommand(): Command {
           tracker.set("requestedKit", kit);
           tracker.set("dryRun", Boolean(options.dryRun));
 
-          const parsed = parseKitArg(kit);
-          const registry = await loadRegistry(import.meta.url);
-          const entry = resolveRegistryEntry(registry, parsed.name);
-          const version = resolveVersion(parsed.name, entry, parsed.version);
-          tracker.set("kit", parsed.name);
+          const { name: requestedName, version: requestedVersion } =
+            parseKitArg(kit);
+          const { name, version, npmName, meta, deprecation } = await loadKit(
+            requestedName,
+            requestedVersion,
+            { context: false },
+          );
+          tracker.set("kit", name);
           tracker.set("resolvedVersion", version);
 
-          const deprecation = await loadKitDeprecation(
-            import.meta.url,
-            parsed.name,
-            version,
-          );
           if (deprecation) {
             console.log(
               pc.yellow(
-                `Aviso: ${parsed.name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
+                `Aviso: ${name}@${version} esta deprecated desde ${deprecation.since}. Motivo: ${deprecation.reason}`,
               ),
             );
             if (deprecation.successor) {
@@ -246,16 +239,15 @@ export function createFullControlCommand(): Command {
             }
           }
 
-          const meta = await loadKitMeta(import.meta.url, parsed.name, version);
-          const installSpec = `${entry.npmName}@${version}`;
+          const installSpec = `${npmName}@${version}`;
           const installedVersion = resolveInstalledKitVersion(
             process.cwd(),
-            entry.npmName,
+            npmName,
           );
           const context: FullControlContext = {
-            parsed,
-            entry,
+            name,
             version,
+            npmName,
             meta,
             installSpec,
             alreadyInstalled: installedVersion === version,
@@ -327,13 +319,11 @@ async function ensureKitInstalled(context: FullControlContext): Promise<void> {
 async function runLibraryFullControl(
   context: FullControlContext,
 ): Promise<void> {
-  const { parsed, entry, version, meta, options, tracker } = context;
-  const destinationDir = kitFullControlDir(process.cwd(), parsed.name, version);
+  const { name, npmName, version, meta, options, tracker } = context;
+  const destinationDir = kitFullControlDir(process.cwd(), name, version);
 
   if (options.dryRun) {
-    console.log(
-      pc.bold(`[dry-run] full-control para ${parsed.name}@${version}`),
-    );
+    console.log(pc.bold(`[dry-run] full-control para ${name}@${version}`));
     printInstallPreview(context);
 
     console.log(`Destino: ${pc.cyan(destinationDir)}`);
@@ -346,7 +336,7 @@ async function runLibraryFullControl(
     }
 
     if (context.alreadyInstalled) {
-      const sourceDir = await resolveKitSourceDir(process.cwd(), entry.npmName);
+      const sourceDir = await resolveKitSourceDir(process.cwd(), npmName);
       console.log(`Origem:  ${pc.cyan(sourceDir)}`);
       const sample = await collectSampleFiles(sourceDir, 12);
       if (sample.files.length > 0) {
@@ -361,15 +351,15 @@ async function runLibraryFullControl(
     } else {
       console.log(
         pc.dim(
-          `O fonte do kit seria copiado de node_modules/${entry.npmName}/src apos a instalacao.`,
+          `O fonte do kit seria copiado de node_modules/${npmName}/src apos a instalacao.`,
         ),
       );
     }
 
     const aliasPreview = await upsertPathAlias(
       process.cwd(),
-      entry.npmName,
-      kitFullControlAliasTarget(parsed.name, version),
+      npmName,
+      kitFullControlAliasTarget(name, version),
       { dryRun: true },
     );
 
@@ -391,7 +381,7 @@ async function runLibraryFullControl(
 
   await ensureKitInstalled(context);
 
-  const sourceDir = await resolveKitSourceDir(process.cwd(), entry.npmName);
+  const sourceDir = await resolveKitSourceDir(process.cwd(), npmName);
   const destinationExists = await fs.pathExists(destinationDir);
 
   if (destinationExists) {
@@ -410,14 +400,12 @@ async function runLibraryFullControl(
 
   const aliasResult = await upsertPathAlias(
     process.cwd(),
-    entry.npmName,
-    kitFullControlAliasTarget(parsed.name, version),
+    npmName,
+    kitFullControlAliasTarget(name, version),
   );
 
   console.log(
-    pc.green(
-      `Kit ${parsed.name} copiado para ./cullet/${parsed.name}@${version}/`,
-    ),
+    pc.green(`Kit ${name} copiado para ./cullet/${name}@${version}/`),
   );
   console.log(`Origem: ${pc.cyan(sourceDir)}`);
   console.log(`Destino: ${pc.cyan(destinationDir)}`);
@@ -429,7 +417,7 @@ async function runLibraryFullControl(
 
   console.log("");
   console.log(pc.bold("Como usar agora:"));
-  console.log(pc.cyan(`import { ... } from "${entry.npmName}";`));
+  console.log(pc.cyan(`import { ... } from "${npmName}";`));
   console.log(
     pc.dim(
       "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
@@ -448,12 +436,12 @@ async function runLibraryFullControl(
 async function runToolingFullControl(
   context: FullControlContext,
 ): Promise<void> {
-  const { parsed, entry, version, meta, options, tracker } = context;
+  const { name, npmName, version, meta, options, tracker } = context;
 
   const copy = getCopyDelivery(meta);
   if (copy === undefined) {
     throw new Error(
-      `O kit ${parsed.name}@${version} e do tipo tooling mas nao declara delivery.copy no meta.json. O catalogo esta inconsistente.`,
+      `O kit ${name}@${version} e do tipo tooling mas nao declara delivery.copy no meta.json. O catalogo esta inconsistente.`,
     );
   }
 
@@ -465,9 +453,7 @@ async function runToolingFullControl(
 
   if (options.dryRun) {
     console.log(
-      pc.bold(
-        `[dry-run] full-control (tooling) para ${parsed.name}@${version}`,
-      ),
+      pc.bold(`[dry-run] full-control (tooling) para ${name}@${version}`),
     );
     printInstallPreview(context);
 
@@ -478,7 +464,7 @@ async function runToolingFullControl(
     if (context.alreadyInstalled) {
       const sourceDir = await resolveKitPayloadDir(
         process.cwd(),
-        entry.npmName,
+        npmName,
         copy.source,
       );
       console.log(`Origem:  ${pc.cyan(sourceDir)}`);
@@ -503,7 +489,7 @@ async function runToolingFullControl(
     } else {
       console.log(
         pc.dim(
-          `O payload seria copiado de node_modules/${entry.npmName}/${copy.source} apos a instalacao.`,
+          `O payload seria copiado de node_modules/${npmName}/${copy.source} apos a instalacao.`,
         ),
       );
     }
@@ -537,7 +523,7 @@ async function runToolingFullControl(
 
   const sourceDir = await resolveKitPayloadDir(
     process.cwd(),
-    entry.npmName,
+    npmName,
     copy.source,
   );
 
@@ -559,7 +545,7 @@ async function runToolingFullControl(
   await fs.ensureDir(destinationDir);
   await fs.copy(sourceDir, destinationDir, { overwrite: true });
 
-  console.log(pc.green(`Kit ${parsed.name} adicionado em ${copy.placement}`));
+  console.log(pc.green(`Kit ${name} adicionado em ${copy.placement}`));
   console.log(`Origem: ${pc.cyan(sourceDir)}`);
   console.log(`Destino: ${pc.cyan(destinationDir)}`);
 
@@ -579,7 +565,7 @@ async function runToolingFullControl(
   if (kitExposesImport(meta)) {
     console.log(
       pc.dim(
-        `Este kit tambem expoe uma superficie importavel: voce pode usa-lo direto do node_modules com \`import { ... } from "${entry.npmName}"\`, sem copiar.`,
+        `Este kit tambem expoe uma superficie importavel: voce pode usa-lo direto do node_modules com \`import { ... } from "${npmName}"\`, sem copiar.`,
       ),
     );
   }
