@@ -6,6 +6,7 @@ import {
     buildInstallCommand,
     detectPackageManager,
     formatInstallCommand,
+    resolveCommandForPlatform,
 } from "../../packages/cli/src/cli/utils/package-manager.js";
 
 describe("detectPackageManager", () => {
@@ -65,6 +66,19 @@ describe("buildInstallCommand", () => {
             command: "npm",
             args: ["install", "@cullet/erp-core@1.0.0"],
         });
+    });
+});
+
+describe("resolveCommandForPlatform", () => {
+    it("appends .cmd on Windows so execFile can resolve the binary", () => {
+        expect(resolveCommandForPlatform("npm", "win32")).toBe("npm.cmd");
+        expect(resolveCommandForPlatform("pnpm", "win32")).toBe("pnpm.cmd");
+        expect(resolveCommandForPlatform("yarn", "win32")).toBe("yarn.cmd");
+    });
+
+    it("leaves the bare command on POSIX platforms", () => {
+        expect(resolveCommandForPlatform("npm", "linux")).toBe("npm");
+        expect(resolveCommandForPlatform("pnpm", "darwin")).toBe("pnpm");
     });
 });
 

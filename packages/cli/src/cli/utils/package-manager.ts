@@ -48,6 +48,22 @@ export function formatInstallCommand(
     return `${command} ${args.join(" ")}`;
 }
 
+/**
+ * Resolve the runnable executable name for the current platform.
+ *
+ * On Windows the package managers are shipped as `npm.cmd`/`pnpm.cmd`/`yarn.cmd`.
+ * Because `execFile` does not go through a shell, it cannot resolve the bare
+ * name and fails with `ENOENT`, so the `.cmd` extension must be appended there.
+ * Exposed (and parameterized on `platform`) so both branches stay testable
+ * without spawning a real process.
+ */
+export function resolveCommandForPlatform(
+    command: string,
+    platform: NodeJS.Platform = process.platform,
+): string {
+    return platform === "win32" ? `${command}.cmd` : command;
+}
+
 /** Run the package manager install for `spec` in `cwd`. */
 export async function installPackage(
     cwd: string,
@@ -55,5 +71,7 @@ export async function installPackage(
     spec: string,
 ): Promise<void> {
     const { command, args } = buildInstallCommand(packageManager, spec);
-    await execFileAsync(command, args, { cwd });
+    // We avoid `shell: true` to keep the argv free from shell
+    // quoting/injection concerns around `spec`.
+    await execFileAsync(resolveCommandForPlatform(command), args, { cwd });
 }
