@@ -181,9 +181,30 @@ export function createDoctorCommand(): Command {
                     );
                     const findings: Finding[] = [];
 
-                    const tsconfigInspection =
-                        await inspectTsconfig(projectRoot);
-                    if (tsconfigInspection === null) {
+                    let tsconfigInspection: Awaited<
+                        ReturnType<typeof inspectTsconfig>
+                    > = null;
+                    let tsconfigUnreadable = false;
+                    try {
+                        tsconfigInspection =
+                            await inspectTsconfig(projectRoot);
+                    } catch (error) {
+                        tsconfigUnreadable = true;
+                        findings.push({
+                            severity: "error",
+                            code: "tsconfig-unreadable",
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : "Nao foi possivel ler o tsconfig.json do projeto.",
+                            hint: "Corrija a sintaxe do tsconfig.json para que o cullet consiga audita-lo.",
+                        });
+                    }
+
+                    if (tsconfigUnreadable) {
+                        // tsconfig presente mas invalido: ja registramos o erro acima
+                        // e nao ha config para inspecionar.
+                    } else if (tsconfigInspection === null) {
                         findings.push({
                             severity: "warn",
                             code: "tsconfig-missing",
