@@ -49,19 +49,39 @@ export function formatInstallCommand(
 }
 
 /**
- * Resolve the runnable executable name for the current platform.
- *
- * On Windows the package managers are shipped as `npm.cmd`/`pnpm.cmd`/`yarn.cmd`.
- * Because `execFile` does not go through a shell, it cannot resolve the bare
- * name and fails with `ENOENT`, so the `.cmd` extension must be appended there.
- * Exposed (and parameterized on `platform`) so both branches stay testable
- * without spawning a real process.
+ * Conservative allow-list for an install spec (`<npmName>@<version>`). Because
+ * the install runs through a shell on Windows (see {@link buildInstallInvocation}),
+ * the spec must never carry shell metacharacters. A published npm package name
+ * and a resolved semver only use these characters, so any spec failing this is
+ * not a real spec and we refuse to spawn. Defends against command injection.
  */
-export function resolveCommandForPlatform(
-    command: string,
+const SAFE_INSTALL_SPEC = /^[a-zA-Z0-9._~@/+-]+$/;
+
+/**
+ * Resolve how to spawn the package-manager install for `spec` on a given
+ * platform. Parameterized on `platform` so both branches stay testable without
+ * spawning a real process.
+ *
+ * On Windows the package managers are `npm.cmd`/`pnpm.cmd`/`yarn.cmd` batch
+ * scripts. Since the Node fix for CVE-2024-27980, `.cmd`/`.bat` files can only
+ * be spawned with `shell: true`; without it `execFile` throws `EINVAL`. We
+ * therefore enable the shell only on Windows (cmd.exe resolves the bare command
+ * to its `.cmd` via PATHEXT) and, because the spec then flows through the shell,
+ * reject any spec carrying shell metacharacters first.
+ */
+export function buildInstallInvocation(
+    packageManager: PackageManager,
+    spec: string,
     platform: NodeJS.Platform = process.platform,
-): string {
-    return platform === "win32" ? `${command}.cmd` : command;
+): { command: string; args: string[]; shell: boolean } {
+    if (!SAFE_INSTALL_SPEC.test(spec)) {
+        throw new Error(
+            `Spec de instalacao invalido: "${spec}". Use o formato nome@versao.`,
+        );
+    }
+
+    const { command, args } = buildInstallCommand(packageManager, spec);
+    return { command, args, shell: platform === "win32" };
 }
 
 /** Run the package manager install for `spec` in `cwd`. */
@@ -70,8 +90,9 @@ export async function installPackage(
     packageManager: PackageManager,
     spec: string,
 ): Promise<void> {
-    const { command, args } = buildInstallCommand(packageManager, spec);
-    // We avoid `shell: true` to keep the argv free from shell
-    // quoting/injection concerns around `spec`.
-    await execFileAsync(resolveCommandForPlatform(command), args, { cwd });
+    const { command, args, shell } = buildInstallInvocation(
+        packageManager,
+        spec,
+    );
+    await execFileAsync(command, args, { cwd, shell });
 }
