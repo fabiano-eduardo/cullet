@@ -167,39 +167,3 @@ export function softSeverity(levelName) {
     if (levelName === "off") return "off";
     return "warn";
 }
-
-// --- Any-usage scanner (skips strings & comments roughly) ---
-
-function stripCommentsAndStrings(src) {
-    // Replace block comments
-    let s = src.replace(/\/\*[\s\S]*?\*\//g, (m) => " ".repeat(m.length));
-    // Replace line comments (preserve newlines)
-    s = s.replace(/\/\/[^\n]*/g, (m) => " ".repeat(m.length));
-    // Replace string literals (single, double, backtick) — keep length so line numbers stay
-    s = s.replace(
-        /(['"`])(?:\\.|(?!\1)[^\\])*\1/g,
-        (m) => m[0] + " ".repeat(m.length - 2) + m[0],
-    );
-    return s;
-}
-
-export function findBareAny(src) {
-    const stripped = stripCommentsAndStrings(src);
-    const ANY_RE =
-        /(?<![A-Za-z0-9_$])(?::\s*any\b|as\s+any\b|<any>|\bany\[\])/g;
-    const hits = [];
-    let m;
-    while ((m = ANY_RE.exec(stripped)) !== null) {
-        const upto = src.slice(0, m.index);
-        const line = upto.split("\n").length;
-        const lineEnd = src.indexOf("\n", m.index);
-        const lineSrc = src.slice(
-            upto.lastIndexOf("\n") + 1,
-            lineEnd === -1 ? src.length : lineEnd,
-        );
-        // Justification: trailing "// any-ok: <reason>" on same line
-        if (/\/\/\s*any-ok:/.test(lineSrc)) continue;
-        hits.push({ line, snippet: lineSrc.trim() });
-    }
-    return hits;
-}
