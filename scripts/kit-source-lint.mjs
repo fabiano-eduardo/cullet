@@ -13,6 +13,7 @@ import {
     collectExportNames,
     collectRootDescribeTitles,
     collectTestCaseTitles,
+    findBareAnyUsages,
     getTypeParameterConstraintText,
     hasModuleMockCallInSourceFile,
     hasOutputTypeParameter,
@@ -26,7 +27,6 @@ import {
     baseNameWithoutSpec,
     exists,
     expectedTargetPathForSpec,
-    findBareAny,
     getCoreLayerFromPath,
     hardSeverity,
     isAllowedPackageRootImport,
@@ -344,7 +344,7 @@ export async function checkSourceFiles(
         // Bare any
         const anyLvl = level(lint, "noBareAny");
         if (anyLvl !== "off") {
-            for (const hit of findBareAny(src)) {
+            for (const hit of findBareAnyUsages(sourceFile)) {
                 findings.push({
                     severity: anyLvl,
                     msg: `bare "any" without "// any-ok: <reason>" justification — ${hit.snippet}`,

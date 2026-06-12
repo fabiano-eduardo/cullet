@@ -294,13 +294,3 @@ npm run release:dry-run
 ```
 
 A decisão de empacotamento dos pacotes de kit é: tanto `dist/` quanto `src/` vão para o npm (o `src/` alimenta o `fc`), mas `*.spec.ts` e `*.test.ts` ficam fora do tarball.
-
-Para validar a publicação em um projeto sandbox real:
-
-```bash
-./scripts/smoke-test.sh
-# ou apontando para um tarball especifico:
-./scripts/smoke-test.sh ./cullet-<versao>.tgz
-```
-
-O script cria um diretório temporário, roda `npm init`, instala o tarball, compila um projeto TypeScript mínimo consumindo um kit publicado e executa o resultado.

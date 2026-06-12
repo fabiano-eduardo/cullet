@@ -171,3 +171,38 @@ export function hasOutputTypeParameter(classDecl) {
 export function matchesResultConstraint(constraintText) {
     return constraintText != null && /\bResult\s*</.test(constraintText);
 }
+
+// Bare-`any` scanner over the parsed AST. Replaces the old regex heuristic:
+// it flags exactly the `any` *type* keyword (annotations, generic arguments,
+// `as any`, `<any>` casts, `any[]`, return types, …) and never the identifier
+// or word "any" living in comments, strings, property names or test titles —
+// so it has no false positives. A line carrying a trailing
+// `// any-ok: <reason>` justification is skipped. One finding per offending
+// line. Returns `{ line, snippet }[]` with 1-based line numbers, matching the
+// shape the lint pass already reports.
+export function findBareAnyUsages(sourceFile) {
+    const fullText = sourceFile.getFullText();
+    const hits = [];
+    const seenLines = new Set();
+
+    visit(sourceFile, (node) => {
+        if (node.kind !== ts.SyntaxKind.AnyKeyword) return;
+
+        const start = node.getStart(sourceFile);
+        const { line } = sourceFile.getLineAndCharacterOfPosition(start);
+        if (seenLines.has(line)) return;
+
+        const lineStart = fullText.lastIndexOf("\n", start - 1) + 1;
+        const newlineIndex = fullText.indexOf("\n", start);
+        const lineEnd = newlineIndex === -1 ? fullText.length : newlineIndex;
+        const lineText = fullText.slice(lineStart, lineEnd);
+
+        // Justification: trailing "// any-ok: <reason>" on the same line.
+        if (/\/\/\s*any-ok:/.test(lineText)) return;
+
+        seenLines.add(line);
+        hits.push({ line: line + 1, snippet: lineText.trim() });
+    });
+
+    return hits;
+}
