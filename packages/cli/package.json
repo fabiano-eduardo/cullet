@@ -1,6 +1,6 @@
 {
     "name": "cullet",
-    "version": "0.5.4",
+    "version": "0.5.5",
     "description": "Catálogo opinativo de blocos arquiteturais para TypeScript — bibliotecas importáveis e ferramentas copy-first via CLI",
     "type": "module",
     "license": "MIT",
