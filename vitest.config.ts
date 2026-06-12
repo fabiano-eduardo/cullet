@@ -29,7 +29,7 @@ export default mergeConfig(
                 include: [
                     "packages/cli/src/cli/**/*.ts",
                     "packages/cli/src/registry/**/*.ts",
-                    "scripts/{validate-kit,sync-kit-deps,new-kit,check-pack-contents}.mjs",
+                    "scripts/{validate-kit,kit-validators,kit-source-lint,kit-lint-helpers,kit-ast,schema-validator,sync-kit-deps,new-kit,check-pack-contents}.mjs",
                 ],
                 reporter: ["text", "lcov"],
                 thresholds: {
