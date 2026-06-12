@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
     buildInstallCommand,
+    buildInstallInvocation,
     detectPackageManager,
     formatInstallCommand,
-    resolveCommandForPlatform,
 } from "../../packages/cli/src/cli/utils/package-manager.js";
 
 describe("detectPackageManager", () => {
@@ -69,16 +69,50 @@ describe("buildInstallCommand", () => {
     });
 });
 
-describe("resolveCommandForPlatform", () => {
-    it("appends .cmd on Windows so execFile can resolve the binary", () => {
-        expect(resolveCommandForPlatform("npm", "win32")).toBe("npm.cmd");
-        expect(resolveCommandForPlatform("pnpm", "win32")).toBe("pnpm.cmd");
-        expect(resolveCommandForPlatform("yarn", "win32")).toBe("yarn.cmd");
+describe("buildInstallInvocation", () => {
+    it("enables the shell on Windows so .cmd shims can be spawned (CVE-2024-27980)", () => {
+        expect(
+            buildInstallInvocation("npm", "@cullet/erp-core@1.0.0", "win32"),
+        ).toEqual({
+            command: "npm",
+            args: ["install", "@cullet/erp-core@1.0.0"],
+            shell: true,
+        });
     });
 
-    it("leaves the bare command on POSIX platforms", () => {
-        expect(resolveCommandForPlatform("npm", "linux")).toBe("npm");
-        expect(resolveCommandForPlatform("pnpm", "darwin")).toBe("pnpm");
+    it("keeps the shell off on POSIX platforms", () => {
+        expect(
+            buildInstallInvocation("pnpm", "@cullet/erp-core@1.0.0", "linux"),
+        ).toEqual({
+            command: "pnpm",
+            args: ["add", "@cullet/erp-core@1.0.0"],
+            shell: false,
+        });
+    });
+
+    it("accepts a pinned semver with prerelease and build metadata", () => {
+        expect(() =>
+            buildInstallInvocation(
+                "npm",
+                "@scope/kit@1.2.3-beta.1+build.5",
+                "win32",
+            ),
+        ).not.toThrow();
+    });
+
+    it("rejects specs carrying shell metacharacters", () => {
+        for (const malicious of [
+            "pkg && rm -rf /",
+            "pkg; echo pwned",
+            "pkg | cat",
+            "pkg`whoami`",
+            "pkg $(id)",
+            "pkg with space",
+        ]) {
+            expect(() =>
+                buildInstallInvocation("npm", malicious, "win32"),
+            ).toThrow(/invalido/u);
+        }
     });
 });
 
