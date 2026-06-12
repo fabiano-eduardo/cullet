@@ -267,13 +267,18 @@ describe("emitTelemetryIfEnabled", () => {
         expect(logMode).toBe(0o600);
     });
 
-    it("rethrows unexpected telemetry configuration resolution failures", async () => {
+    it("resolves the telemetry home from USERPROFILE when HOME is unset (Windows)", async () => {
         const env = {
             ...process.env,
             HOME: undefined,
+            USERPROFILE: homeDir,
             CULLET_CONFIG_HOME: undefined,
             XDG_CONFIG_HOME: undefined,
+            CULLET_STATE_HOME: undefined,
+            XDG_STATE_HOME: undefined,
         };
+
+        await enableTelemetry({ env });
 
         await expect(
             emitTelemetryIfEnabled(
@@ -285,7 +290,10 @@ describe("emitTelemetryIfEnabled", () => {
                 },
                 { env },
             ),
-        ).rejects.toThrow("HOME nao esta definido");
+        ).resolves.toBe(true);
+
+        expect(resolveTelemetryConfigPath(env)).toContain(homeDir);
+        await expect(readLoggedEvents(env)).resolves.toHaveLength(1);
     });
 
     it("rethrows unexpected CLI version resolution failures", async () => {
@@ -557,5 +565,44 @@ describe("runCommandWithTelemetry", () => {
                 failureKind: "TypeError",
             },
         });
+    });
+
+    it("never lets a telemetry write failure break or mask the command", async () => {
+        // Um arquivo onde o diretorio de estado deveria existir faz o append do
+        // evento local falhar com ENOTDIR (erro nao-ignoravel).
+        const blocker = join(homeDir, "blocker");
+        await writeFile(blocker, "x", "utf8");
+        const env = {
+            ...makeEnv(),
+            CULLET_STATE_HOME: join(blocker, "nested"),
+        };
+
+        await enableTelemetry({ env });
+
+        // Caminho de sucesso: o resultado do handler e preservado mesmo com a
+        // telemetria falhando ao gravar.
+        await expect(
+            runCommandWithTelemetry({
+                fromMetaUrl: cliMetaUrl,
+                command: "list",
+                env,
+                async handler() {
+                    return "ok";
+                },
+            }),
+        ).resolves.toBe("ok");
+
+        // Caminho de erro: o erro original do handler e propagado, nunca o erro
+        // da telemetria.
+        await expect(
+            runCommandWithTelemetry({
+                fromMetaUrl: cliMetaUrl,
+                command: "fc",
+                env,
+                async handler() {
+                    throw new Error("boom");
+                },
+            }),
+        ).rejects.toThrow("boom");
     });
 });
