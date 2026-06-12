@@ -156,7 +156,7 @@ export function parseTsSource(
         sourceText,
         ts.ScriptTarget.Latest,
         true,
-        ts.ScriptKind.TS,
+        extname(sourcePath) === ".tsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
 }
 
@@ -204,7 +204,7 @@ export function collectModuleSpecifiers(sourceFile, options = {}) {
             includeDynamicImports &&
             ts.isCallExpression(node) &&
             node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-            node.arguments.length === 1 &&
+            node.arguments.length >= 1 &&
             ts.isStringLiteralLike(node.arguments[0])
         ) {
             specifiers.push(node.arguments[0].text);
