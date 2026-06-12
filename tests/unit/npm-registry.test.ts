@@ -49,4 +49,19 @@ describe("fetchPublishedPackageInfo", () => {
             fetchPublishedPackageInfo("@cullet/erp-core"),
         ).resolves.toBeNull();
     });
+
+    it("refuses to query names carrying shell metacharacters", async () => {
+        // Online on purpose: the guard must short-circuit before any spawn,
+        // so this resolves to null without ever shelling out to npm.
+        delete process.env.CULLET_OFFLINE;
+        await expect(
+            fetchPublishedPackageInfo("@cullet/erp-core; rm -rf /"),
+        ).resolves.toBeNull();
+        await expect(
+            fetchPublishedPackageInfo("foo && echo pwned"),
+        ).resolves.toBeNull();
+        await expect(
+            fetchPublishedPackageInfo("foo$(whoami)"),
+        ).resolves.toBeNull();
+    });
 });

@@ -5,6 +5,22 @@ const execFileAsync = promisify(execFile);
 
 const NPM_VIEW_TIMEOUT_MS = 8000;
 
+/**
+ * On Windows the `npm` executable is `npm.cmd`, a batch script. Since the Node
+ * security fix for CVE-2024-27980, `.cmd`/`.bat` files can only be spawned with
+ * `shell: true`; without it the call throws (EINVAL/ENOENT) and the npm query
+ * silently fails on Windows. We therefore enable the shell only on Windows.
+ */
+const IS_WINDOWS = process.platform === "win32";
+
+/**
+ * Conservative allow-list of characters that can appear in a valid npm package
+ * name (scoped or not). Because we spawn through a shell on Windows, the name
+ * must never carry shell metacharacters — any name failing this is not a real
+ * package, so we refuse to spawn at all. Defends against command injection.
+ */
+const SAFE_NPM_NAME = /^[a-zA-Z0-9._~@/-]+$/;
+
 export interface PublishedPackageInfo {
     versions: string[];
     distTags: Record<string, string>;
@@ -25,11 +41,19 @@ export async function fetchPublishedPackageInfo(
         return null;
     }
 
+    if (!SAFE_NPM_NAME.test(npmName)) {
+        return null;
+    }
+
     try {
         const { stdout } = await execFileAsync(
             "npm",
             ["view", npmName, "--json", "versions", "dist-tags"],
-            { encoding: "utf8", timeout: NPM_VIEW_TIMEOUT_MS },
+            {
+                encoding: "utf8",
+                timeout: NPM_VIEW_TIMEOUT_MS,
+                shell: IS_WINDOWS,
+            },
         );
 
         return parsePublishedPackageInfo(stdout);
