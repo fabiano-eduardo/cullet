@@ -8,6 +8,8 @@ import {
     loadKitDeprecation,
     loadKitMeta,
     loadRegistry,
+    resolveKitFromArg,
+    resolveKitPayloadDir,
     resolveKitSourceDir,
 } from "../../packages/cli/src/cli/utils/resolve.js";
 
@@ -356,5 +358,72 @@ describe("loadKitDeprecation", () => {
             meta: { deprecated: { since: 1, reason: 2 } },
         });
         expect(await loadKitDeprecation(metaUrl, "erp-core")).toBeNull();
+    });
+
+    it("returns null when meta.json cannot be read or parsed", async () => {
+        await setupFakeCullet({ meta: null });
+        await writeFile(
+            join(root, "packages", "erp-core", "meta.json"),
+            "{ json invalido",
+        );
+        expect(await loadKitDeprecation(metaUrl, "erp-core")).toBeNull();
+    });
+});
+
+describe("resolveKitFromArg", () => {
+    it("resolves name, pinned version and registry entry in one step", async () => {
+        await setupFakeCullet();
+        const resolved = await resolveKitFromArg(metaUrl, "erp-core@1.0.0");
+        expect(resolved.name).toBe("erp-core");
+        expect(resolved.version).toBe("1.0.0");
+        expect(resolved.entry.latest).toBe("1.0.0");
+    });
+
+    it("falls back to the latest version when none is pinned", async () => {
+        await setupFakeCullet();
+        const resolved = await resolveKitFromArg(metaUrl, "erp-core");
+        expect(resolved.version).toBe("1.0.0");
+    });
+});
+
+describe("resolveKitPayloadDir", () => {
+    let consumer = "";
+
+    afterEach(async () => {
+        if (consumer) {
+            await rm(consumer, { recursive: true, force: true });
+            consumer = "";
+        }
+    });
+
+    async function installToolingKit(opts: {
+        payload: boolean;
+    }): Promise<string> {
+        consumer = await mkdtemp(join(tmpdir(), "cullet-consumer-"));
+        const kitRoot = join(consumer, "node_modules", "@cullet", "agent-kit");
+        await mkdir(kitRoot, { recursive: true });
+        await writeFile(
+            join(kitRoot, "package.json"),
+            JSON.stringify({ name: "@cullet/agent-kit", version: "1.0.0" }),
+        );
+        if (opts.payload) {
+            await mkdir(join(kitRoot, "files"), { recursive: true });
+            await writeFile(join(kitRoot, "files", "CLAUDE.md"), "# kit");
+        }
+        return kitRoot;
+    }
+
+    it("returns the declared payload directory of the installed kit", async () => {
+        const kitRoot = await installToolingKit({ payload: true });
+        await expect(
+            resolveKitPayloadDir(consumer, "@cullet/agent-kit", "files"),
+        ).resolves.toBe(join(kitRoot, "files"));
+    });
+
+    it("throws when the package does not ship the payload directory", async () => {
+        await installToolingKit({ payload: false });
+        await expect(
+            resolveKitPayloadDir(consumer, "@cullet/agent-kit", "files"),
+        ).rejects.toThrow(/payload/);
     });
 });

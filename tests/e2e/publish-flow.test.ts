@@ -39,9 +39,37 @@ interface PublishedKit {
     version: string;
 }
 
+// A versao vem do package.json de cada kit: o beforeAll publica no verdaccio a
+// versao atual do workspace, entao fixar um literal aqui quebraria a cada
+// release.
+function readKitVersion(shortName: string): string {
+    const manifest = JSON.parse(
+        readFileSync(
+            join(repoRoot, "packages", shortName, "package.json"),
+            "utf8",
+        ),
+    ) as { version?: unknown };
+
+    if (typeof manifest.version !== "string") {
+        throw new Error(
+            `packages/${shortName}/package.json nao declara uma versao valida.`,
+        );
+    }
+
+    return manifest.version;
+}
+
 const KITS: PublishedKit[] = [
-    { shortName: "erp-core", npmName: "@cullet/erp-core", version: "1.0.0" },
-    { shortName: "dummy-api", npmName: "@cullet/dummy-api", version: "1.0.0" },
+    {
+        shortName: "erp-core",
+        npmName: "@cullet/erp-core",
+        version: readKitVersion("erp-core"),
+    },
+    {
+        shortName: "dummy-api",
+        npmName: "@cullet/dummy-api",
+        version: readKitVersion("dummy-api"),
+    },
 ];
 
 let verdaccio: ChildProcess | undefined;

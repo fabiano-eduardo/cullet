@@ -11,11 +11,17 @@ import {
 import { runCommandWithTelemetry } from "../utils/telemetry.js";
 import { runLibraryFullControl } from "./full-control/library.js";
 import { runToolingFullControl } from "./full-control/tooling.js";
-import { type FullControlContext, type FullControlOptions } from "./full-control/types.js";
+import {
+    type FullControlContext,
+    type FullControlOptions,
+} from "./full-control/types.js";
 
 // Re-exported so existing consumers (and tests) keep importing them from this module.
 export { copyDirectoryTransactional } from "./full-control/transaction.js";
-export { findPayloadConflicts, listRelativeFiles } from "./full-control/files.js";
+export {
+    findPayloadConflicts,
+    listRelativeFiles,
+} from "./full-control/files.js";
 
 export function createFullControlCommand(): Command {
     return new Command("fc")

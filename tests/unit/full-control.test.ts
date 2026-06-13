@@ -8,6 +8,7 @@ import {
     findPayloadConflicts,
     listRelativeFiles,
 } from "../../packages/cli/src/cli/commands/full-control.js";
+import { collectSampleFiles } from "../../packages/cli/src/cli/commands/full-control/files.js";
 
 async function makeFixtureRoot(): Promise<string> {
     return mkdtemp(join(tmpdir(), "cullet-fc-"));
@@ -169,5 +170,57 @@ describe("findPayloadConflicts", () => {
         await expect(
             findPayloadConflicts(sourceDir, join(root, ".claude")),
         ).resolves.toEqual([]);
+    });
+});
+
+describe("collectSampleFiles", () => {
+    it("collects every file when under the limit", async () => {
+        const root = await makeFixtureRoot();
+        await writeTree(root, {
+            "CLAUDE.md": "a",
+            "hooks/pre.mjs": "b",
+        });
+
+        const sample = await collectSampleFiles(root, 10);
+
+        expect(sample.truncated).toBe(false);
+        expect(sample.files).toHaveLength(2);
+    });
+
+    it("stops at the limit and flags truncation", async () => {
+        const root = await makeFixtureRoot();
+        await writeTree(root, {
+            "a.md": "1",
+            "b.md": "2",
+            "nested/c.md": "3",
+            "nested/deep/d.md": "4",
+        });
+
+        const sample = await collectSampleFiles(root, 1);
+
+        expect(sample.truncated).toBe(true);
+        expect(sample.files).toHaveLength(1);
+    });
+
+    it("skips node_modules and dotfiles", async () => {
+        const root = await makeFixtureRoot();
+        await writeTree(root, {
+            "CLAUDE.md": "a",
+            ".hidden": "b",
+            "node_modules/pkg/index.js": "c",
+        });
+
+        const sample = await collectSampleFiles(root, 10);
+
+        expect(sample.files).toHaveLength(1);
+        expect(sample.files[0]).toContain("CLAUDE.md");
+    });
+
+    it("returns an empty sample when the root cannot be read", async () => {
+        const root = await makeFixtureRoot();
+
+        await expect(
+            collectSampleFiles(join(root, "missing"), 10),
+        ).resolves.toEqual({ files: [], truncated: false });
     });
 });
