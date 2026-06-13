@@ -31,7 +31,9 @@ jobs:
               # (applying the version bump), so it legitimately has no changesets
               # and `changeset status` would fail it.
               if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/main'
-              run: npx changeset status --since=origin/${{ github.base_ref }}
+              env:
+                  BASE_REF: ${{ github.base_ref }}
+              run: npx changeset status --since="origin/$BASE_REF"
 
             - name: Prettier (changed files)
               if: github.event_name == 'pull_request'

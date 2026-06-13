@@ -272,7 +272,7 @@ describe.sequential("script entrypoints", () => {
                     await rm(tarballPath, { force: true });
                 }
             }
-        });
+        }, 90_000);
 
         it("validates all publishable workspace tarballs from the repository root", async () => {
             const buildResult = spawnSync(

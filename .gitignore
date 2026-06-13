@@ -8,6 +8,9 @@ lib/
 out/
 build/
 
+# Astro generated types/metadata
+.astro/
+
 # IDE and Editor files
 .vscode/
 .idea/
