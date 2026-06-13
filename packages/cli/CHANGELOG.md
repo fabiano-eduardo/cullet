@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.6
+
+### Patch Changes
+
+- 8f19d99: test(cli): expand regression coverage around full-control and registry helpers, and align workspace metadata with the `packages/*` monorepo layout.
+
 ## 0.5.5
 
 ### Patch Changes
