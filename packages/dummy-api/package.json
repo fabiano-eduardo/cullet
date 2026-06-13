@@ -1,7 +1,7 @@
 {
     "name": "@cullet/dummy-api",
     "version": "1.0.2",
-    "description": "Kit dummy de API para validar o fluxo de criacao",
+    "description": "Kit de exemplo minimo: esqueleto de core em clean architecture (camadas domain, application, errors e result) como referencia de estrutura para novos kits.",
     "type": "module",
     "repository": {
         "type": "git",

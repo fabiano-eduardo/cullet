@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { findCulletPackageRoot, kitPackageDir } from "./paths.js";
+import { findCulletPackageRoot, kitMetaDir } from "./paths.js";
 import {
     isRecord,
     parseDeprecation,
@@ -77,7 +77,7 @@ export async function loadKitDeprecation(
     name: string,
 ): Promise<KitDeprecation | null> {
     const packageRoot = findCulletPackageRoot(fromMetaUrl);
-    const metaPath = join(kitPackageDir(packageRoot, name), "meta.json");
+    const metaPath = join(kitMetaDir(packageRoot, name), "meta.json");
 
     try {
         const raw = await readFile(metaPath, "utf8");
@@ -93,7 +93,7 @@ export async function loadKitMeta(
     name: string,
 ): Promise<KitMeta | null> {
     const packageRoot = findCulletPackageRoot(fromMetaUrl);
-    return readKitMeta(join(kitPackageDir(packageRoot, name), "meta.json"));
+    return readKitMeta(join(kitMetaDir(packageRoot, name), "meta.json"));
 }
 
 export async function loadKitContext(
@@ -101,10 +101,7 @@ export async function loadKitContext(
     name: string,
 ): Promise<string | null> {
     const packageRoot = findCulletPackageRoot(fromMetaUrl);
-    const contextPath = join(
-        kitPackageDir(packageRoot, name),
-        "KIT_CONTEXT.md",
-    );
+    const contextPath = join(kitMetaDir(packageRoot, name), "KIT_CONTEXT.md");
 
     try {
         return await readFile(contextPath, "utf8");

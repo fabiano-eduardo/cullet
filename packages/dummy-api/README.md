@@ -1,6 +1,6 @@
 # dummy-api
 
-Kit dummy para exercitar o fluxo de criação e publicação de kits no cullet. Não é uma curadoria de API real; serve como sandbox de validação para o catálogo.
+Kit de exemplo mínimo do cullet: um esqueleto de core em clean architecture que serve de referência de estrutura para começar um novo kit. Não expõe uma API de negócio própria — é o ponto de partida estrutural, não um kit de produção.
 
 Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../../../PHILOSOPHY.md).
 
@@ -26,13 +26,13 @@ npx cullet fc dummy-api@1.0.0 --dry-run
 
 ## Decisões tomadas
 
-- **Modelo de erro `mixed`**: estabelecido por contrato do catálogo — mesmo em um kit dummy, a estrutura segue a filosofia (domínio lança, aplicação retorna `Result`, infra traduz).
+- **Modelo de erro `mixed`**: estabelecido por contrato do catálogo — mesmo neste kit de exemplo, a estrutura segue a filosofia (domínio lança, aplicação retorna `Result`, infra traduz).
 - **Sem dependência runtime externa**: `externalDeps: []`. Qualquer dep nova exige justificativa no `KIT_CONTEXT.md`.
 - **Sem portas implementadas**: a expectativa é evoluir o kit antes de qualquer consumidor real usá-lo.
 
 ## Como evoluir
 
-- Substituir a descrição genérica em `meta.json` e `KIT_CONTEXT.md` antes da primeira release real.
+- Ajustar `meta.json` e `KIT_CONTEXT.md` ao adaptar o esqueleto para um problema-alvo real.
 - Preencher `core/domain/`, `core/application/`, `core/errors/`, `core/exceptions/` à medida que o problema-alvo se definir.
 - Mudança incompatível: abrir `versions/2.0.0/`. Regras em [`kits/VERSIONING.md`](../../../../kits/VERSIONING.md).
 - Antes de qualquer publicação: `npm run validate-kits`.
