@@ -165,4 +165,21 @@ describe("findCulletPackageRoot", () => {
 
         expect(findCulletPackageRoot(asMetaUrl(nested))).toBe(culletRoot);
     });
+
+    it("ignores a malformed package.json even when both cullet markers exist", async () => {
+        const culletRoot = join(workspace, "cullet");
+        await writeCulletPackage(culletRoot);
+
+        // Both markers present (package.json + registry/index.json) so the
+        // candidate passes the existence check and reaches JSON.parse.
+        const broken = join(culletRoot, "dist");
+        await mkdir(join(broken, "registry"), { recursive: true });
+        await writeFile(join(broken, "package.json"), "{ this is not json");
+        await writeFile(join(broken, "registry", "index.json"), "{}\n");
+
+        const nested = join(broken, "index.js");
+        await writeFile(nested, "");
+
+        expect(findCulletPackageRoot(asMetaUrl(nested))).toBe(culletRoot);
+    });
 });

@@ -3,12 +3,34 @@ import {
     getCopyDelivery,
     getCopyDependencies,
     getCopyPlacement,
+    getDirectImportPeerDependencies,
+    getFullControlDependencies,
     getImportPeerDependencies,
     getKitKind,
     isToolingKit,
     kitExposesImport,
     type KitMeta,
 } from "../../packages/cli/src/registry/catalog.js";
+
+describe("dependency fallbacks from philosophy.externalDeps", () => {
+    it("derives rangeless dependencies when compatibility is absent", () => {
+        const meta: KitMeta = { philosophy: { externalDeps: ["zod", "pino"] } };
+
+        expect(getDirectImportPeerDependencies(meta)).toEqual([
+            { name: "zod", range: "" },
+            { name: "pino", range: "" },
+        ]);
+        expect(getFullControlDependencies(meta)).toEqual([
+            { name: "zod", range: "" },
+            { name: "pino", range: "" },
+        ]);
+    });
+
+    it("returns an empty list when there is no meta at all", () => {
+        expect(getDirectImportPeerDependencies(null)).toEqual([]);
+        expect(getFullControlDependencies(undefined)).toEqual([]);
+    });
+});
 
 describe("getKitKind", () => {
     it("defaults to foundation when kind is absent", () => {

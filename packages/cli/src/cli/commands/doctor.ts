@@ -186,8 +186,7 @@ export function createDoctorCommand(): Command {
                     > = null;
                     let tsconfigUnreadable = false;
                     try {
-                        tsconfigInspection =
-                            await inspectTsconfig(projectRoot);
+                        tsconfigInspection = await inspectTsconfig(projectRoot);
                     } catch (error) {
                         tsconfigUnreadable = true;
                         findings.push({
