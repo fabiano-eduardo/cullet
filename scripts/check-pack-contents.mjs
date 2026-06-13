@@ -476,7 +476,8 @@ function findForbiddenEntries(entries, allowedDistEntries) {
             entry.startsWith("tmp/") ||
             entry === ".gitkeep" ||
             (entry.startsWith("registry/") &&
-                entry !== "registry/index.json") ||
+                entry !== "registry/index.json" &&
+                !entry.startsWith("registry/kits/")) ||
             isTestOnlyEntry(entry) ||
             isUnexpectedRootDistChunk(entry, allowedDistEntries),
     );

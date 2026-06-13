@@ -1,0 +1,71 @@
+{
+    "schemaVersion": "2",
+    "name": "erp-core",
+    "version": "1.0.3",
+    "description": "Core ERP com clean architecture, policies, erros e services de aplicação.",
+    "compatibility": {
+        "engines": {
+            "node": ">=18",
+            "typescript": ">=5.0.0"
+        },
+        "directImport": {
+            "peerDependencies": [
+                {
+                    "name": "zod",
+                    "range": ">=3.22.0 <5"
+                }
+            ]
+        },
+        "fullControl": {
+            "dependencies": [
+                {
+                    "name": "zod",
+                    "range": ">=3.22.0 <5"
+                }
+            ]
+        }
+    },
+    "entryPoint": "index.ts",
+    "philosophy": {
+        "errorModel": "mixed",
+        "observability": ["log-port", "metric-port", "trace-port"],
+        "testStyle": "vitest-no-mocks-in-core",
+        "externalDeps": ["zod"],
+        "testDeps": ["vitest"]
+    },
+    "docs": {
+        "context": "KIT_CONTEXT.md",
+        "readme": "README.md"
+    },
+    "lint": {
+        "nodenextImports": "off",
+        "noBareAny": "warn",
+        "noExternalImports": "error",
+        "noUpwardImports": "error",
+        "architectureLayers": "error",
+        "portsArePure": "error",
+        "applicationReturnsResult": "error",
+        "requiredCoreTests": "error",
+        "noMocksInCoreTests": "error"
+    },
+    "exports": [
+        "Entity",
+        "ValueObject",
+        "AppError",
+        "ValidationError",
+        "NotFoundError",
+        "ConflictError",
+        "AuthorizationError",
+        "IntegrationError",
+        "PolicyCatalog",
+        "PolicyDefinition",
+        "PolicyDecision",
+        "PolicyResolver",
+        "PolicyService",
+        "mapPolicyEvaluationError"
+    ],
+    "changelog": [
+        "1.0.0 - Registro inicial do boilerplate com primitives tipadas para import direto, CLI e fluxo full-control."
+    ],
+    "deprecated": false
+}
