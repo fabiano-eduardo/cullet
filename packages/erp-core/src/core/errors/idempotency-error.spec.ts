@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
     IdempotencyError,
+    IdempotencyInProgressError,
+    IdempotencyKeyMissingError,
     IdempotencyPayloadMismatchError,
+    IdempotencyReplayNotSupportedError,
     payloadHash,
     sha256Hex,
     stableStringify,
@@ -54,5 +57,51 @@ describe("IdempotencyError factories", () => {
         expect(error.code).toBe(ErrorCodes.idempotency.payloadMismatch);
         // keyPreview is truncated to the first 8 chars of the raw key.
         expect(error.metadata?.keyPreview).toBe("idem-key");
+    });
+
+    it("builds a key-missing error with the audited code and a default hint", () => {
+        const error = IdempotencyError.keyMissing({
+            operation: "createInvoice",
+        });
+
+        expect(error).toBeInstanceOf(IdempotencyKeyMissingError);
+        expect(error.kind).toBe("key_missing");
+        expect(error.code).toBe(ErrorCodes.idempotency.keyMissing);
+        expect(error.metadata).toMatchObject({
+            kind: "key_missing",
+            operation: "createInvoice",
+            hint: "Send a commandId/idempotency key to prevent duplicate processing.",
+        });
+    });
+
+    it("keeps a short key (<= 8 chars) intact in the preview", () => {
+        const error = IdempotencyError.inProgress({
+            operation: "createInvoice",
+            key: "short",
+        });
+
+        expect(error).toBeInstanceOf(IdempotencyInProgressError);
+        expect(error.kind).toBe("in_progress");
+        expect(error.code).toBe(ErrorCodes.idempotency.inProgress);
+        expect(error.metadata?.keyPreview).toBe("short");
+        expect(error.metadata?.hint).toBe(
+            "Wait for completion and retry using the same key.",
+        );
+    });
+
+    it("builds a replay-not-supported error with its audited code", () => {
+        const error = IdempotencyError.replayNotSupported({
+            operation: "createInvoice",
+            idempotencyRecordId: "rec-1",
+        });
+
+        expect(error).toBeInstanceOf(IdempotencyReplayNotSupportedError);
+        expect(error.kind).toBe("replay_not_supported");
+        expect(error.code).toBe(ErrorCodes.idempotency.replayNotSupported);
+        expect(error.metadata).toMatchObject({
+            kind: "replay_not_supported",
+            operation: "createInvoice",
+            idempotencyRecordId: "rec-1",
+        });
     });
 });
