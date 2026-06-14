@@ -135,18 +135,6 @@ Com `--dry-run`, o CLI mostra o destino, uma amostra dos arquivos que seriam cop
 
 Se o destino já existir e você estiver em modo real, o CLI pede confirmação antes de sobrescrever. A troca é transacional: o conteúdo antigo vai para backup temporário e só sai de cena quando a nova cópia assume o lugar, então falhas no meio não deixam o projeto em estado parcialmente sobrescrito.
 
-### `cullet migrate <kit>`
-
-```bash
-npx cullet migrate erp-core@1.0.0
-npx cullet migrate erp-core@1.0.0 --dry-run
-npx cullet migrate erp-core@1.0.0 --apply
-```
-
-Lê o caminho de migração declarado em `meta.json -> deprecated.successor`, mostra o sucessor recomendado, o guia de migração e o codemod associado quando existirem. Sem flags, só imprime o plano. Com `--dry-run`, executa o codemod em modo simulado. Com `--apply`, executa a migração no diretório atual.
-
-`--dry-run` e `--apply` carregam e executam o codemod publicado pelo kit no processo do CLI. Use essas flags apenas para kits e versões cuja origem você confia e revisou.
-
 ### `cullet doctor`
 
 ```bash
