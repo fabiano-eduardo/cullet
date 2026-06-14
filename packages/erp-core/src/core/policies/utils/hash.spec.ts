@@ -112,4 +112,18 @@ describe("PolicyHashing.canonicalJson", () => {
             PolicyHashing.canonicalJson(right),
         );
     });
+
+    it("rejects circular references instead of overflowing the stack", () => {
+        const payload: Record<string, unknown> = { id: "root" };
+        payload.self = payload;
+
+        expect(() => PolicyHashing.canonicalJson(payload)).toThrow(/circular/);
+    });
+
+    it("hashes a payload that reuses the same (acyclic) object twice", () => {
+        const shared = { flag: true };
+        const payload = { left: shared, right: shared };
+
+        expect(() => PolicyHashing.canonicalJson(payload)).not.toThrow();
+    });
 });

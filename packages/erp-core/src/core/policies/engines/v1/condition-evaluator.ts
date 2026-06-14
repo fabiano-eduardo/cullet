@@ -21,6 +21,8 @@ const NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG =
     "NULLISH_NUMERIC_OPERAND_NOT_ALLOWED";
 const NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG = "NULLISH_DATE_OPERAND_NOT_ALLOWED";
 const INVALID_DATE_OPERAND_TAG = "INVALID_DATE_OPERAND";
+const INVALID_NUMERIC_OPERAND_TAG = "INVALID_NUMERIC_OPERAND";
+const INVALID_SET_OPERAND_TAG = "INVALID_SET_OPERAND";
 const EMPTY_OR_CONDITION_TAG = "EMPTY_OR_CONDITION";
 const EMPTY_AND_CONDITION_TAG = "EMPTY_AND_CONDITION";
 const ISO_8601_UTC_DATE_PATTERN =
@@ -108,6 +110,18 @@ export class ConditionEvaluatorV1 {
         node: ConditionLeafNode,
     ): string {
         return `${INVALID_DATE_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires Date or ISO 8601 UTC string operands`;
+    }
+
+    private static buildInvalidNumericOperandMessage(
+        node: ConditionLeafNode,
+    ): string {
+        return `${INVALID_NUMERIC_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires numeric operands`;
+    }
+
+    private static buildInvalidSetOperandMessage(
+        node: ConditionLeafNode,
+    ): string {
+        return `${INVALID_SET_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires an array operand`;
     }
 
     private static buildEmptyOrConditionMessage(): string {
@@ -210,6 +224,56 @@ export class ConditionEvaluatorV1 {
             this.buildReport({
                 level: "error",
                 tag: INVALID_DATE_OPERAND_TAG,
+                message,
+                details: {
+                    field: node.field,
+                    op: node.op,
+                    actual,
+                    expected: node.value,
+                    node,
+                },
+            }),
+        );
+
+        return Result.err(message);
+    }
+
+    private reportInvalidNumericOperand(
+        node: ConditionLeafNode,
+        actual: unknown,
+    ): Result<boolean, string> {
+        const message =
+            ConditionEvaluatorV1.buildInvalidNumericOperandMessage(node);
+
+        this.options.reporter.error(
+            this.buildReport({
+                level: "error",
+                tag: INVALID_NUMERIC_OPERAND_TAG,
+                message,
+                details: {
+                    field: node.field,
+                    op: node.op,
+                    actual,
+                    expected: node.value,
+                    node,
+                },
+            }),
+        );
+
+        return Result.err(message);
+    }
+
+    private reportInvalidSetOperand(
+        node: ConditionLeafNode,
+        actual: unknown,
+    ): Result<boolean, string> {
+        const message =
+            ConditionEvaluatorV1.buildInvalidSetOperandMessage(node);
+
+        this.options.reporter.error(
+            this.buildReport({
+                level: "error",
+                tag: INVALID_SET_OPERAND_TAG,
                 message,
                 details: {
                     field: node.field,
@@ -406,6 +470,19 @@ export class ConditionEvaluatorV1 {
             return Result.err(message);
         }
 
+        // null + allowNull: a relational comparison against a missing value
+        // never matches.
+        if (actual === null) {
+            return Result.ok(false);
+        }
+
+        // Both operands must be numbers. A present but wrong-typed operand is a
+        // context/configuration error, surfaced like the date path instead of
+        // silently collapsing to "no match".
+        if (typeof actual !== "number" || typeof node.value !== "number") {
+            return this.reportInvalidNumericOperand(node, actual);
+        }
+
         return Result.ok(this.evaluateOperator(actual, node.op, node.value));
     }
 
@@ -441,6 +518,13 @@ export class ConditionEvaluatorV1 {
                 }
 
                 return this.evaluateNumericRelationalNode(node, actual);
+            }
+
+            if (
+                (node.op === "in" || node.op === "notIn") &&
+                !Array.isArray(node.value)
+            ) {
+                return this.reportInvalidSetOperand(node, actual);
             }
 
             return Result.ok(

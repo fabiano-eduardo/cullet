@@ -6,7 +6,8 @@
 // severity) is unchanged.
 
 import { readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
+import { collectFileExports } from "./kit-ast.mjs";
 import {
     collectModuleSpecifiers,
     parseTsSource,
@@ -82,6 +83,119 @@ async function resolveEntryPointPath(kit, entryPoint) {
     }
 
     return join(kit.sourceDir, entryPoint);
+}
+
+// Source extensions tsdown compiles from. Kits import with `.js`/extensionless
+// specifiers but ship `.ts`, so a specifier maps to one of these on disk.
+const MODULE_SOURCE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts"];
+
+// Candidate source paths for a module specifier, in resolution order: the file
+// itself (`<base>.ts`, …) then a directory barrel (`<base>/index.ts`, …). The
+// `.js`/`.mjs`/`.cjs` suffix kits use in import paths is mapped back to source.
+function moduleSourceCandidates(spec) {
+    const base = spec.replace(/\.(?:js|mjs|cjs)$/u, "");
+    return [
+        ...MODULE_SOURCE_EXTENSIONS.map((ext) => `${base}${ext}`),
+        ...MODULE_SOURCE_EXTENSIONS.map((ext) => `${base}/index${ext}`),
+    ];
+}
+
+// Resolve a *relative* module specifier to an existing source file, or null.
+// Bare/external specifiers (e.g. "zod") return null — they cannot be read from
+// the kit's source tree.
+async function resolveRelativeModule(fromDir, spec) {
+    if (!spec.startsWith(".")) return null;
+    for (const candidate of moduleSourceCandidates(spec)) {
+        const resolved = join(fromDir, candidate);
+        if (await exists(resolved)) return resolved;
+    }
+    return null;
+}
+
+// Walk the re-export graph from `entryPath`, collecting every exported name.
+// `hadUnresolvedStar` is true when an `export *` pointed at a specifier we
+// could not read (an external package, or a missing file): the real surface is
+// then a superset of what we collected, so a name's absence cannot be proven.
+async function collectSurfaceExports(entryPath) {
+    const names = new Set();
+    const visited = new Set();
+    const queue = [entryPath];
+    let hadUnresolvedStar = false;
+
+    while (queue.length > 0) {
+        const filePath = queue.pop();
+        if (visited.has(filePath)) continue;
+        visited.add(filePath);
+
+        let sourceText;
+        try {
+            sourceText = await readFile(filePath, "utf8");
+        } catch {
+            hadUnresolvedStar = true;
+            continue;
+        }
+
+        const { names: fileNames, starReexports } = collectFileExports(
+            parseTsSource(filePath, sourceText),
+        );
+        for (const name of fileNames) names.add(name);
+
+        for (const spec of starReexports) {
+            const resolved = await resolveRelativeModule(
+                dirname(filePath),
+                spec,
+            );
+            if (resolved === null) {
+                hadUnresolvedStar = true;
+                continue;
+            }
+            queue.push(resolved);
+        }
+    }
+
+    return { names, hadUnresolvedStar };
+}
+
+// Enforce that every symbol in meta.json.exports is actually exported by the
+// kit's entryPoint surface. `exports` is a *curated* headline subset (it need
+// not be exhaustive), but it must not promise a symbol the kit does not ship —
+// otherwise the field silently rots. Provable absence is an error; when an
+// `export *` target could not be resolved from source the surface is a
+// superset we cannot fully see, so we warn instead of erroring (no false
+// positives). No-op for kits without an entryPoint or without declared exports.
+export async function checkDeclaredExports(kit, meta, findings) {
+    const declared = meta.exports;
+    if (!Array.isArray(declared) || declared.length === 0) return;
+    if (typeof meta.entryPoint !== "string") return;
+
+    const entryPath = await resolveEntryPointPath(kit, meta.entryPoint);
+    // A missing entryPoint is already reported by checkExistence; don't
+    // double-report it as a pile of "export not found" findings.
+    if (!(await exists(entryPath))) return;
+
+    const metaRel = relative(kit.packageDir, kit.metaPath);
+    const entryRel = relative(kit.packageDir, entryPath);
+    const { names, hadUnresolvedStar } = await collectSurfaceExports(entryPath);
+
+    for (const exported of declared) {
+        if (typeof exported !== "string" || names.has(exported)) continue;
+
+        if (hadUnresolvedStar) {
+            pushFinding(
+                findings,
+                "warn",
+                `meta.json declares export "${exported}" but it could not be confirmed in ${entryRel} (an "export *" target could not be resolved from source)`,
+                metaRel,
+            );
+        } else {
+            pushFinding(
+                findings,
+                "error",
+                `meta.json declares export "${exported}" but ${entryRel} does not export it`,
+                metaRel,
+            );
+        }
+    }
 }
 
 export async function checkExistence(kit, meta, findings) {

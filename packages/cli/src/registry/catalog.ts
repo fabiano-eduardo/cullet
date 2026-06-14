@@ -41,6 +41,7 @@ export {
     getDirectImportPeerDependencies,
     getFullControlDependencies,
     getKitKind,
+    getKitHeadlineExports,
     isToolingKit,
     getCopyDelivery,
     getCopyPlacement,

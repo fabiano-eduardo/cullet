@@ -6,6 +6,7 @@ import {
     getDirectImportPeerDependencies,
     getFullControlDependencies,
     getImportPeerDependencies,
+    getKitHeadlineExports,
     getKitKind,
     isToolingKit,
     kitExposesImport,
@@ -29,6 +30,23 @@ describe("dependency fallbacks from philosophy.externalDeps", () => {
     it("returns an empty list when there is no meta at all", () => {
         expect(getDirectImportPeerDependencies(null)).toEqual([]);
         expect(getFullControlDependencies(undefined)).toEqual([]);
+    });
+});
+
+describe("getKitHeadlineExports", () => {
+    it("returns a defensive copy of the declared exports", () => {
+        const meta: KitMeta = { exports: ["Entity", "ValueObject"] };
+        const result = getKitHeadlineExports(meta);
+
+        expect(result).toEqual(["Entity", "ValueObject"]);
+        result.push("Mutated");
+        expect(meta.exports).toEqual(["Entity", "ValueObject"]);
+    });
+
+    it("returns an empty list when no exports are declared", () => {
+        expect(getKitHeadlineExports({})).toEqual([]);
+        expect(getKitHeadlineExports(null)).toEqual([]);
+        expect(getKitHeadlineExports(undefined)).toEqual([]);
     });
 });
 

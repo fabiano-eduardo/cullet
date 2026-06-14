@@ -61,12 +61,14 @@ Se você estiver abrindo uma nova major de um kit existente, não use o scaffold
 | `philosophy.observability`                    | declare `log-port`, `metric-port` e/ou `trace-port` apenas se o kit realmente expõe essas portas            |
 | `philosophy.externalDeps`                     | allowlist dos imports runtime externos usados pelo lint arquitetural                                        |
 | `docs.context` / `docs.readme`                | caminhos reais dos arquivos markdown                                                                        |
-| `exports`                                     | nomes que o kit promete na superfície pública                                                               |
+| `exports`                                     | subconjunto curado dos nomes em destaque da superfície pública; `validate-kit` exige que cada um exista no `entryPoint` |
 | `deprecated`                                  | `false` para kit ativo; objeto com `since`, `reason` e `successor` estruturado quando houver migração clara |
 
 ### Regras práticas para `exports`
 
-- Liste apenas o que o `index.ts` realmente reexporta.
+- É um subconjunto **curado** dos nomes em destaque — não precisa listar toda a superfície, só o que o consumidor alcança primeiro.
+- `validate-kit` segue o `entryPoint` (inclusive `export *` e barris) e **falha** se um nome declarado aqui não for realmente exportado; assim a lista não mente nem apodrece em silêncio. Se um `export *` apontar para um pacote externo que ele não consegue ler, vira aviso em vez de erro.
+- `cullet info` mostra a lista em "Principais exports", então mantenha-a representativa.
 - Trate a lista como promessa pública: remover nome daqui é breaking change de kit.
 - Se a mudança for incompatível, abra uma nova pasta em `versions/<major>.0.0/`.
 

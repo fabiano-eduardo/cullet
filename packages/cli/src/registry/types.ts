@@ -87,6 +87,12 @@ export interface KitMeta {
         externalDeps?: string[];
         testDeps?: string[];
     };
+    /**
+     * Curated headline exports of an importable kit — a subset of the full
+     * public surface, validated by scripts/validate-kit.mjs and surfaced by
+     * `cullet info`. Absent for copy-only tooling kits.
+     */
+    exports?: string[];
 }
 
 export const KIT_KINDS: ReadonlySet<string> = new Set([

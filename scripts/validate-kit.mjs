@@ -20,6 +20,7 @@ import { validateAgainstSchema } from "./schema-validator.mjs";
 import { exists } from "./kit-lint-helpers.mjs";
 import {
     checkCompatibilityMatrix,
+    checkDeclaredExports,
     checkExistence,
     checkFolderDepth,
     checkKindContract,
@@ -210,6 +211,7 @@ export async function validateKit(kit, schema) {
     if (checkKindContract(kit, meta, findings)) return { kit, findings };
 
     await checkExistence(kit, meta, findings);
+    await checkDeclaredExports(kit, meta, findings);
 
     if (kit.isTooling && (await checkToolingPayload(kit, findings))) {
         return { kit, findings };

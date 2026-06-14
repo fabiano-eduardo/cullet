@@ -7,6 +7,7 @@ import type { JsonSafeRecord, JsonSafeValue } from "../types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NON_SERIALIZABLE_PLACEHOLDER = "[NonSerializable]";
+const CIRCULAR_REFERENCE_PLACEHOLDER = "[Circular]";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal helpers
@@ -18,7 +19,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     return proto === Object.prototype || proto === null;
 }
 
-function sanitizeValue(value: unknown): JsonSafeValue {
+// `seen` tracks the ancestors on the current traversal branch (a DFS path), not
+// every object visited. This collapses true circular references to a placeholder
+// while still serializing the same object referenced more than once across
+// sibling branches (a DAG) — matching `JSON.stringify`, which only rejects
+// cycles, not shared references.
+function sanitizeValue(value: unknown, seen: WeakSet<object>): JsonSafeValue {
     // Null passthrough
     if (value === null) return null;
 
@@ -41,7 +47,11 @@ function sanitizeValue(value: unknown): JsonSafeValue {
 
     // Arrays (recursive)
     if (Array.isArray(value)) {
-        return value.map(sanitizeValue);
+        if (seen.has(value)) return CIRCULAR_REFERENCE_PLACEHOLDER;
+        seen.add(value);
+        const sanitized = value.map((item) => sanitizeValue(item, seen));
+        seen.delete(value);
+        return sanitized;
     }
 
     // Date → placeholder (could also use .toISOString() if preferred)
@@ -55,10 +65,13 @@ function sanitizeValue(value: unknown): JsonSafeValue {
     }
 
     // Plain object (recursive)
+    if (seen.has(value)) return CIRCULAR_REFERENCE_PLACEHOLDER;
+    seen.add(value);
     const result: Record<string, JsonSafeValue> = {};
     for (const [key, val] of Object.entries(value)) {
-        result[key] = sanitizeValue(val);
+        result[key] = sanitizeValue(val, seen);
     }
+    seen.delete(value);
     return result;
 }
 
@@ -72,7 +85,8 @@ function sanitizeValue(value: unknown): JsonSafeValue {
  * **Allowed:** string, number, boolean, null, arrays, and plain objects.
  *
  * **Converted to placeholder:** Date, BigInt, class instances, functions,
- * symbols, undefined.
+ * symbols, undefined, and circular references (which would otherwise make
+ * `JSON.stringify` throw).
  *
  * @throws {TypeError} If `input` is not a plain object at the root level.
  */
@@ -87,7 +101,11 @@ function assertJsonSafeMetadata(input: unknown): JsonSafeRecord {
         );
     }
 
-    return sanitizeValue(input) as JsonSafeRecord;
+    return sanitizeValue(input, new WeakSet<object>()) as JsonSafeRecord;
 }
 
-export { assertJsonSafeMetadata, NON_SERIALIZABLE_PLACEHOLDER };
+export {
+    assertJsonSafeMetadata,
+    CIRCULAR_REFERENCE_PLACEHOLDER,
+    NON_SERIALIZABLE_PLACEHOLDER,
+};
