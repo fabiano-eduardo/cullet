@@ -124,6 +124,63 @@ export function collectExportNames(sourceFile) {
     return [...names];
 }
 
+// Reads a single module's export surface from its AST: the names it exports
+// directly or re-exports by name, plus the specifiers of any `export *`
+// (wildcard) re-export whose names can only be known by following the target.
+// Type-only exports count — a kit may legitimately list a type in
+// meta.json.exports. Pure analysis: resolving wildcards to files needs fs and
+// lives in the validator, not here. Returns `{ names, starReexports }`.
+export function collectFileExports(sourceFile) {
+    const names = new Set(collectExportNames(sourceFile));
+    const starReexports = [];
+
+    for (const stmt of sourceFile.statements) {
+        // Exported enums are not covered by collectExportNames; add them so a
+        // declared export that happens to be an enum still resolves.
+        if (
+            ts.isEnumDeclaration(stmt) &&
+            stmt.modifiers?.some(
+                (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+            )
+        ) {
+            names.add(stmt.name.text);
+            continue;
+        }
+
+        if (!ts.isExportDeclaration(stmt)) continue;
+
+        const { exportClause, moduleSpecifier } = stmt;
+
+        // `export * from "spec"` / `export type * from "spec"` — the names are
+        // unknown until the target is read; record the specifier.
+        if (exportClause === undefined) {
+            if (
+                moduleSpecifier !== undefined &&
+                ts.isStringLiteralLike(moduleSpecifier)
+            ) {
+                starReexports.push(moduleSpecifier.text);
+            }
+            continue;
+        }
+
+        // `export * as ns from "spec"` — the namespace identifier is the export.
+        if (ts.isNamespaceExport(exportClause)) {
+            names.add(exportClause.name.text);
+            continue;
+        }
+
+        // `export { a, b as c }` (local or `from "spec"`): the exported name is
+        // the binding's `name` (the alias after `as`, when present).
+        if (ts.isNamedExports(exportClause)) {
+            for (const element of exportClause.elements) {
+                names.add(element.name.text);
+            }
+        }
+    }
+
+    return { names: [...names], starReexports };
+}
+
 export function getTypeParameterConstraintText(
     classDecl,
     sourceFile,

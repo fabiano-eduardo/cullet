@@ -277,7 +277,11 @@
                 }
             }
         },
-        "exports": { "type": "array", "items": { "type": "string" } },
+        "exports": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Curated headline symbols a consumer reaches for first — a subset of the entryPoint's full public surface, not an exhaustive list. validate-kit enforces that every entry is actually exported by entryPoint (following barrels and `export *`), so the list cannot silently drift or promise a symbol the kit does not ship. `cullet info` shows it under \"Principais exports\". Omit for copy-only tooling kits."
+        },
         "changelog": { "type": "array", "items": { "type": "string" } },
         "deprecated": {
             "description": "false when active. Object form announces deprecation: when, why, and which kit/version supersedes this one.",

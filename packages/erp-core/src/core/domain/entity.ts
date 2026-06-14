@@ -59,6 +59,12 @@ abstract class Entity<TIdentifier> {
     protected markAsModified(updatedAt: Date = new Date()): number {
         assertValidDate("updatedAt", updatedAt);
 
+        if (updatedAt.getTime() < this._createdAt.getTime()) {
+            throw new InvariantViolationException(
+                "updatedAt cannot be earlier than createdAt",
+            );
+        }
+
         this._updatedAt = cloneDate(updatedAt);
         this._aggregateVersion += 1;
 

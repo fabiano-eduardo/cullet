@@ -10,6 +10,7 @@ import {
     getCopyPlacement,
     getDirectImportPeerDependencies,
     getImportPeerDependencies,
+    getKitHeadlineExports,
     isToolingKit,
     kitExposesImport,
     parseKitArg,
@@ -63,6 +64,15 @@ function printCompatibility(meta: KitMeta | null): void {
             console.log(pc.dim(`  ${formatDependency(dependency)}`));
         }
     }
+}
+
+function printHeadlineExports(meta: KitMeta | null): void {
+    const exports = getKitHeadlineExports(meta);
+    if (exports.length === 0) return;
+
+    console.log("");
+    console.log(pc.bold("Principais exports:"));
+    console.log(pc.dim(`  ${exports.join(", ")}`));
 }
 
 function printKitContext(
@@ -256,6 +266,7 @@ export function createInfoCommand(): Command {
                         }
                     } else {
                         printCompatibility(meta);
+                        printHeadlineExports(meta);
                     }
 
                     if (context !== null) {

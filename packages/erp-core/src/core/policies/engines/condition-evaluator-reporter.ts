@@ -10,6 +10,8 @@ export type ConditionEvaluationReportTag =
     | "NULLISH_NUMERIC_OPERAND_NOT_ALLOWED"
     | "NULLISH_DATE_OPERAND_NOT_ALLOWED"
     | "INVALID_DATE_OPERAND"
+    | "INVALID_NUMERIC_OPERAND"
+    | "INVALID_SET_OPERAND"
     | "CONDITION_EVAL_THREW";
 
 export interface ConditionEvaluationReport {

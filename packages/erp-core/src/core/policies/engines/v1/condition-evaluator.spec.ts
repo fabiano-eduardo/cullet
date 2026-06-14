@@ -620,6 +620,86 @@ describe("ConditionEvaluatorV1.evaluate", () => {
         );
     });
 
+    it("returns Result.err when a numeric operator receives a non-numeric actual", () => {
+        const reporter = {
+            warn: vi.fn<(report: ConditionEvaluationReport) => void>(),
+            error: vi.fn<(report: ConditionEvaluationReport) => void>(),
+        };
+        const context: PolicyContext = { amount: "100" };
+        const node: ConditionLeafNode = {
+            field: "amount",
+            op: "gt",
+            value: 50,
+        };
+
+        const result = evaluateCondition(node, context, {
+            reporter,
+            engineVersion: 1,
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe(
+            'INVALID_NUMERIC_OPERAND: "amount" with operator "gt" requires numeric operands',
+        );
+        expect(reporter.warn).not.toHaveBeenCalled();
+        expect(reporter.error).toHaveBeenCalledOnce();
+        expect(reporter.error).toHaveBeenCalledWith(
+            expect.objectContaining({
+                level: "error",
+                tag: "INVALID_NUMERIC_OPERAND",
+                details: {
+                    field: "amount",
+                    op: "gt",
+                    actual: "100",
+                    expected: 50,
+                    node,
+                },
+            }),
+        );
+    });
+
+    it("returns Result.err when the numeric leaf value is not a number", () => {
+        const context: PolicyContext = { amount: 100 };
+        const node: ConditionLeafNode = {
+            field: "amount",
+            op: "gte",
+            value: "50",
+        };
+
+        const result = evaluateCondition(node, context, options);
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toContain("INVALID_NUMERIC_OPERAND");
+    });
+
+    it("returns Result.err when in/notIn receive a non-array operand", () => {
+        const inNode: ConditionLeafNode = {
+            field: "tier",
+            op: "in",
+            value: "gold",
+        };
+        const inResult = evaluateCondition(inNode, { tier: "gold" }, options);
+
+        expect(inResult.isErr()).toBe(true);
+        expect(inResult.errorOrNull()).toBe(
+            'INVALID_SET_OPERAND: "tier" with operator "in" requires an array operand',
+        );
+
+        const notInNode: ConditionLeafNode = {
+            field: "tier",
+            op: "notIn",
+            value: "gold",
+        };
+        const notInResult = evaluateCondition(
+            notInNode,
+            { tier: "bronze" },
+            options,
+        );
+
+        expect(notInResult.isErr()).toBe(true);
+        expect(notInResult.errorOrNull()).toContain("INVALID_SET_OPERAND");
+    });
+
     it("returns Result.err with tag when evaluation throws and reports via the optional reporter", () => {
         const reporter = {
             warn: vi.fn<(report: ConditionEvaluationReport) => void>(),

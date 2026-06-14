@@ -12,16 +12,23 @@ interface ParsedSemver {
 
 function parseSemver(version: string): ParsedSemver {
     const withoutBuild = version.split("+")[0];
-    const [core, preRelease = null] = withoutBuild.split("-") as [
-        string,
-        string | undefined,
-    ];
+
+    // Split on the first hyphen only. A pre-release identifier may itself
+    // contain hyphens (e.g. "1.0.0-x-1"); `split("-")` would drop everything
+    // after the first one and corrupt the comparison.
+    const dashIndex = withoutBuild.indexOf("-");
+    const core =
+        dashIndex === -1 ? withoutBuild : withoutBuild.slice(0, dashIndex);
+    const preRelease =
+        dashIndex === -1 ? null : withoutBuild.slice(dashIndex + 1);
+
     const [major, minor, patch] = core.split(".").map(Number) as [
         number,
         number,
         number,
     ];
-    return { major, minor, patch, preRelease: preRelease ?? null };
+
+    return { major, minor, patch, preRelease };
 }
 
 function comparePreRelease(a: string, b: string): number {

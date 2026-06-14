@@ -123,6 +123,7 @@ describe("parseKitMeta", () => {
                 fullControl: { dependencies: [] },
             },
             delivery: { copy: { placement: ".claude" } },
+            exports: ["Entity", "ValueObject"],
         });
 
         expect(meta).toEqual({
@@ -144,11 +145,22 @@ describe("parseKitMeta", () => {
                     dependencies: [],
                 },
             },
+            exports: ["Entity", "ValueObject"],
         });
     });
 
     it("ignores an unknown kind", () => {
         expect(parseKitMeta({ kind: "plugin" })?.kind).toBeUndefined();
+    });
+
+    it("keeps only string entries in exports and omits an empty list", () => {
+        expect(
+            parseKitMeta({ exports: ["Entity", 42, null, "ValueObject"] })
+                ?.exports,
+        ).toEqual(["Entity", "ValueObject"]);
+        expect(parseKitMeta({ exports: [] })?.exports).toBeUndefined();
+        expect(parseKitMeta({ exports: "Entity" })?.exports).toBeUndefined();
+        expect(parseKitMeta({})?.exports).toBeUndefined();
     });
 });
 

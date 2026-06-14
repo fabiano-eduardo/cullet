@@ -16,7 +16,11 @@ export class PolicyHashing {
         return sha256Hex(input);
     }
 
-    private static assertHashable(value: unknown, path: string): void {
+    private static assertHashable(
+        value: unknown,
+        path: string,
+        seen: WeakSet<object>,
+    ): void {
         if (value === null) {
             return;
         }
@@ -54,22 +58,30 @@ export class PolicyHashing {
             return;
         }
 
+        if (seen.has(value as object)) {
+            throw new TypeError(
+                `canonicalJson does not accept circular references (at ${path})`,
+            );
+        }
+        seen.add(value as object);
+
         if (Array.isArray(value)) {
             value.forEach((item, index) => {
-                PolicyHashing.assertHashable(item, `${path}[${index}]`);
+                PolicyHashing.assertHashable(item, `${path}[${index}]`, seen);
             });
-            return;
+        } else {
+            for (const [key, nested] of Object.entries(
+                value as Record<string, unknown>,
+            )) {
+                PolicyHashing.assertHashable(nested, `${path}.${key}`, seen);
+            }
         }
 
-        for (const [key, nested] of Object.entries(
-            value as Record<string, unknown>,
-        )) {
-            PolicyHashing.assertHashable(nested, `${path}.${key}`);
-        }
+        seen.delete(value as object);
     }
 
     static canonicalJson(value: unknown): string {
-        PolicyHashing.assertHashable(value, "$");
+        PolicyHashing.assertHashable(value, "$", new WeakSet<object>());
 
         return stableStringify(value);
     }

@@ -41,6 +41,16 @@ export function getKitKind(meta: KitMeta | null | undefined): KitKind {
     return meta?.kind ?? DEFAULT_KIT_KIND;
 }
 
+/**
+ * Curated headline exports a kit advertises (a subset of its full public
+ * surface), or `[]` when none are declared. Surfaced by `cullet info`.
+ */
+export function getKitHeadlineExports(
+    meta: KitMeta | null | undefined,
+): string[] {
+    return meta?.exports !== undefined ? [...meta.exports] : [];
+}
+
 /** True when the kit is delivered by copying a payload rather than importing. */
 export function isToolingKit(meta: KitMeta | null | undefined): boolean {
     return getKitKind(meta) === "tooling";

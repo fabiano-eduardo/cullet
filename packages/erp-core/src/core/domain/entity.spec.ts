@@ -209,6 +209,29 @@ describe("Entity", () => {
             );
         });
 
+        it("throws InvariantViolationException when updatedAt is earlier than createdAt", () => {
+            const entity = new TestEntity(
+                makeState({
+                    createdAt: new Date("2024-06-01T00:00:00.000Z"),
+                    updatedAt: new Date("2024-06-01T00:00:00.000Z"),
+                }),
+            );
+
+            expect(() =>
+                entity.modify(new Date("2024-01-01T00:00:00.000Z")),
+            ).toThrow(InvariantViolationException);
+        });
+
+        it("accepts updatedAt equal to createdAt", () => {
+            const createdAt = new Date("2024-06-01T00:00:00.000Z");
+            const entity = new TestEntity(
+                makeState({ createdAt, updatedAt: createdAt }),
+            );
+
+            expect(() => entity.modify(createdAt)).not.toThrow();
+            expect(entity.updatedAt.getTime()).toBe(createdAt.getTime());
+        });
+
         it("returns a clone of updatedAt (protection against mutation)", () => {
             const entity = new TestEntity(makeState());
             const updateDate = new Date("2025-01-01T00:00:00.000Z");

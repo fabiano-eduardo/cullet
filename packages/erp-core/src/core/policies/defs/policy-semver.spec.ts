@@ -55,4 +55,12 @@ describe("comparePolicySemver", () => {
             comparePolicySemver("1.0.0-beta.1", "1.0.0-beta"),
         ).toBeGreaterThan(0);
     });
+
+    it("preserves hyphenated pre-release identifiers when comparing", () => {
+        expect(comparePolicySemver("1.0.0-x-1", "1.0.0-x-2")).toBeLessThan(0);
+        expect(comparePolicySemver("1.0.0-x-2", "1.0.0-x-1")).toBeGreaterThan(
+            0,
+        );
+        expect(comparePolicySemver("1.0.0-alpha-1", "1.0.0-alpha-1")).toBe(0);
+    });
 });

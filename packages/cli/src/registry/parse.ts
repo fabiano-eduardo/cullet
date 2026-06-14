@@ -356,6 +356,11 @@ export function parseKitMeta(parsed: unknown): KitMeta | null {
               (entry): entry is string => typeof entry === "string",
           )
         : undefined;
+    const headlineExports = Array.isArray(parsed.exports)
+        ? parsed.exports.filter(
+              (entry): entry is string => typeof entry === "string",
+          )
+        : undefined;
 
     const meta: KitMeta = {};
     if (typeof parsed.schemaVersion === "string") {
@@ -375,6 +380,9 @@ export function parseKitMeta(parsed: unknown): KitMeta | null {
             meta.philosophy.externalDeps = externalDeps;
         }
         if (testDeps !== undefined) meta.philosophy.testDeps = testDeps;
+    }
+    if (headlineExports !== undefined && headlineExports.length > 0) {
+        meta.exports = headlineExports;
     }
     return meta;
 }
