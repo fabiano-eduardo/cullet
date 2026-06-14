@@ -22,6 +22,7 @@ const NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG =
 const NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG = "NULLISH_DATE_OPERAND_NOT_ALLOWED";
 const INVALID_DATE_OPERAND_TAG = "INVALID_DATE_OPERAND";
 const EMPTY_OR_CONDITION_TAG = "EMPTY_OR_CONDITION";
+const EMPTY_AND_CONDITION_TAG = "EMPTY_AND_CONDITION";
 const ISO_8601_UTC_DATE_PATTERN =
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -111,6 +112,10 @@ export class ConditionEvaluatorV1 {
 
     private static buildEmptyOrConditionMessage(): string {
         return `${EMPTY_OR_CONDITION_TAG}: OR nodes must contain at least one child condition`;
+    }
+
+    private static buildEmptyAndConditionMessage(): string {
+        return `${EMPTY_AND_CONDITION_TAG}: AND nodes must contain at least one child condition`;
     }
 
     private static parseComparableDate(
@@ -486,6 +491,12 @@ export class ConditionEvaluatorV1 {
         }
 
         if (ConditionEvaluatorV1.isAndNode(node)) {
+            if (node.and.length === 0) {
+                return Result.err(
+                    ConditionEvaluatorV1.buildEmptyAndConditionMessage(),
+                );
+            }
+
             let lastTracedChild: TracedConditionEvaluation | null = null;
 
             for (const [index, child] of node.and.entries()) {
