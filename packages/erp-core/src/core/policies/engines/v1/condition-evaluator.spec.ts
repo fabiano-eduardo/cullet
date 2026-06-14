@@ -270,6 +270,15 @@ describe("ConditionEvaluatorV1.evaluate", () => {
         );
     });
 
+    it("returns Result.err when AND receives no children", () => {
+        const result = evaluateCondition({ and: [] }, {}, options);
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe(
+            "EMPTY_AND_CONDITION: AND nodes must contain at least one child condition",
+        );
+    });
+
     it("evaluates NOT", () => {
         const context: PolicyContext = { isDebtPrescribed: false };
         const node = {
