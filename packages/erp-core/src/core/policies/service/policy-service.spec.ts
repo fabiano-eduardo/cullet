@@ -739,4 +739,52 @@ describe("PolicyService", () => {
             cause: 'Policy variant not found in catalog: "financial.billing.psp_selection" (COMPUTE, computeEngineVersion=1, payloadSchemaVersion=2)',
         });
     });
+
+    it("returns INVALID_POLICY_KEY when the requested policyKey is malformed", async () => {
+        const gateEngines = new GateEngineRegistry();
+        gateEngines.register(makeGateEngine(1, "ALLOW"));
+
+        const service = buildService(makeGateDefinition(1), gateEngines);
+        const result = await service.evaluate({
+            decisionId: asPolicyDecisionId("decision-invalid-key"),
+            policyKey: "not-a-valid-key",
+            scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
+            contextVersion: 1,
+            seed: makeSeed({
+                now: new Date("2026-01-01T00:00:00Z"),
+            }),
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toMatchObject({
+            kind: "INVALID_POLICY_KEY",
+            rawPolicyKey: "not-a-valid-key",
+        });
+    });
+
+    it("returns POLICY_DEFINITION_NOT_FOUND when no published definition is effective at asOf", async () => {
+        const gateEngines = new GateEngineRegistry();
+        gateEngines.register(makeGateEngine(1, "ALLOW"));
+
+        const service = buildService(makeGateDefinition(1), gateEngines);
+        // asOf derives from seed.now; 2020 predates the definition's
+        // effectiveFrom (2024-01-01), so no candidate is eligible while the
+        // policy itself is still registered in the catalog.
+        const result = await service.evaluate({
+            decisionId: asPolicyDecisionId("decision-no-effective-definition"),
+            policyKey: "financial.charges.charge_eligibility",
+            scopeChain: [{ level: "GLOBAL", tenantId: null, schoolId: null }],
+            contextVersion: 1,
+            seed: makeSeed({
+                now: new Date("2020-01-01T00:00:00Z"),
+            }),
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toMatchObject({
+            kind: "POLICY_DEFINITION_NOT_FOUND",
+            policyKey: "financial.charges.charge_eligibility",
+            contextVersion: 1,
+        });
+    });
 });

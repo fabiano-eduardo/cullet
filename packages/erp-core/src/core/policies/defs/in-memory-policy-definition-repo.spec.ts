@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { asPolicyDefinitionId, asSchoolId, asTenantId } from "../policy-ids";
 import { InMemoryPolicyDefinitionRepository } from "./in-memory-policy-definition-repo";
 import { PolicyDefinition } from "./policy-definition";
+import type { GatePolicyDefinitionInput } from "./policy-definition";
 
 function makeDefinition(
     id: string,
@@ -180,5 +181,130 @@ describe("InMemoryPolicyDefinitionRepository", () => {
         expect(candidates.map((candidate) => candidate.id)).toEqual([
             "enabled-definition",
         ]);
+    });
+
+    describe("eligibility filtering", () => {
+        const POLICY_KEY = "financial.charges.charge_eligibility" as const;
+
+        function gate(
+            overrides: Partial<
+                GatePolicyDefinitionInput<typeof POLICY_KEY>
+            > = {},
+        ): PolicyDefinition<typeof POLICY_KEY> {
+            return PolicyDefinition.gate({
+                id: asPolicyDefinitionId("definition-under-test"),
+                policyKey: POLICY_KEY,
+                policyVersion: "1.0.0",
+                gateEngineVersion: 1,
+                payloadSchemaVersion: 1,
+                contextVersionMin: 1,
+                contextVersionMax: 1,
+                status: "PUBLISHED",
+                scope: { level: "GLOBAL", tenantId: null, schoolId: null },
+                effectiveFrom: new Date("2026-01-01T00:00:00.000Z"),
+                effectiveTo: null,
+                priority: 10,
+                payloadJson: {
+                    condition: {
+                        field: "student.contractStatus",
+                        op: "eq",
+                        value: "ACTIVE",
+                    },
+                },
+                payloadHash: "definition-under-test-hash",
+                createdAt: new Date("2025-12-01T00:00:00.000Z"),
+                publishedAt: new Date("2025-12-02T00:00:00.000Z"),
+                ...overrides,
+            });
+        }
+
+        function findGlobal(repository: InMemoryPolicyDefinitionRepository) {
+            return repository.findCandidates({
+                policyKey: POLICY_KEY,
+                kind: "GATE",
+                asOf: new Date("2026-02-01T00:00:00.000Z"),
+                contextVersion: 1,
+                scopeChain: [
+                    { level: "GLOBAL", tenantId: null, schoolId: null },
+                ],
+            });
+        }
+
+        it("returns no candidates when the policyKey is not indexed", () => {
+            const repository = new InMemoryPolicyDefinitionRepository([gate()]);
+
+            const candidates = repository.findCandidates({
+                policyKey: "financial.billing.psp_selection",
+                kind: "GATE",
+                asOf: new Date("2026-02-01T00:00:00.000Z"),
+                contextVersion: 1,
+                scopeChain: [
+                    { level: "GLOBAL", tenantId: null, schoolId: null },
+                ],
+            });
+
+            expect(candidates).toEqual([]);
+        });
+
+        it("excludes definitions that are not PUBLISHED", () => {
+            const repository = new InMemoryPolicyDefinitionRepository([
+                gate({ status: "DRAFT" }),
+            ]);
+
+            expect(findGlobal(repository)).toEqual([]);
+        });
+
+        it("excludes definitions whose effectiveFrom is after asOf", () => {
+            const repository = new InMemoryPolicyDefinitionRepository([
+                gate({ effectiveFrom: new Date("2030-01-01T00:00:00.000Z") }),
+            ]);
+
+            expect(findGlobal(repository)).toEqual([]);
+        });
+
+        it("excludes definitions whose effectiveTo is at or before asOf", () => {
+            const repository = new InMemoryPolicyDefinitionRepository([
+                gate({ effectiveTo: new Date("2025-06-01T00:00:00.000Z") }),
+            ]);
+
+            expect(findGlobal(repository)).toEqual([]);
+        });
+
+        it("excludes definitions outside the requested contextVersion range", () => {
+            const belowMin = new InMemoryPolicyDefinitionRepository([
+                gate({ contextVersionMin: 5, contextVersionMax: 9 }),
+            ]);
+            const aboveMax = new InMemoryPolicyDefinitionRepository([
+                gate({ contextVersionMin: 1, contextVersionMax: 1 }),
+            ]);
+
+            expect(findGlobal(belowMin)).toEqual([]);
+            expect(
+                aboveMax.findCandidates({
+                    policyKey: POLICY_KEY,
+                    kind: "GATE",
+                    asOf: new Date("2026-02-01T00:00:00.000Z"),
+                    contextVersion: 3,
+                    scopeChain: [
+                        { level: "GLOBAL", tenantId: null, schoolId: null },
+                    ],
+                }),
+            ).toEqual([]);
+        });
+
+        it("excludes definitions whose scope does not match the chain", () => {
+            const repository = new InMemoryPolicyDefinitionRepository([
+                gate({
+                    scope: {
+                        level: "SCHOOL",
+                        tenantId: asTenantId("tenant-1"),
+                        schoolId: asSchoolId("school-1"),
+                    },
+                }),
+            ]);
+
+            // Chain only offers GLOBAL, so the SCHOOL-scoped definition is dropped.
+            expect(findGlobal(repository)).toEqual([]);
+        });
     });
 });
