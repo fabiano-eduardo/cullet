@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.8
+
+### Patch Changes
+
+- 28efca8: Remove migrate command documentation form README
+
 ## 0.5.7
 
 ### Patch Changes
