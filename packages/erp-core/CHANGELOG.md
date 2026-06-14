@@ -1,5 +1,15 @@
 # @cullet/erp-core
 
+## 1.0.4
+
+### Patch Changes
+
+- bd5111e: fix(erp-core): return an error when an AND node has no child conditions
+
+    `ConditionEvaluatorV1` now rejects empty `and` arrays the same way it already
+    rejects empty `or` arrays, returning a tagged `EMPTY_AND_CONDITION` error
+    instead of silently evaluating to `true`.
+
 ## 1.0.3
 
 ### Patch Changes
