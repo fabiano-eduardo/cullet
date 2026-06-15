@@ -1,11 +1,6 @@
 {
     "dummy-api": {
-        "versions": [
-            "1.0.0",
-            "1.0.1",
-            "1.0.2",
-            "1.0.3"
-        ],
+        "versions": ["1.0.0", "1.0.1", "1.0.2", "1.0.3"],
         "latest": "1.0.3",
         "description": "Kit de exemplo minimo: esqueleto de core em clean architecture (camadas domain, application, errors e result) como referencia de estrutura para novos kits.",
         "npmName": "@cullet/dummy-api"
@@ -22,7 +17,7 @@
             "1.0.7"
         ],
         "latest": "1.0.7",
-        "description": "Core ERP com clean architecture, temporalidade, policies e rule sets",
+        "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
         "npmName": "@cullet/erp-core"
     }
 }

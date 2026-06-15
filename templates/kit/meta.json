@@ -5,7 +5,7 @@
   "description": "__KIT_DESCRIPTION__",
   "compatibility": {
     "engines": {
-      "node": ">=18",
+      "node": ">=18.17",
       "typescript": ">=5.0.0"
     },
     "directImport": {

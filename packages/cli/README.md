@@ -203,7 +203,7 @@ Essa API retorna o registry tipado (`loadRegistry`), o resumo de cada kit (`list
 
 ## Kits atuais
 
-- [`erp-core`](../erp-core/README.md) — núcleo de ERP com clean architecture, temporalidade, policies e rule sets. Publicado como `@cullet/erp-core`.
+- [`erp-core`](../erp-core/README.md) — núcleo arquitetural para ERP em TypeScript: entidades, value objects, erros tipados e policies declaráveis sobre clean architecture. Publicado como `@cullet/erp-core`.
 - [`dummy-api`](../dummy-api/README.md) — kit de exemplo mínimo: esqueleto de core em clean architecture como referência de estrutura para novos kits. Publicado como `@cullet/dummy-api`.
 
 ---

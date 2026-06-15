@@ -2,10 +2,10 @@
     "schemaVersion": "2",
     "name": "erp-core",
     "version": "1.0.7",
-    "description": "Core ERP com clean architecture, policies, erros e services de aplicação.",
+    "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "compatibility": {
         "engines": {
-            "node": ">=18",
+            "node": ">=18.17",
             "typescript": ">=5.0.0"
         },
         "directImport": {
@@ -65,7 +65,13 @@
         "mapPolicyEvaluationError"
     ],
     "changelog": [
-        "1.0.0 - Registro inicial do boilerplate com primitives tipadas para import direto, CLI e fluxo full-control."
+        "1.0.0 - Registro inicial do boilerplate com primitives tipadas para import direto, CLI e fluxo full-control.",
+        "1.0.1 - Corrige exemplos de consumo no README: import direto usa o nome npm com escopo e o argumento do `cullet fc` é o nome do kit no registry.",
+        "1.0.2 - Declara explicitamente os lints de arquitetura em camadas; o catálogo passa a ser neutro de arquitetura.",
+        "1.0.3 - Ajuste de descrição do pacote.",
+        "1.0.4 - `ConditionEvaluatorV1` rejeita `and` vazio com `EMPTY_AND_CONDITION` em vez de avaliar como `true`.",
+        "1.0.5 - Amplia a cobertura de testes internos (mapeamento de erros de policy, catálogos de erro, `AppError.toJSON`, repositório de definitions); sem mudanças de API pública.",
+        "1.0.6 - Endurece utilitários recursivos (json-safe, deepFreeze, hashing) contra ciclos e aperta contratos de corretude (semver, `Entity`, condition evaluator)."
     ],
     "deprecated": false
 }
