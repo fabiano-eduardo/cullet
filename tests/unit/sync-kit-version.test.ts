@@ -4,8 +4,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
     compareSemver,
+    deriveChangelogFromMd,
     registryPathFor,
     renderVersionModule,
+    setJsonChangelogField,
     setJsonVersionField,
     syncKitVersions,
 } from "../../scripts/sync-kit-version.mjs";
@@ -24,6 +26,8 @@ async function writeKit(options: {
     name: string;
     packageVersion: string;
     metaVersion: string;
+    metaChangelog?: string[];
+    changelogMd?: string;
 }) {
     const kitRoot = join(packagesRoot, options.name);
     await mkdir(join(kitRoot, "src"), { recursive: true });
@@ -49,12 +53,22 @@ async function writeKit(options: {
                 name: options.name,
                 version: options.metaVersion,
                 description: "kit de teste para sync de versao",
+                ...(options.metaChangelog !== undefined
+                    ? { changelog: options.metaChangelog }
+                    : {}),
             },
             null,
-            2,
+            4,
         ) + "\n",
         "utf8",
     );
+    if (options.changelogMd !== undefined) {
+        await writeFile(
+            join(kitRoot, "CHANGELOG.md"),
+            options.changelogMd,
+            "utf8",
+        );
+    }
     // Write the full version module (header + export) so an "aligned" fixture
     // matches what the script expects byte-for-byte.
     await writeFile(
@@ -231,6 +245,80 @@ describe("syncKitVersions registry projection", () => {
     });
 });
 
+describe("syncKitVersions changelog projection", () => {
+    const changelogMd = [
+        "# @cullet/x-kit",
+        "",
+        "## 1.0.2",
+        "",
+        "### Patch Changes",
+        "",
+        "- abc1234: Second change.",
+        "",
+        "## 1.0.1",
+        "",
+        "### Patch Changes",
+        "",
+        "- def5678: First change.",
+        "",
+    ].join("\n");
+
+    it("projects meta.json changelog from CHANGELOG.md", async () => {
+        const kitRoot = await writeKit({
+            name: "x-kit",
+            packageVersion: "1.0.2",
+            metaVersion: "1.0.2",
+            metaChangelog: ["1.0.0 - Initial scaffold."],
+            changelogMd,
+        });
+
+        await syncKitVersions(packagesRoot);
+
+        const meta = JSON.parse(
+            await readFile(join(kitRoot, "meta.json"), "utf8"),
+        );
+        expect(meta.changelog).toEqual([
+            "1.0.1 - First change.",
+            "1.0.2 - Second change.",
+        ]);
+    });
+
+    it("reports changelog drift in check mode without rewriting meta.json", async () => {
+        const kitRoot = await writeKit({
+            name: "x-kit",
+            packageVersion: "1.0.2",
+            metaVersion: "1.0.2",
+            metaChangelog: ["1.0.0 - Initial scaffold."],
+            changelogMd,
+        });
+
+        const { drift } = await syncKitVersions(packagesRoot, { check: true });
+
+        expect(drift.some((d) => d.path.endsWith("meta.json"))).toBe(true);
+        const meta = JSON.parse(
+            await readFile(join(kitRoot, "meta.json"), "utf8"),
+        );
+        expect(meta.changelog).toEqual(["1.0.0 - Initial scaffold."]); // untouched
+    });
+
+    it("leaves a kit without a changelog field untouched", async () => {
+        const kitRoot = await writeKit({
+            name: "x-kit",
+            packageVersion: "1.0.1",
+            metaVersion: "1.0.1",
+            changelogMd,
+        });
+
+        const { drift } = await syncKitVersions(packagesRoot);
+
+        expect(drift).toEqual([]);
+        const meta = JSON.parse(
+            await readFile(join(kitRoot, "meta.json"), "utf8"),
+        );
+        expect(meta.changelog).toBeUndefined();
+    });
+});
+
 describe("compareSemver", () => {
     it("orders core versions and treats prerelease as lower than the final", () => {
         const sorted = [
@@ -261,5 +349,71 @@ describe("setJsonVersionField", () => {
         expect(result).toContain('"schemaVersion": "3"');
         expect(result).toContain('"version": "1.0.1"');
         expect(result).not.toContain('"version": "1.0.0"');
+    });
+});
+
+describe("deriveChangelogFromMd", () => {
+    it("derives one entry per version, ascending, stripping the changeset id and trailing colon", () => {
+        const md = [
+            "# @cullet/x",
+            "## 1.1.0",
+            "- 9f8e7d6: fix(scope): keep inner colons, drop trailing ones:",
+            "    - ignored sub-bullet",
+            "## 1.0.0",
+            "- abc1234: First release.",
+        ].join("\n");
+
+        expect(deriveChangelogFromMd(md)).toEqual([
+            "1.0.0 - First release.",
+            "1.1.0 - fix(scope): keep inner colons, drop trailing ones",
+        ]);
+    });
+
+    it("returns an empty array when there are no version sections", () => {
+        expect(deriveChangelogFromMd("# title\n\nno versions here")).toEqual(
+            [],
+        );
+    });
+});
+
+describe("setJsonChangelogField", () => {
+    it("rewrites an inline changelog array without reformatting other arrays", () => {
+        const json = `{
+    "name": "x",
+    "tags": ["a", "b"],
+    "changelog": ["1.0.0 - old."],
+    "deprecated": false
+}
+`;
+        const result = setJsonChangelogField(json, [
+            "1.0.1 - new one.",
+            "1.0.2 - another.",
+        ]);
+
+        const parsed = JSON.parse(result);
+        expect(parsed.changelog).toEqual([
+            "1.0.1 - new one.",
+            "1.0.2 - another.",
+        ]);
+        expect(result).toContain('"tags": ["a", "b"]'); // short array stays inline
+        expect(result).toContain('"deprecated": false');
+    });
+
+    it("preserves entries that contain brackets", () => {
+        const json = `{
+    "changelog": ["1.0.0 - old."]
+}
+`;
+        const result = setJsonChangelogField(json, [
+            "1.0.1 - has [brackets] inside.",
+        ]);
+        expect(JSON.parse(result).changelog).toEqual([
+            "1.0.1 - has [brackets] inside.",
+        ]);
+    });
+
+    it("returns the text unchanged when there is no changelog field", () => {
+        const json = `{ "name": "x" }`;
+        expect(setJsonChangelogField(json, ["1.0.0 - x."])).toBe(json);
     });
 });
