@@ -65,13 +65,15 @@
         "mapPolicyEvaluationError"
     ],
     "changelog": [
-        "1.0.0 - Registro inicial do boilerplate com primitives tipadas para import direto, CLI e fluxo full-control.",
-        "1.0.1 - Corrige exemplos de consumo no README: import direto usa o nome npm com escopo e o argumento do `cullet fc` é o nome do kit no registry.",
-        "1.0.2 - Declara explicitamente os lints de arquitetura em camadas; o catálogo passa a ser neutro de arquitetura.",
-        "1.0.3 - Ajuste de descrição do pacote.",
-        "1.0.4 - `ConditionEvaluatorV1` rejeita `and` vazio com `EMPTY_AND_CONDITION` em vez de avaliar como `true`.",
-        "1.0.5 - Amplia a cobertura de testes internos (mapeamento de erros de policy, catálogos de erro, `AppError.toJSON`, repositório de definitions); sem mudanças de API pública.",
-        "1.0.6 - Endurece utilitários recursivos (json-safe, deepFreeze, hashing) contra ciclos e aperta contratos de corretude (semver, `Entity`, condition evaluator)."
+        "1.0.1 - Corrige os exemplos de consumo nos READMEs dos kits: o import direto usa o nome npm com escopo (`@cullet/<kit>`) e o argumento do `npx cullet fc` é o nome do kit no registry (`erp-core`), não o nome com escopo. Adiciona a nota explicando o que o `fc` faz no `erp-core`.",
+        "1.0.2 - erp-core declara explicitamente os lints de arquitetura em camadas; o catálogo passa a ser neutro de arquitetura.",
+        "1.0.3 - Reescreve a descrição do pacote para refletir a entrega dupla do cullet — kits de biblioteca importáveis e kits de tooling copy-first via CLI — e a deixa consistente entre package.json e a saída do `cullet --help`. Só cullet entra (o package.json raiz é private, não publica). O reformat não precisa de changeset: a tarball publicada leva dist/ buildado, cuja saída não muda com a reformatação do src/.",
+        "1.0.4 - fix(erp-core): return an error when an AND node has no child conditions",
+        "1.0.5 - Expand internal test coverage for previously untested or thinly-tested units: policy error mapping and policy-evaluation error kinds (`INVALID_POLICY_KEY`, `POLICY_DEFINITION_NOT_FOUND`), the conflict/serialization/idempotency error catalogs, `AppError.toJSON`, `RequestedBy`, `PolicyKey`, policy semver comparison, and the in-memory policy definition repository's eligibility filtering. No runtime or public API changes — spec files are excluded from the published package.",
+        "1.0.6 - Harden recursive utilities and tighten a few correctness contracts",
+        "1.0.7 - Make the kit source nodenext-safe so the full-control copy (`npx cullet fc erp-core`) compiles and runs beyond a bundler.",
+        "1.0.8 - Align kit metadata with what the package actually ships and fix doc/packaging gaps. No runtime or public API changes.",
+        "1.0.9 - Harden erp-core invariants and error serialization"
     ],
     "deprecated": false
 }

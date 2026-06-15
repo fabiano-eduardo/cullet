@@ -5,6 +5,11 @@
 //   - packages/<kit>/meta.json             (campo "version" do contrato do kit)
 //   - packages/cli/registry/index.json     (versions/latest do catalogo da CLI)
 //
+// Tambem projeta o array "changelog" do meta.json a partir do CHANGELOG.md
+// (a fonte da verdade gerida pelo Changesets), para o changelog do contrato do
+// kit nao defasar a cada release — como ja acontecera (faltavam 1.0.7/1.0.8 no
+// erp-core e 1.0.1-1.0.3 no dummy-api).
+//
 // O entry de cada kit (src/index.ts) le a versao de ./version.js em vez de
 // `../package.json`. Isso mantem o src/ auto-contido: a copia full-control
 // (que copia apenas o conteudo de src/) compila sem depender de um arquivo
@@ -129,6 +134,93 @@ export async function collectKitPackageEntries(
 // minusculo logo apos), nem "since"/engines, que usam outras chaves.
 export function setJsonVersionField(jsonText, version) {
     return jsonText.replace(/("version"\s*:\s*")[^"]*(")/, `$1${version}$2`);
+}
+
+function normalizeChangelogSummary(text) {
+    return text
+        .replace(/\s+/g, " ")
+        .replace(/\s*:+\s*$/, "")
+        .trim();
+}
+
+// Deriva o array "changelog" do meta.json a partir do CHANGELOG.md gerido pelo
+// Changesets. Para cada secao "## x.y.z" usa a primeira linha de bullet
+// ("- <id>: <resumo>") como resumo de uma linha, removendo o prefixo do id do
+// changeset e dois-pontos finais. O resultado fica em ordem crescente de versao
+// (o CHANGELOG.md lista da mais nova para a mais antiga).
+export function deriveChangelogFromMd(changelogText) {
+    const lines = String(changelogText).split(/\r?\n/);
+    const entries = [];
+
+    for (const line of lines) {
+        const header = /^##\s+(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$/.exec(
+            line,
+        );
+        if (header) {
+            entries.push({ version: header[1], summary: null });
+            continue;
+        }
+
+        const current = entries[entries.length - 1];
+        if (current === undefined || current.summary !== null) continue;
+
+        const bullet =
+            /^-\s+(?:[0-9A-Za-z][0-9A-Za-z._-]*:\s+)?(.*\S)\s*$/.exec(line);
+        if (bullet) {
+            current.summary = normalizeChangelogSummary(bullet[1]);
+        }
+    }
+
+    return entries
+        .filter((entry) => entry.summary)
+        .reverse()
+        .map((entry) => `${entry.version} - ${entry.summary}`);
+}
+
+// Substitui in-place apenas o array "changelog" no texto do JSON, preservando o
+// resto byte a byte (mesma estrategia de setJsonVersionField: nao reserializa o
+// objeto inteiro, para nao reformatar outros arrays curtos que o Prettier
+// mantem inline). Varre o array com um scanner que respeita strings e escapes,
+// para funcionar tanto com arrays inline (curtos) quanto multi-linha, e com
+// entradas que contenham colchetes. Assume 4 espacos por nivel de indentacao
+// (prettier.config.mjs) e so atua quando o campo ja existe.
+export function setJsonChangelogField(jsonText, changelog) {
+    const keyMatch = /"changelog"\s*:\s*\[/.exec(jsonText);
+    if (keyMatch === null) return jsonText;
+
+    const keyIndex = keyMatch.index;
+    const openBracket = jsonText.indexOf("[", keyIndex);
+    const lineStart = jsonText.lastIndexOf("\n", keyIndex) + 1;
+    const indent = /^[ \t]*/.exec(jsonText.slice(lineStart, keyIndex))[0];
+
+    let inString = false;
+    let escaped = false;
+    let depth = 1;
+    let cursor = openBracket + 1;
+    for (; cursor < jsonText.length; cursor += 1) {
+        const ch = jsonText[cursor];
+        if (inString) {
+            if (escaped) escaped = false;
+            else if (ch === "\\") escaped = true;
+            else if (ch === '"') inString = false;
+            continue;
+        }
+        if (ch === '"') inString = true;
+        else if (ch === "[") depth += 1;
+        else if (ch === "]" && --depth === 0) break;
+    }
+    if (depth !== 0) return jsonText; // array malformado: nao arrisca reescrever
+
+    const rendered =
+        changelog.length === 0
+            ? "[]"
+            : `[\n${changelog
+                  .map((entry) => `${indent.repeat(2)}${JSON.stringify(entry)}`)
+                  .join(",\n")}\n${indent}]`;
+
+    return (
+        jsonText.slice(0, openBracket) + rendered + jsonText.slice(cursor + 1)
+    );
 }
 
 // Projeta as versoes dos pacotes em packages/cli/registry/index.json, de forma
@@ -265,6 +357,51 @@ export async function syncKitVersions(
                         "utf8",
                     );
                     updated.push(relative(packagesRoot, kit.metaPath));
+                }
+            }
+        }
+
+        // 2b) meta.json -> "changelog" projetado do CHANGELOG.md. Le o meta apos
+        // o passo (2) para compor com uma eventual escrita de "version". So roda
+        // quando o kit ja tem CHANGELOG.md e um array "changelog" no meta.
+        const changelogPath = join(kit.dir, "CHANGELOG.md");
+        if (
+            (await pathExists(kit.metaPath)) &&
+            (await pathExists(changelogPath))
+        ) {
+            const metaText = await readFile(kit.metaPath, "utf8");
+            const currentChangelog = JSON.parse(metaText).changelog;
+
+            if (Array.isArray(currentChangelog)) {
+                const expectedChangelog = deriveChangelogFromMd(
+                    await readFile(changelogPath, "utf8"),
+                );
+                const inSync =
+                    currentChangelog.length === expectedChangelog.length &&
+                    currentChangelog.every(
+                        (entry, index) => entry === expectedChangelog[index],
+                    );
+
+                if (!inSync) {
+                    drift.push({
+                        kitName: kit.kitName,
+                        path: kit.metaPath,
+                        version,
+                    });
+                    if (!check) {
+                        await writeFile(
+                            kit.metaPath,
+                            setJsonChangelogField(metaText, expectedChangelog),
+                            "utf8",
+                        );
+                        const relMetaPath = relative(
+                            packagesRoot,
+                            kit.metaPath,
+                        );
+                        if (!updated.includes(relMetaPath)) {
+                            updated.push(relMetaPath);
+                        }
+                    }
                 }
             }
         }

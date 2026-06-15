@@ -34,6 +34,10 @@
         "noUpwardImports": "error"
     },
     "exports": [],
-    "changelog": ["1.0.0 - Initial scaffold."],
+    "changelog": [
+        "1.0.1 - Corrige os exemplos de consumo nos READMEs dos kits: o import direto usa o nome npm com escopo (`@cullet/<kit>`) e o argumento do `npx cullet fc` é o nome do kit no registry (`erp-core`), não o nome com escopo. Adiciona a nota explicando o que o `fc` faz no `erp-core`.",
+        "1.0.2 - Reescreve a descrição do pacote para refletir a entrega dupla do cullet — kits de biblioteca importáveis e kits de tooling copy-first via CLI — e a deixa consistente entre package.json e a saída do `cullet --help`. Só cullet entra (o package.json raiz é private, não publica). O reformat não precisa de changeset: a tarball publicada leva dist/ buildado, cuja saída não muda com a reformatação do src/.",
+        "1.0.3 - fix(cli): bundle each kit's metadata into the CLI package so `cullet info`/`list` keep showing the kit's context, compatibility, peer deps and deprecation when the CLI runs installed from npm."
+    ],
     "deprecated": false
 }
