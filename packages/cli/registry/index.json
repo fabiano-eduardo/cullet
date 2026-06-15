@@ -4,9 +4,10 @@
             "1.0.0",
             "1.0.1",
             "1.0.2",
-            "1.0.3"
+            "1.0.3",
+            "1.0.4"
         ],
-        "latest": "1.0.3",
+        "latest": "1.0.4",
         "description": "Kit de exemplo minimo: esqueleto de core em clean architecture (camadas domain, application, errors e result) como referencia de estrutura para novos kits.",
         "npmName": "@cullet/dummy-api"
     },
@@ -21,9 +22,10 @@
             "1.0.6",
             "1.0.7",
             "1.0.8",
-            "1.0.9"
+            "1.0.9",
+            "1.0.10"
         ],
-        "latest": "1.0.9",
+        "latest": "1.0.10",
         "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
         "npmName": "@cullet/erp-core"
     }
