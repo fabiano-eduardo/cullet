@@ -13,9 +13,10 @@
             "1.0.3",
             "1.0.4",
             "1.0.5",
-            "1.0.6"
+            "1.0.6",
+            "1.0.7"
         ],
-        "latest": "1.0.6",
+        "latest": "1.0.7",
         "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
         "npmName": "@cullet/erp-core"
     }
