@@ -1,7 +1,7 @@
 {
     "schemaVersion": "2",
     "name": "erp-core",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "compatibility": {
         "engines": {
