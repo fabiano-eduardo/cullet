@@ -69,14 +69,18 @@ abstract class AppError extends Error {
         const payload: Record<string, unknown> = {
             name: this.name,
             code: this.code,
-            type: this.type,
-            severity: this.severity,
             message: this.message,
-            publicMessage: this.publicMessage,
             createdAtIso: this.createdAtIso,
-            metadata: this.metadata,
         };
 
+        // Optional fields are emitted only when defined, so the serialized
+        // shape never carries `undefined`-valued keys (consistent with how the
+        // correlation/request/command ids are handled).
+        if (this.type !== undefined) payload.type = this.type;
+        if (this.severity !== undefined) payload.severity = this.severity;
+        if (this.publicMessage !== undefined)
+            payload.publicMessage = this.publicMessage;
+        if (this.metadata !== undefined) payload.metadata = this.metadata;
         if (this.correlationId !== undefined)
             payload.correlationId = this.correlationId;
         if (this.requestId !== undefined) payload.requestId = this.requestId;

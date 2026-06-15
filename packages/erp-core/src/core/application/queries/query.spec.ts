@@ -18,6 +18,16 @@ class CountQuery extends Query<void, number, never> {
     }
 }
 
+class CacheableQuery extends Query<void, number, never> {
+    protected execute(): Result<number, never> {
+        return Result.ok(1);
+    }
+
+    public exposedCacheStrategy() {
+        return this.cacheStrategy();
+    }
+}
+
 describe("Query", () => {
     it("is a subclass of UseCase", () => {
         const query = new FindEntityQuery();
@@ -49,5 +59,11 @@ describe("Query", () => {
         const query = new FindEntityQuery();
 
         expect(query.contractVersion).toBe("1.0");
+    });
+
+    it("declares NO_CACHE as the default cache strategy", () => {
+        expect(new CacheableQuery().exposedCacheStrategy()).toEqual({
+            kind: "NO_CACHE",
+        });
     });
 });

@@ -44,4 +44,69 @@ describe("deriveAsOf", () => {
             "2041-01-01T00:00:00.000Z",
         );
     });
+
+    it("returns the provided now for asOfSource NOW", () => {
+        const now = new Date("2026-01-01T00:00:00.000Z");
+        const result = PolicyAsOfResolver.derive(
+            "NOW",
+            {
+                tenantId: asTenantId("tenant-1"),
+                schoolId: asSchoolId("school-1"),
+                fields: {},
+            },
+            now,
+        );
+
+        expect(result.getOrNull()).toBe(now);
+    });
+
+    it("rejects CALLER_PROVIDED without a valid asOf date", () => {
+        const result = PolicyAsOfResolver.derive(
+            "CALLER_PROVIDED",
+            {
+                tenantId: asTenantId("tenant-1"),
+                schoolId: asSchoolId("school-1"),
+                fields: {},
+            },
+            new Date("2026-01-01T00:00:00.000Z"),
+        );
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe(
+            'asOfSource "CALLER_PROVIDED" requires seed.fields.asOf to be a Date',
+        );
+    });
+
+    it("rejects a negative maxFutureYears option", () => {
+        const result = PolicyAsOfResolver.derive(
+            "NOW",
+            {
+                tenantId: asTenantId("tenant-1"),
+                schoolId: asSchoolId("school-1"),
+                fields: {},
+            },
+            new Date("2026-01-01T00:00:00.000Z"),
+            { maxFutureYears: -1 },
+        );
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toContain(
+            "maxFutureYears must be a non-negative integer",
+        );
+    });
+
+    it("rejects an unknown asOfSource", () => {
+        const result = PolicyAsOfResolver.derive(
+            "WHENEVER" as unknown as "NOW",
+            {
+                tenantId: asTenantId("tenant-1"),
+                schoolId: asSchoolId("school-1"),
+                fields: {},
+            },
+            new Date("2026-01-01T00:00:00.000Z"),
+        );
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toBe('Unknown asOfSource: "WHENEVER"');
+    });
 });
