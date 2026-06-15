@@ -1,4 +1,4 @@
-export { InMemoryPolicyDefinitionRepository } from "./in-memory-policy-definition-repo";
+export { InMemoryPolicyDefinitionRepository } from "./in-memory-policy-definition-repo.js";
 export type {
     BasePolicyDefinitionProps,
     ComputePolicyDefinitionInput,
@@ -8,13 +8,13 @@ export type {
     GatePolicyDefinitionProps,
     PolicyDefinitionProps,
     PolicyDefinitionStatus,
-} from "./policy-definition";
-export { PolicyDefinition } from "./policy-definition";
-export type { PolicyDefinitionRepository } from "./policy-definition-repository";
+} from "./policy-definition.js";
+export { PolicyDefinition } from "./policy-definition.js";
+export type { PolicyDefinitionRepository } from "./policy-definition-repository.js";
 export type {
     AnyPolicyPayload,
     PayloadForKey,
-} from "./policy-payload.contracts";
-export { comparePolicySemver, POLICY_SEMVER_PATTERN } from "./policy-semver";
-export type { PolicyScope, ScopeChain } from "./policy-scope";
-export { PolicyScopeMatcher } from "./policy-scope";
+} from "./policy-payload.contracts.js";
+export { comparePolicySemver, POLICY_SEMVER_PATTERN } from "./policy-semver.js";
+export type { PolicyScope, ScopeChain } from "./policy-scope.js";
+export { PolicyScopeMatcher } from "./policy-scope.js";

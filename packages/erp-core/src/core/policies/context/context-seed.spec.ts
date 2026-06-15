@@ -5,8 +5,8 @@ import {
     asTenantId,
     type SchoolId,
     type TenantId,
-} from "../policy-ids";
-import { ContextSeedValidator } from "./context-seed";
+} from "../policy-ids.js";
+import { ContextSeedValidator } from "./context-seed.js";
 
 function unsafeTenantId(value: string): TenantId {
     return value as TenantId;

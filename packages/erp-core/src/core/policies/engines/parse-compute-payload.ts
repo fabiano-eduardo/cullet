@@ -1,8 +1,8 @@
-import type { Result as ResultType } from "../../result/result";
-import { Result } from "../../result/result";
+import type { Result as ResultType } from "../../result/result.js";
+import { Result } from "../../result/result.js";
 
-import type { ComputePayload } from "./compute-payload";
-import { ComputePayloadSchemaV1 } from "./v1/compute/compute-payload.schema";
+import type { ComputePayload } from "./compute-payload.js";
+import { ComputePayloadSchemaV1 } from "./v1/compute/compute-payload.schema.js";
 
 export type ComputePayloadParser = (
     payload: unknown,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ValueObject } from "./value-object";
+import { ValueObject } from "./value-object.js";
 
 class StringVO extends ValueObject<string, string> {
     constructor(value: string) {

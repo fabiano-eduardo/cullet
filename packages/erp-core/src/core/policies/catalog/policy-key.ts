@@ -1,4 +1,4 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 /**
  * PolicyKey value object.

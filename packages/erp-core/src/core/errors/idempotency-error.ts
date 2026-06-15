@@ -1,7 +1,7 @@
-import { payloadHash, sha256Hex, stableStringify } from "../shared/hashing";
+import { payloadHash, sha256Hex, stableStringify } from "../shared/hashing.js";
 
-import { AppError } from "./app-error";
-import { ErrorCodes } from "./error-codes";
+import { AppError } from "./app-error.js";
+import { ErrorCodes } from "./error-codes.js";
 
 export type IdempotencyFailureKind =
     | "key_missing"

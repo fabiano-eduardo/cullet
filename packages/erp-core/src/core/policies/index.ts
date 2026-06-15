@@ -2,30 +2,33 @@
 // Re-exports all public types, classes and utilities.
 
 // ─── Core Config ────────────────────────────────────────────────────────────
-export type { CoreConfigOptions, CoreObservabilityConfig } from "../config";
-export { CoreConfig, coreConfig } from "../config";
+export type {
+    CoreConfigOptions,
+    CoreObservabilityConfig,
+} from "../config/index.js";
+export { CoreConfig, coreConfig } from "../config/index.js";
 
 // ─── Result (technical execution) ───────────────────────────────────────────
-export { Err, Ok, Result } from "../result/result";
+export { Err, Ok, Result } from "../result/result.js";
 
 // ─── Outcome (business decision) ───────────────────────────────────────────
-export type { CommonOutcomeStatus } from "../result/outcome";
-export { Outcome } from "../result/outcome";
+export type { CommonOutcomeStatus } from "../result/outcome.js";
+export { Outcome } from "../result/outcome.js";
 
 // ─── Utils ──────────────────────────────────────────────────────────────────
-export { PolicyHashing } from "./utils";
+export { PolicyHashing } from "./utils/index.js";
 export type {
     PolicyDecisionId,
     PolicyDefinitionId,
     SchoolId,
     TenantId,
-} from "./policy-ids";
+} from "./policy-ids.js";
 export {
     asPolicyDecisionId,
     asPolicyDefinitionId,
     asSchoolId,
     asTenantId,
-} from "./policy-ids";
+} from "./policy-ids.js";
 
 // ─── Catalog ────────────────────────────────────────────────────────────────
 export type {
@@ -34,8 +37,12 @@ export type {
     PolicyKind,
     PolicyOwner,
     PolicyScopeLevel,
-} from "./catalog";
-export { PolicyCatalog, PolicyCatalogFactory, PolicyKey } from "./catalog";
+} from "./catalog/index.js";
+export {
+    PolicyCatalog,
+    PolicyCatalogFactory,
+    PolicyKey,
+} from "./catalog/index.js";
 
 // ─── Definitions ────────────────────────────────────────────────────────────
 export type {
@@ -47,12 +54,12 @@ export type {
     PolicyDefinitionStatus,
     PolicyScope,
     ScopeChain,
-} from "./defs";
+} from "./defs/index.js";
 export {
     InMemoryPolicyDefinitionRepository,
     PolicyDefinition,
     PolicyScopeMatcher,
-} from "./defs";
+} from "./defs/index.js";
 
 // ─── Context ────────────────────────────────────────────────────────────────
 export type {
@@ -62,7 +69,7 @@ export type {
     ContextSeed,
     ContextValueResolver,
     PolicyContextBuilderOptions,
-} from "./context";
+} from "./context/index.js";
 export {
     ContextSeedValidator,
     ContextResolverRegistry,
@@ -71,11 +78,11 @@ export {
     PolicyContextPath,
     registerNamespacedContextResolvers,
     registerNamespacedContextResolversIn,
-} from "./context";
+} from "./context/index.js";
 
 // ─── AsOf ───────────────────────────────────────────────────────────────────
-export type { DeriveAsOfOptions } from "./asof";
-export { PolicyAsOfResolver } from "./asof";
+export type { DeriveAsOfOptions } from "./asof/index.js";
+export { PolicyAsOfResolver } from "./asof/index.js";
 
 // ─── Engines ────────────────────────────────────────────────────────────────
 export type {
@@ -95,7 +102,7 @@ export type {
     PolicyContext,
     PolicyViolation,
     VersionedGateEngine,
-} from "./engines";
+} from "./engines/index.js";
 export type {
     ComputeEvaluator,
     ComputeEvaluatorRegistration,
@@ -103,7 +110,7 @@ export type {
     ComputeOutcomeData,
     ComputeStatus,
     VersionedComputeEngine,
-} from "./engines";
+} from "./engines/index.js";
 export {
     ComputeEngineRegistry,
     ComputeEvaluatorRegistry,
@@ -112,10 +119,10 @@ export {
     ComputeRegistry,
     GateEngineRegistry,
     GatePayloadParsers,
-} from "./engines";
+} from "./engines/index.js";
 
 // ─── Resolver ───────────────────────────────────────────────────────────────
-export { PolicyResolver } from "./resolver";
+export { PolicyResolver } from "./resolver/index.js";
 
 // ─── Service ────────────────────────────────────────────────────────────────
 export type {
@@ -125,8 +132,8 @@ export type {
     PolicyEvaluationResult,
     PolicyServiceParams,
     PolicyServiceOptions,
-} from "./service";
-export { PolicyEvaluationErrors, PolicyService } from "./service";
+} from "./service/index.js";
+export { PolicyEvaluationErrors, PolicyService } from "./service/index.js";
 
 // ─── Package (contribution protocol) ────────────────────────────────────────
-export type { PolicyPackage } from "./package/policy-package";
+export type { PolicyPackage } from "./package/policy-package.js";

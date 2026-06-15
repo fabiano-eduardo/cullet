@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { PolicyCatalog } from "./policy-catalog";
-import { PolicyCatalogEntry } from "./policy-catalog-entry";
-import { PolicyKey } from "./policy-key";
+import { PolicyCatalog } from "./policy-catalog.js";
+import { PolicyCatalogEntry } from "./policy-catalog-entry.js";
+import { PolicyKey } from "./policy-key.js";
 
 const policyKey = PolicyKey.parse(
     "financial.charges.charge_eligibility",

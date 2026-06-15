@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { ErrorCodes } from "./error-codes";
+import { ErrorCodes } from "./error-codes.js";
 import {
     evaluateTemporalWindow,
     ExpiredError,
     NotYetValidError,
-} from "./temporal-error";
+} from "./temporal-error.js";
 
 describe("evaluateTemporalWindow", () => {
     it("returns null when evaluatedAtIso is invalid", () => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 import {
     GatePayloadParsers,
     GatePayloadParserRegistry,
-} from "./parse-gate-payload";
+} from "./parse-gate-payload.js";
 
 describe("GatePayloadParserRegistry", () => {
     it("allows registering parsers dynamically per engine version", () => {

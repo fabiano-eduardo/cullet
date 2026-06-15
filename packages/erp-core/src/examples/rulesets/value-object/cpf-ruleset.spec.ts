@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { CPF } from "./cpf";
-import { CPFRulesV1 } from "./cpf-rules-v1";
-import { CPFRulesV2 } from "./cpf-rules-v2";
+import { CPF } from "./cpf.js";
+import { CPFRulesV1 } from "./cpf-rules-v1.js";
+import { CPFRulesV2 } from "./cpf-rules-v2.js";
 import {
     DomainException,
     type RulesetId,
     type ValueObjectRuleset,
-} from "../../../core/domain/rulesets/value-object-ruleset.contracts";
+} from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 
 const VALID_CPF = "52998224725";
 const OTHER_VALID_CPF = "12345678909";

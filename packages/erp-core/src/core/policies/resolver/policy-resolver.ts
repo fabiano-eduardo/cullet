@@ -1,7 +1,7 @@
-import type { PolicyDefinition } from "../defs";
-import { PolicyScopeMatcher } from "../defs";
-import { comparePolicySemver } from "../defs/policy-semver";
-import { Result } from "../../result/result";
+import type { PolicyDefinition } from "../defs/index.js";
+import { PolicyScopeMatcher } from "../defs/index.js";
+import { comparePolicySemver } from "../defs/policy-semver.js";
+import { Result } from "../../result/result.js";
 
 /**
  * Selects the best policy definition from a list of already-filtered candidates.

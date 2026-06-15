@@ -1,6 +1,6 @@
-import type { PolicyCatalogEntryProps } from "../catalog";
-import type { PolicyDefinition } from "../defs";
-import type { ComputeEvaluatorRegistration } from "../engines";
+import type { PolicyCatalogEntryProps } from "../catalog/index.js";
+import type { PolicyDefinition } from "../defs/index.js";
+import type { ComputeEvaluatorRegistration } from "../engines/index.js";
 
 /**
  * Protocol of contribution: a module declares what it wants to add to the

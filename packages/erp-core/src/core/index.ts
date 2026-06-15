@@ -1,5 +1,5 @@
-export * from "./errors";
-export * from "./exceptions/validation-field";
+export * from "./errors/index.js";
+export * from "./exceptions/validation-field.js";
 export type {
     LogPayload,
     LoggerPort,
@@ -8,8 +8,8 @@ export type {
     TraceAttributeValue,
     TraceSpan,
     TracerPort,
-} from "./application";
-export { mapPolicyEvaluationError } from "./application/policy-error-mapper";
-export { Entity, type EntityState } from "./domain/entity";
-export { ValueObject, type DeepReadonly } from "./domain/value-object";
-export * from "./policies";
+} from "./application/index.js";
+export { mapPolicyEvaluationError } from "./application/policy-error-mapper.js";
+export { Entity, type EntityState } from "./domain/entity.js";
+export { ValueObject, type DeepReadonly } from "./domain/value-object.js";
+export * from "./policies/index.js";

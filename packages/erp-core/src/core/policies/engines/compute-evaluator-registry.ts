@@ -1,7 +1,7 @@
 import type {
     ComputeEvaluator,
     ComputeEvaluatorRegistration,
-} from "./compute-types";
+} from "./compute-types.js";
 
 export class ComputeEvaluatorRegistry {
     private readonly evaluators = new Map<string, ComputeEvaluator>();

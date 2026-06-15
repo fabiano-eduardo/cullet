@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ConditionLeafNode, ConditionNode } from "./condition-types";
+import type { ConditionLeafNode, ConditionNode } from "./condition-types.js";
 
 // ─── Shared v1 condition Zod schemas ─────────────────────────────────────────
 // Extracted from gate/v1 so both gate/v1 and compute/v1 can validate

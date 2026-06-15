@@ -1,6 +1,6 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
-import type { ContextSeed } from "./context-seed";
+import type { ContextSeed } from "./context-seed.js";
 
 export interface ContextResolverRetryOptions {
     readonly maxAttempts?: number;

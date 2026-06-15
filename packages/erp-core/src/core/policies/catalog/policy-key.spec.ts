@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PolicyKey } from "./policy-key";
+import { PolicyKey } from "./policy-key.js";
 
 describe("PolicyKey", () => {
     it("rejects keys above the maximum limit", () => {

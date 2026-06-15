@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
-import { Outcome } from "./outcome";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
+import { Outcome } from "./outcome.js";
 
 describe("Outcome", () => {
     describe("of()", () => {

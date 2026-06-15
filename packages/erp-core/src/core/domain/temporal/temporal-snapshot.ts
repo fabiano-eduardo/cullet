@@ -1,15 +1,15 @@
-import { type DeepReadonly, makeImmutable } from "../../shared/immutable";
+import { type DeepReadonly, makeImmutable } from "../../shared/immutable.js";
 
 import {
     createTransactionTime,
     type CreateTransactionTimeInput,
     type TransactionTime,
-} from "./transaction-time";
+} from "./transaction-time.js";
 import {
     createValidTime,
     type CreateValidTimeInput,
     type ValidTime,
-} from "./valid-time";
+} from "./valid-time.js";
 
 /**
  * Pairs a domain datum with its time dimensions (Business and Transaction).

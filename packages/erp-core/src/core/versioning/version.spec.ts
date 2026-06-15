@@ -4,7 +4,7 @@ import {
     CONTRACT_VERSION_PROPERTY,
     type ContractVersion,
     version,
-} from "./version";
+} from "./version.js";
 
 interface Target {
     readonly prototype: object;

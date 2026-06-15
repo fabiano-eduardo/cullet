@@ -5,10 +5,10 @@ import {
     type Order as OrderInstance,
     type OrderItem,
     type OrderSnapshot,
-} from "./order";
-import { OrderInvariantsV1 } from "./order-invariants-v1";
-import { OrderInvariantsV2 } from "./order-invariants-v2";
-import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts";
+} from "./order.js";
+import { OrderInvariantsV1 } from "./order-invariants-v1.js";
+import { OrderInvariantsV2 } from "./order-invariants-v2.js";
+import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
 
 const orderInvariantRulesetV1 = new OrderInvariantsV1();
 const orderInvariantRulesetV2 = new OrderInvariantsV2();

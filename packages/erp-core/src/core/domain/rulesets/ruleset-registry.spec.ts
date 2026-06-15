@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "../../exceptions/domain-exception";
-import { RulesetRegistry } from "./ruleset-registry";
-import { type Ruleset, type RulesetId } from "./ruleset.contracts";
+import { DomainException } from "../../exceptions/domain-exception.js";
+import { RulesetRegistry } from "./ruleset-registry.js";
+import { type Ruleset, type RulesetId } from "./ruleset.contracts.js";
 
 function makeRuleset(id: RulesetId, description = "test ruleset"): Ruleset {
     return {

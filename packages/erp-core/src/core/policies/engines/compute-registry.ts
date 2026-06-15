@@ -1,16 +1,16 @@
-import { type CoreConfig, coreConfig } from "../../config";
-import type { Result } from "../../result/result";
+import { type CoreConfig, coreConfig } from "../../config/index.js";
+import type { Result } from "../../result/result.js";
 
-import { ComputeEngineRegistry } from "./compute-engine-registry";
-import { ComputeEvaluatorRegistry } from "./compute-evaluator-registry";
-import type { PolicyContext } from "./gate-types";
+import { ComputeEngineRegistry } from "./compute-engine-registry.js";
+import { ComputeEvaluatorRegistry } from "./compute-evaluator-registry.js";
+import type { PolicyContext } from "./gate-types.js";
 import type {
     ComputeEvaluator,
     ComputeEvaluatorRegistration,
     ComputeOutcome,
     VersionedComputeEngine,
-} from "./compute-types";
-import { ComputeEngineV1 } from "./v1/compute";
+} from "./compute-types.js";
+import { ComputeEngineV1 } from "./v1/compute/index.js";
 
 export interface ComputeRegistryOptions {
     readonly coreConfig?: CoreConfig;

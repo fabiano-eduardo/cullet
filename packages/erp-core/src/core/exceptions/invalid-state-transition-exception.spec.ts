@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "./domain-exception";
-import { InvalidStateTransitionException } from "./invalid-state-transition-exception";
+import { DomainException } from "./domain-exception.js";
+import { InvalidStateTransitionException } from "./invalid-state-transition-exception.js";
 
 describe("InvalidStateTransitionException", () => {
     describe("constructor", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NotFoundError } from "./not-found-error";
+import { NotFoundError } from "./not-found-error.js";
 
 // AppError is abstract; NotFoundError is the simplest concrete subclass and is
 // enough to exercise the shared base behaviour (toJSON and the optional id

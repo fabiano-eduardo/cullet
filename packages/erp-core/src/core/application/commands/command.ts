@@ -1,8 +1,8 @@
-import { UseCase } from "../use-case";
-import { version } from "../../versioning/version";
-import type { Result } from "../../result/result";
+import { UseCase } from "../use-case.js";
+import { version } from "../../versioning/version.js";
+import type { Result } from "../../result/result.js";
 
-import { RequestedBy } from "./requested-by";
+import { RequestedBy } from "./requested-by.js";
 
 interface CommandInput {
     readonly requestedBy: RequestedBy;

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { Result } from "../../result/result";
-import { asSchoolId, asTenantId } from "../policy-ids";
+import { Result } from "../../result/result.js";
+import { asSchoolId, asTenantId } from "../policy-ids.js";
 
 import {
     ContextResolverRegistry,
     registerNamespacedContextResolversIn,
-} from "./context-registry";
+} from "./context-registry.js";
 
 describe("ContextResolverRegistry", () => {
     it("rejects path collisions between different namespaces", () => {

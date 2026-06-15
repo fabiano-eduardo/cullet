@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { GatePayloadSchemaV1 } from "./gate-v1-payload.schema";
+import { GatePayloadSchemaV1 } from "./gate-v1-payload.schema.js";
 
 describe("GatePayloadSchemaV1.parse", () => {
     it("returns Result.ok for a valid payload", () => {

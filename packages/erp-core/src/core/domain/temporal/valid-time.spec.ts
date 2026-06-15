@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 
-import { assertValidTime, createValidTime } from "./valid-time";
+import { assertValidTime, createValidTime } from "./valid-time.js";
 
 describe("valid-time", () => {
     it("creates an open immutable range with defensive copies", () => {

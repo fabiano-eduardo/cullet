@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { InvalidValueException } from "../../exceptions/validation-exception";
+import { InvalidValueException } from "../../exceptions/validation-exception.js";
 
-import { RequestedBy } from "./requested-by";
+import { RequestedBy } from "./requested-by.js";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 

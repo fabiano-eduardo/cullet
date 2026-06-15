@@ -1,8 +1,8 @@
-export { ConditionEvaluatorV1 } from "./condition-evaluator";
+export { ConditionEvaluatorV1 } from "./condition-evaluator.js";
 export {
     conditionLeafNodeSchema,
     conditionNodeSchema,
-} from "./condition-schema";
+} from "./condition-schema.js";
 export type {
     ConditionAndNode,
     ConditionLeafNode,
@@ -10,4 +10,4 @@ export type {
     ConditionNotNode,
     ConditionOp,
     ConditionOrNode,
-} from "./condition-types";
+} from "./condition-types.js";

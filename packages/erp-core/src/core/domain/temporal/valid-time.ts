@@ -1,6 +1,6 @@
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
-import { makeImmutable } from "../../shared/immutable";
-import { assertValidDate } from "../../shared/temporal-guards";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
+import { makeImmutable } from "../../shared/immutable.js";
+import { assertValidDate } from "../../shared/temporal-guards.js";
 
 /**
  * Represents business time (Valid Time).

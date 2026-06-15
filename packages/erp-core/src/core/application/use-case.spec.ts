@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Result } from "../result/result";
-import { UseCase } from "./use-case";
+import { Result } from "../result/result.js";
+import { UseCase } from "./use-case.js";
 
 class SyncUseCase extends UseCase<number, Result<number, never>> {
     protected execute(input: number): Result<number, never> {

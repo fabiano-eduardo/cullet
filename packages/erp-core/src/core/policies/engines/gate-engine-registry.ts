@@ -1,11 +1,11 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 import type {
     GateOutcome,
     PolicyContext,
     VersionedGateEngine,
-} from "./gate-types";
-import { GatePayloadParsers } from "./parse-gate-payload";
+} from "./gate-types.js";
+import { GatePayloadParsers } from "./parse-gate-payload.js";
 
 export class GateEngineRegistry {
     private readonly engines = new Map<number, VersionedGateEngine>();

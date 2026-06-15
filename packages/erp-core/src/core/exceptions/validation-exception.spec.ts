@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "./domain-exception";
-import { ValidationCode } from "./validation-code";
-import { ValidationField } from "./validation-field";
+import { DomainException } from "./domain-exception.js";
+import { ValidationCode } from "./validation-code.js";
+import { ValidationField } from "./validation-field.js";
 import {
     InvalidValueException,
     ValidationException,
-} from "./validation-exception";
+} from "./validation-exception.js";
 
 describe("ValidationException", () => {
     const field = ValidationField.of("email");

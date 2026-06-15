@@ -1,7 +1,7 @@
 import {
     type RulesetId,
     type ValueObjectRuleset,
-} from "../../../core/domain/rulesets/value-object-ruleset.contracts";
+} from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 
 interface CPFStatic {
     create(raw: string, ruleset: ValueObjectRuleset<string>): CPF;

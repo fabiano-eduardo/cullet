@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { asSchoolId, asTenantId, type ContextSeed } from "../../policies";
-import { Result } from "../../result/result";
+import {
+    asSchoolId,
+    asTenantId,
+    type ContextSeed,
+} from "../../policies/index.js";
+import { Result } from "../../result/result.js";
 
 import {
     createTemporalContext,
     type TemporalContext,
-} from "./temporal-context";
+} from "./temporal-context.js";
 import {
     type TemporalUseCaseInput,
     TemporalUseCase,
-} from "./temporal-use-case";
+} from "./temporal-use-case.js";
 
 interface InspectTemporalInput extends TemporalUseCaseInput {
     readonly tenantId: string;

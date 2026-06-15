@@ -3,8 +3,8 @@ import {
     BusinessRuleViolationError,
     NotFoundError,
     UnexpectedError,
-} from "../errors";
-import type { PolicyEvaluationError } from "../policies";
+} from "../errors/index.js";
+import type { PolicyEvaluationError } from "../policies/index.js";
 
 export function mapPolicyEvaluationError(err: PolicyEvaluationError): AppError {
     switch (err.kind) {

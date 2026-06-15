@@ -1,9 +1,9 @@
 import type {
     FindCandidatesParams,
     PolicyDefinition,
-} from "./policy-definition";
-import type { PolicyDefinitionRepository } from "./policy-definition-repository";
-import { PolicyScopeMatcher } from "./policy-scope";
+} from "./policy-definition.js";
+import type { PolicyDefinitionRepository } from "./policy-definition-repository.js";
+import { PolicyScopeMatcher } from "./policy-scope.js";
 
 export class InMemoryPolicyDefinitionRepository implements PolicyDefinitionRepository {
     private readonly definitions: readonly PolicyDefinition[];

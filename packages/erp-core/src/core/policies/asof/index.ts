@@ -1,2 +1,2 @@
-export { PolicyAsOfResolver } from "./asof";
-export type { DeriveAsOfOptions } from "./asof";
+export { PolicyAsOfResolver } from "./asof.js";
+export type { DeriveAsOfOptions } from "./asof.js";

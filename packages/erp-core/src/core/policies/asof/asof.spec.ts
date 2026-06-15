@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { asSchoolId, asTenantId } from "../policy-ids";
-import { PolicyAsOfResolver } from "./asof";
+import { asSchoolId, asTenantId } from "../policy-ids.js";
+import { PolicyAsOfResolver } from "./asof.js";
 
 describe("deriveAsOf", () => {
     it("mantem o limite padrao de 10 anos no futuro", () => {

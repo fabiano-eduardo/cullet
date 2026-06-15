@@ -5,7 +5,7 @@ import {
     safePreview,
     SerializationInError,
     SerializationOutError,
-} from "./serialization-error";
+} from "./serialization-error.js";
 
 describe("serialization-error aliases", () => {
     it("keeps DeserializationError as an alias of SerializationInError", () => {

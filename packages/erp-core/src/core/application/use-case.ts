@@ -1,5 +1,5 @@
-import { type ContractVersion, version } from "../versioning/version";
-import type { Result } from "../result/result";
+import { type ContractVersion, version } from "../versioning/version.js";
+import type { Result } from "../result/result.js";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -8,7 +8,7 @@ abstract class UseCase<
     Input = void,
     Output extends Result<unknown, unknown> = Result<void, never>,
 > {
-    public static readonly CONTRACT_VERSION: ContractVersion;
+    declare public static readonly CONTRACT_VERSION: ContractVersion;
 
     public get contractVersion(): ContractVersion {
         return UseCase.CONTRACT_VERSION;

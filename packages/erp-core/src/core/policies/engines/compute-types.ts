@@ -1,8 +1,8 @@
-import type { Outcome } from "../../result/outcome";
-import type { Result } from "../../result/result";
+import type { Outcome } from "../../result/outcome.js";
+import type { Result } from "../../result/result.js";
 
-import type { ComputePayload } from "./compute-payload";
-import type { PolicyContext, PolicyViolation } from "./gate-types";
+import type { ComputePayload } from "./compute-payload.js";
+import type { PolicyContext, PolicyViolation } from "./gate-types.js";
 
 // ─── Compute outcome (business decision) ────────────────────────────────────
 

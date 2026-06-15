@@ -1,9 +1,9 @@
-import { type DeepReadonly, makeImmutable } from "../shared/immutable";
-import { type ContractVersion, version } from "../versioning/version";
+import { type DeepReadonly, makeImmutable } from "../shared/immutable.js";
+import { type ContractVersion, version } from "../versioning/version.js";
 
 @version("1.0")
 abstract class ValueObject<T, P> {
-    public static readonly CONTRACT_VERSION: ContractVersion;
+    declare public static readonly CONTRACT_VERSION: ContractVersion;
     public readonly value: DeepReadonly<T>;
 
     protected constructor(value: T) {

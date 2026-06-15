@@ -1,8 +1,8 @@
-import type { Result as ResultType } from "../../result/result";
-import { Result } from "../../result/result";
+import type { Result as ResultType } from "../../result/result.js";
+import { Result } from "../../result/result.js";
 
-import type { GatePayload } from "./gate-payload";
-import { GatePayloadSchemaV1 } from "./v1/gate/gate-v1-payload.schema";
+import type { GatePayload } from "./gate-payload.js";
+import { GatePayloadSchemaV1 } from "./v1/gate/gate-v1-payload.schema.js";
 
 export type GatePayloadParser = (
     payload: unknown,

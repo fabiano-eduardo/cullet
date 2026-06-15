@@ -3,7 +3,7 @@
  * in plain objects, e.g. "installment.dueDate".
  */
 
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 export class PolicyContextPath {
     private static readonly FORBIDDEN_SEGMENTS = new Set([

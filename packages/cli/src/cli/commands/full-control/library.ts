@@ -5,22 +5,47 @@ import { formatDependency } from "../../utils/formatDependency.js";
 import {
     kitFullControlAliasTarget,
     kitFullControlDir,
+    kitFullControlSubpathAlias,
+    kitFullControlSubpathAliasTarget,
 } from "../../utils/paths.js";
 import {
     getFullControlDependencies,
     resolveKitSourceDir,
 } from "../../utils/resolve.js";
-import { upsertPathAlias } from "../../utils/tsconfig.js";
+import {
+    upsertPathAliases,
+    type PathAliasEntry,
+} from "../../utils/tsconfig.js";
 import { collectSampleFiles } from "./files.js";
 import { ensureKitInstalled } from "./install.js";
 import {
-    printAliasOutcome,
+    printAliasOutcomes,
     printExternalDepsWarning,
     printInstallPreview,
 } from "./output.js";
 import { confirmOverwrite } from "./prompts.js";
 import { copyDirectoryTransactional } from "./transaction.js";
 import { type FullControlContext } from "./types.js";
+
+/**
+ * Os dois aliases que o full-control registra para um kit importável: o
+ * specifier raiz (→ index.ts da cópia) e o wildcard de subpath (→ raiz da
+ * cópia), para que `import "<kit>/<subpath>"` também resolva para a cópia
+ * editável e não para o pacote original em node_modules.
+ */
+function fullControlAliasEntries(
+    npmName: string,
+    name: string,
+    version: string,
+): PathAliasEntry[] {
+    return [
+        { alias: npmName, target: kitFullControlAliasTarget(name, version) },
+        {
+            alias: kitFullControlSubpathAlias(npmName),
+            target: kitFullControlSubpathAliasTarget(name, version),
+        },
+    ];
+}
 
 /** Importable kits (foundation/capability): copy `src/` and register a tsconfig alias. */
 export async function runLibraryFullControl(
@@ -63,14 +88,13 @@ export async function runLibraryFullControl(
             );
         }
 
-        const aliasPreview = await upsertPathAlias(
+        const aliasPreviews = await upsertPathAliases(
             process.cwd(),
-            npmName,
-            kitFullControlAliasTarget(name, version),
+            fullControlAliasEntries(npmName, name, version),
             { dryRun: true },
         );
 
-        printAliasOutcome(aliasPreview, { dryRun: true });
+        printAliasOutcomes(aliasPreviews, { dryRun: true });
 
         const deps = getFullControlDependencies(meta);
         if (deps.length > 0) {
@@ -105,10 +129,9 @@ export async function runLibraryFullControl(
 
     await copyDirectoryTransactional(sourceDir, destinationDir);
 
-    const aliasResult = await upsertPathAlias(
+    const aliasResults = await upsertPathAliases(
         process.cwd(),
-        npmName,
-        kitFullControlAliasTarget(name, version),
+        fullControlAliasEntries(npmName, name, version),
     );
 
     console.log(
@@ -117,17 +140,33 @@ export async function runLibraryFullControl(
     console.log(`Origem: ${pc.cyan(sourceDir)}`);
     console.log(`Destino: ${pc.cyan(destinationDir)}`);
 
-    printAliasOutcome(aliasResult, { dryRun: false });
+    printAliasOutcomes(aliasResults, { dryRun: false });
 
     const deps = getFullControlDependencies(meta);
     printExternalDepsWarning(deps);
 
     console.log("");
     console.log(pc.bold("Como usar agora:"));
-    console.log(pc.cyan(`import { ... } from "${npmName}";`));
-    console.log(
-        pc.dim(
-            "O alias local aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
-        ),
-    );
+    if (aliasResults[0].status === "missing-tsconfig") {
+        // Sem alias registrado, o specifier do pacote continua resolvendo para
+        // node_modules (o original), não para a cópia — então não prometemos
+        // editabilidade aqui.
+        console.log(
+            pc.dim(
+                `Sem um tsconfig.json o alias nao foi registrado: importar "${npmName}" continua resolvendo para node_modules (o pacote original), nao para a copia.`,
+            ),
+        );
+        console.log(
+            pc.dim(
+                `Para editar a copia, importe-a pelo caminho relativo ./cullet/${name}@${version}/ ou crie um tsconfig.json com os paths "${npmName}" e "${kitFullControlSubpathAlias(npmName)}" apontando para ./cullet/${name}@${version}/.`,
+            ),
+        );
+    } else {
+        console.log(pc.cyan(`import { ... } from "${npmName}";`));
+        console.log(
+            pc.dim(
+                "O alias local (specifier raiz e subpaths) aponta para a copia em ./cullet/, permitindo editar o kit dentro do projeto.",
+            ),
+        );
+    }
 }

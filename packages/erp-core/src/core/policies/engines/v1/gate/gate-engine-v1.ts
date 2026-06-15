@@ -1,13 +1,13 @@
-import { type CoreConfig, coreConfig } from "../../../../config";
-import { Outcome } from "../../../../result/outcome";
-import { Result } from "../../../../result/result";
+import { type CoreConfig, coreConfig } from "../../../../config/index.js";
+import { Outcome } from "../../../../result/outcome.js";
+import { Result } from "../../../../result/result.js";
 
 import {
     ConditionEvaluatorV1,
     type TracedConditionEvaluation,
-} from "../condition-evaluator";
-import type { ConditionLeafNode, ConditionNode } from "../condition-types";
-import type { GatePayload } from "../../gate-payload";
+} from "../condition-evaluator.js";
+import type { ConditionLeafNode, ConditionNode } from "../condition-types.js";
+import type { GatePayload } from "../../gate-payload.js";
 import type {
     GateOutcome,
     GateStatus,
@@ -16,7 +16,7 @@ import type {
     PolicyContext,
     PolicyViolation,
     VersionedGateEngine,
-} from "../../gate-types";
+} from "../../gate-types.js";
 
 // ─── Gate engine v1 ─────────────────────────────────────────────────────────
 

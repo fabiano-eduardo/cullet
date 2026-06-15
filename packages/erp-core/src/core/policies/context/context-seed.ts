@@ -1,6 +1,6 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
-import type { SchoolId, TenantId } from "../policy-ids";
+import type { SchoolId, TenantId } from "../policy-ids.js";
 
 /**
  * Seed data provided by the use case / caller.

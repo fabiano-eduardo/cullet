@@ -1,14 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { PolicyCatalog, PolicyCatalogEntry, PolicyKey } from "../catalog";
-import { ContextResolverRegistry, PolicyContextBuilder } from "../context";
-import { InMemoryPolicyDefinitionRepository, PolicyDefinition } from "../defs";
+import {
+    PolicyCatalog,
+    PolicyCatalogEntry,
+    PolicyKey,
+} from "../catalog/index.js";
+import {
+    ContextResolverRegistry,
+    PolicyContextBuilder,
+} from "../context/index.js";
+import {
+    InMemoryPolicyDefinitionRepository,
+    PolicyDefinition,
+} from "../defs/index.js";
 import {
     asPolicyDecisionId,
     asPolicyDefinitionId,
     asSchoolId,
     asTenantId,
-} from "../policy-ids";
+} from "../policy-ids.js";
 import {
     ComputeRegistry,
     GateEngineRegistry,
@@ -19,13 +29,13 @@ import {
     type ComputeOutcome,
     type GateOutcome,
     type VersionedGateEngine,
-} from "../engines";
-import { PolicyResolver } from "../resolver";
-import type { PolicyReporter } from "../../config/policy-reporter";
-import { Outcome } from "../../result/outcome";
-import { Result } from "../../result/result";
+} from "../engines/index.js";
+import { PolicyResolver } from "../resolver/index.js";
+import type { PolicyReporter } from "../../config/policy-reporter.js";
+import { Outcome } from "../../result/outcome.js";
+import { Result } from "../../result/result.js";
 
-import { type PolicyServiceOptions, PolicyService } from "./policy-service";
+import { type PolicyServiceOptions, PolicyService } from "./policy-service.js";
 
 GatePayloadParsers.register(2, (payload) =>
     GatePayloadParsers.parse(1, payload),

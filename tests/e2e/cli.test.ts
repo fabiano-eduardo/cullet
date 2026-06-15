@@ -150,6 +150,15 @@ describe("cullet CLI e2e", () => {
         expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core"]).toEqual([
             `./cullet/${subdirs[0]}/index.ts`,
         ]);
+        // O wildcard de subpath aponta os subpaths (ex.: @cullet/erp-core/errors)
+        // para a copia, e nao para o pacote original em node_modules.
+        expect(tsconfig.compilerOptions?.paths?.["@cullet/erp-core/*"]).toEqual(
+            [
+                `./cullet/${subdirs[0]}/*.ts`,
+                `./cullet/${subdirs[0]}/*/index.ts`,
+                `./cullet/${subdirs[0]}/*`,
+            ],
+        );
     });
 
     it("running cullet fc twice with an explicit version overwrites without duplicating", async () => {

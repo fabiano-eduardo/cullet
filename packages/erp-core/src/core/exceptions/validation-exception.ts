@@ -1,6 +1,6 @@
-import { DomainException } from "./domain-exception";
-import { ValidationCode } from "./validation-code";
-import { ValidationField } from "./validation-field";
+import { DomainException } from "./domain-exception.js";
+import { ValidationCode } from "./validation-code.js";
+import { ValidationField } from "./validation-field.js";
 
 export interface ValidationViolation {
     readonly field: ValidationField;

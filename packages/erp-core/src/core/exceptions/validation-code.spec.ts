@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ValidationCode } from "./validation-code";
+import { ValidationCode } from "./validation-code.js";
 
 describe("ValidationCode", () => {
     describe("of()", () => {

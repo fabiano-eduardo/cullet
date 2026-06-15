@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { Result } from "../../result/result";
-import { UseCase } from "../use-case";
+import { Result } from "../../result/result.js";
+import { UseCase } from "../use-case.js";
 
-import { Query } from "./query";
+import { Query } from "./query.js";
 
 class FindEntityQuery extends Query<{ id: string }, string | null, never> {
     protected execute(input: { id: string }): Result<string | null, never> {

@@ -2,7 +2,7 @@ import {
     type CreationRuleset,
     type InvariantRuleset,
     type RulesetId,
-} from "../../../core/domain/rulesets/entity-ruleset.contracts";
+} from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
 
 type OrderStatus = "open" | "cancelled" | "shipped" | "delivered";
 

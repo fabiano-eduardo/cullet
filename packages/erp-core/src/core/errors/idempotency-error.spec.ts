@@ -9,8 +9,8 @@ import {
     payloadHash,
     sha256Hex,
     stableStringify,
-} from "./idempotency-error";
-import { ErrorCodes } from "./error-codes";
+} from "./idempotency-error.js";
+import { ErrorCodes } from "./error-codes.js";
 
 // Regression coverage for the ESM crypto fix: these helpers previously used a
 // CommonJS `require('crypto')`, which throws `ReferenceError: require is not

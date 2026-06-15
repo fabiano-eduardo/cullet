@@ -1,6 +1,6 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
-import type { ContextValueResolver } from "./context-resolver";
+import type { ContextValueResolver } from "./context-resolver.js";
 
 export interface ContextResolverRegistrationOptions {
     readonly namespace?: string;

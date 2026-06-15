@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Err, Ok, Result } from "./result";
+import { Err, Ok, Result } from "./result.js";
 
 describe("Result", () => {
     describe("happy path", () => {

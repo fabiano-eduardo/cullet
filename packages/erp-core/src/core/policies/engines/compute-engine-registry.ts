@@ -1,9 +1,12 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
-import type { PolicyContext } from "./gate-types";
-import { ComputePayloadParsers } from "./parse-compute-payload";
-import type { ComputeEvaluatorRegistry } from "./compute-evaluator-registry";
-import type { ComputeOutcome, VersionedComputeEngine } from "./compute-types";
+import type { PolicyContext } from "./gate-types.js";
+import { ComputePayloadParsers } from "./parse-compute-payload.js";
+import type { ComputeEvaluatorRegistry } from "./compute-evaluator-registry.js";
+import type {
+    ComputeOutcome,
+    VersionedComputeEngine,
+} from "./compute-types.js";
 
 export class ComputeEngineRegistry {
     private readonly engines = new Map<number, VersionedComputeEngine>();

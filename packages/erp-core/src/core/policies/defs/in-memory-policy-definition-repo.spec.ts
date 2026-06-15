@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { asPolicyDefinitionId, asSchoolId, asTenantId } from "../policy-ids";
-import { InMemoryPolicyDefinitionRepository } from "./in-memory-policy-definition-repo";
-import { PolicyDefinition } from "./policy-definition";
-import type { GatePolicyDefinitionInput } from "./policy-definition";
+import { asPolicyDefinitionId, asSchoolId, asTenantId } from "../policy-ids.js";
+import { InMemoryPolicyDefinitionRepository } from "./in-memory-policy-definition-repo.js";
+import { PolicyDefinition } from "./policy-definition.js";
+import type { GatePolicyDefinitionInput } from "./policy-definition.js";
 
 function makeDefinition(
     id: string,

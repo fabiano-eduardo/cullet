@@ -1,5 +1,5 @@
-import { CoreConfig } from "./core-config";
-import { SilentPolicyReporter } from "./silent-policy-reporter";
+import { CoreConfig } from "./core-config.js";
+import { SilentPolicyReporter } from "./silent-policy-reporter.js";
 
 /**
  * Shared instance for the application composition root.

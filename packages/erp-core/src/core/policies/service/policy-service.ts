@@ -1,31 +1,38 @@
-import { PolicyAsOfResolver, type DeriveAsOfOptions } from "../asof";
-import { type PolicyCatalog, PolicyCatalogEntry, PolicyKey } from "../catalog";
-import type { ContextSeed, PolicyContextBuilder } from "../context";
-import { ContextSeedValidator } from "../context";
+import { PolicyAsOfResolver, type DeriveAsOfOptions } from "../asof/index.js";
+import {
+    type PolicyCatalog,
+    PolicyCatalogEntry,
+    PolicyKey,
+} from "../catalog/index.js";
+import type { ContextSeed, PolicyContextBuilder } from "../context/index.js";
+import { ContextSeedValidator } from "../context/index.js";
 import {
     PolicyDefinition,
     type PolicyDefinitionRepository,
     type PolicyScope,
-} from "../defs";
-import type { PolicyDecisionId, PolicyDefinitionId } from "../policy-ids";
+} from "../defs/index.js";
+import type { PolicyDecisionId, PolicyDefinitionId } from "../policy-ids.js";
 import {
     type ComputeOutcome,
     ComputeRegistry,
     GateEngineRegistry,
     type GateOutcome,
     type PolicyContext,
-} from "../engines";
-import { PolicyResolver } from "../resolver";
-import { Result } from "../../result/result";
-import { isValidDate } from "../../shared/temporal-guards";
+} from "../engines/index.js";
+import { PolicyResolver } from "../resolver/index.js";
+import { Result } from "../../result/result.js";
+import { isValidDate } from "../../shared/temporal-guards.js";
 
-import type { PolicyEvent, PolicyReporter } from "../../config/policy-reporter";
-import { SilentPolicyReporter } from "../../config/silent-policy-reporter";
+import type {
+    PolicyEvent,
+    PolicyReporter,
+} from "../../config/policy-reporter.js";
+import { SilentPolicyReporter } from "../../config/silent-policy-reporter.js";
 
 import {
     PolicyEvaluationErrors,
     type PolicyEvaluationError,
-} from "./policy-evaluation-error";
+} from "./policy-evaluation-error.js";
 
 // ─── Input ──────────────────────────────────────────────────────────────────
 
@@ -57,7 +64,7 @@ export interface PolicyServiceParams {
 /** Union of all possible policy decision Outcomes. */
 export type PolicyDecision = GateOutcome | ComputeOutcome;
 
-export type { PolicyEvaluationError } from "./policy-evaluation-error";
+export type { PolicyEvaluationError } from "./policy-evaluation-error.js";
 
 export interface PolicyEvaluationResult {
     readonly decisionId: PolicyDecisionId;

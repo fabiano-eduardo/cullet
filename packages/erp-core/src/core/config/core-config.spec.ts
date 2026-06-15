@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { PolicyEvent, PolicyReporter } from ".";
-import { GateEngineV1 } from "../policies/engines/v1/gate";
+import type { PolicyEvent, PolicyReporter } from "./index.js";
+import { GateEngineV1 } from "../policies/engines/v1/gate/index.js";
 
-import { CoreConfig } from "./core-config";
+import { CoreConfig } from "./core-config.js";
 
 function makeMockReporter(): PolicyReporter & {
     report: ReturnType<typeof vi.fn>;

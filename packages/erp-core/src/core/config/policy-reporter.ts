@@ -1,8 +1,8 @@
-import type { ConditionEvaluationReport } from "../policies/engines/condition-evaluator-reporter";
+import type { ConditionEvaluationReport } from "../policies/engines/condition-evaluator-reporter.js";
 import type {
     PolicyDecisionId,
     PolicyDefinitionId,
-} from "../policies/policy-ids";
+} from "../policies/policy-ids.js";
 
 // ─── Event kinds ─────────────────────────────────────────────────────────────
 
@@ -57,4 +57,4 @@ export interface PolicyReporter {
 export type {
     ConditionEvaluationReport,
     ConditionEvaluationReportTag,
-} from "../policies/engines/condition-evaluator-reporter";
+} from "../policies/engines/condition-evaluator-reporter.js";

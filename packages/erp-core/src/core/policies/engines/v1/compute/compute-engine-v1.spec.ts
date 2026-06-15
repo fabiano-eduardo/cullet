@@ -4,12 +4,12 @@ import {
     CoreConfig,
     type PolicyEvent,
     type PolicyReporter,
-} from "../../../../config";
-import { Outcome } from "../../../../result/outcome";
-import { Result } from "../../../../result/result";
+} from "../../../../config/index.js";
+import { Outcome } from "../../../../result/outcome.js";
+import { Result } from "../../../../result/result.js";
 
-import { ComputeEngineV1 } from "./compute-engine-v1";
-import type { ComputeEvaluator, ComputeOutcome } from "../../compute-types";
+import { ComputeEngineV1 } from "./compute-engine-v1.js";
+import type { ComputeEvaluator, ComputeOutcome } from "../../compute-types.js";
 
 function makeReporter(): PolicyReporter & { report: ReturnType<typeof vi.fn> } {
     return { report: vi.fn<(event: PolicyEvent) => void>() };

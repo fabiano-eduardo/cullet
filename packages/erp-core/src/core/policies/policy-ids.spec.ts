@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { ValidationCode } from "../exceptions/validation-code";
-import { InvalidValueException } from "../exceptions/validation-exception";
+import { ValidationCode } from "../exceptions/validation-code.js";
+import { InvalidValueException } from "../exceptions/validation-exception.js";
 import {
     asPolicyDecisionId,
     asPolicyDefinitionId,
     asSchoolId,
     asTenantId,
-} from "./policy-ids";
+} from "./policy-ids.js";
 
 const idConstructors = [
     {

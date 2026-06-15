@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { AppError } from "../app-error";
+import { AppError } from "../app-error.js";
 import {
     assertJsonSafeMetadata,
     CIRCULAR_REFERENCE_PLACEHOLDER,
     NON_SERIALIZABLE_PLACEHOLDER,
-} from "./json-safe";
+} from "./json-safe.js";
 
 class TestError extends AppError {
     constructor(metadata: Record<string, unknown>) {

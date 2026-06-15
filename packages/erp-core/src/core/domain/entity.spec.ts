@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { Entity, type EntityState } from "./entity";
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+import { Entity, type EntityState } from "./entity.js";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 
 class TestEntity extends Entity<string> {
     constructor(state: EntityState<string>) {

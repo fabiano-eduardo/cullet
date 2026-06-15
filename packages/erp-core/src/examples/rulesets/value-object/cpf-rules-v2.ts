@@ -1,8 +1,8 @@
 import {
     DomainException,
     type ValueObjectRuleset,
-} from "../../../core/domain/rulesets/value-object-ruleset.contracts";
-import { CPFRulesV1 } from "./cpf-rules-v1";
+} from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
+import { CPFRulesV1 } from "./cpf-rules-v1.js";
 
 class CPFBlocklistError extends DomainException {}
 

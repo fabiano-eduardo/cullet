@@ -3,7 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { upsertPathAlias } from "../../packages/cli/src/cli/utils/tsconfig.js";
+import {
+    upsertPathAlias,
+    upsertPathAliases,
+} from "../../packages/cli/src/cli/utils/tsconfig.js";
 
 const ALIAS = "cullet/erp-core";
 const TARGET = "./cullet/erp-core@1.0.0/index.ts";
@@ -309,5 +312,115 @@ describe("upsertPathAlias", () => {
         await expect(
             upsertPathAlias(projectRoot, ALIAS, TARGET),
         ).rejects.toThrow(/compilerOptions.*objeto/);
+    });
+});
+
+describe("upsertPathAliases", () => {
+    const ROOT_ALIAS = "@cullet/erp-core";
+    const ROOT_TARGET = "./cullet/erp-core@1.0.0/index.ts";
+    const WILDCARD_ALIAS = "@cullet/erp-core/*";
+    const WILDCARD_TARGETS = [
+        "./cullet/erp-core@1.0.0/*.ts",
+        "./cullet/erp-core@1.0.0/*/index.ts",
+        "./cullet/erp-core@1.0.0/*",
+    ];
+
+    it("registers the root and wildcard aliases in a single write", async () => {
+        await writeFile(
+            join(projectRoot, "tsconfig.json"),
+            JSON.stringify({ compilerOptions: { strict: true } }, null, 2),
+        );
+
+        const results = await upsertPathAliases(projectRoot, [
+            { alias: ROOT_ALIAS, target: ROOT_TARGET },
+            { alias: WILDCARD_ALIAS, target: WILDCARD_TARGETS },
+        ]);
+
+        expect(results.map((result) => result.status)).toEqual([
+            "created",
+            "created",
+        ]);
+        // O resultado do wildcard expõe a forma legível (último alvo), não o array.
+        expect(results[1].target).toBe("./cullet/erp-core@1.0.0/*");
+
+        const compilerOptions = (await readTsconfigJson())
+            .compilerOptions as Record<string, unknown>;
+        expect(compilerOptions.baseUrl).toBe(".");
+        expect(compilerOptions.paths).toEqual({
+            [ROOT_ALIAS]: [ROOT_TARGET],
+            [WILDCARD_ALIAS]: WILDCARD_TARGETS,
+        });
+    });
+
+    it("returns one missing-tsconfig result per entry when no tsconfig exists", async () => {
+        const results = await upsertPathAliases(projectRoot, [
+            { alias: ROOT_ALIAS, target: ROOT_TARGET },
+            { alias: WILDCARD_ALIAS, target: WILDCARD_TARGETS },
+        ]);
+
+        expect(results).toHaveLength(2);
+        expect(results.every((r) => r.status === "missing-tsconfig")).toBe(
+            true,
+        );
+        // Mesmo para alvos em array, o resultado carrega a forma legível.
+        expect(results[1].target).toBe("./cullet/erp-core@1.0.0/*");
+    });
+
+    it("does not touch the disk when every entry is already correct", async () => {
+        const original = JSON.stringify(
+            {
+                compilerOptions: {
+                    baseUrl: ".",
+                    paths: {
+                        [ROOT_ALIAS]: [ROOT_TARGET],
+                        [WILDCARD_ALIAS]: WILDCARD_TARGETS,
+                    },
+                },
+            },
+            null,
+            2,
+        );
+        await writeFile(join(projectRoot, "tsconfig.json"), original);
+
+        const results = await upsertPathAliases(projectRoot, [
+            { alias: ROOT_ALIAS, target: ROOT_TARGET },
+            { alias: WILDCARD_ALIAS, target: WILDCARD_TARGETS },
+        ]);
+
+        expect(results.every((r) => r.status === "unchanged")).toBe(true);
+        const after = await readFile(
+            join(projectRoot, "tsconfig.json"),
+            "utf8",
+        );
+        expect(after).toBe(original);
+    });
+
+    it("preserves unrelated aliases while adding the kit aliases", async () => {
+        await writeFile(
+            join(projectRoot, "tsconfig.json"),
+            JSON.stringify(
+                {
+                    compilerOptions: {
+                        baseUrl: ".",
+                        paths: { "@/*": ["src/*"] },
+                    },
+                },
+                null,
+                2,
+            ),
+        );
+
+        await upsertPathAliases(projectRoot, [
+            { alias: ROOT_ALIAS, target: ROOT_TARGET },
+            { alias: WILDCARD_ALIAS, target: WILDCARD_TARGETS },
+        ]);
+
+        const compilerOptions = (await readTsconfigJson())
+            .compilerOptions as Record<string, unknown>;
+        expect(compilerOptions.paths).toEqual({
+            "@/*": ["src/*"],
+            [ROOT_ALIAS]: [ROOT_TARGET],
+            [WILDCARD_ALIAS]: WILDCARD_TARGETS,
+        });
     });
 });

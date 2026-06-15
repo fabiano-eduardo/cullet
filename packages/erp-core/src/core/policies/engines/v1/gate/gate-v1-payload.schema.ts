@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { Result } from "../../../../result/result";
+import { Result } from "../../../../result/result.js";
 
-import type { GatePayloadV1 } from "./gate-types-v1";
+import type { GatePayloadV1 } from "./gate-types-v1.js";
 import {
     conditionLeafNodeSchema,
     conditionNodeSchema,
-} from "../condition-schema";
+} from "../condition-schema.js";
 
 // Re-export so gate/v1 public API remains unchanged.
 export { conditionLeafNodeSchema, conditionNodeSchema };

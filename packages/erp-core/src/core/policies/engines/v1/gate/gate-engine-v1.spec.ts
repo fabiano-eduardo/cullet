@@ -4,10 +4,10 @@ import {
     CoreConfig,
     type PolicyEvent,
     type PolicyReporter,
-} from "../../../../config";
+} from "../../../../config/index.js";
 
-import { GateEngineV1 } from "./gate-engine-v1";
-import type { GatePayloadV1 } from "./gate-types-v1";
+import { GateEngineV1 } from "./gate-engine-v1.js";
+import type { GatePayloadV1 } from "./gate-types-v1.js";
 
 function makeCoreConfig(reporter: PolicyReporter): CoreConfig {
     return new CoreConfig({

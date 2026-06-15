@@ -1,9 +1,9 @@
 import type {
     ConditionEvaluationOptions,
     ConditionEvaluatorReporter,
-} from "../policies/engines/condition-evaluator-reporter";
-import type { PolicyEvent, PolicyReporter } from "./policy-reporter";
-import { SilentPolicyReporter } from "./silent-policy-reporter";
+} from "../policies/engines/condition-evaluator-reporter.js";
+import type { PolicyEvent, PolicyReporter } from "./policy-reporter.js";
+import { SilentPolicyReporter } from "./silent-policy-reporter.js";
 
 export interface CoreObservabilityConfig {
     readonly reporter?: PolicyReporter;

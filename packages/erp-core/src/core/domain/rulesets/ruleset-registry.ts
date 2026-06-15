@@ -1,8 +1,8 @@
-import { DomainException } from "../../exceptions/domain-exception";
+import { DomainException } from "../../exceptions/domain-exception.js";
 import {
     type Ruleset,
     type RulesetRegistry as RulesetRegistryContract,
-} from "./ruleset.contracts";
+} from "./ruleset.contracts.js";
 
 class RulesetRegistryError extends DomainException {}
 

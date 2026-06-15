@@ -1,5 +1,5 @@
-import { sha256Hex, stableStringify } from "../../shared/hashing";
-import { isValidDate } from "../../shared/temporal-guards";
+import { sha256Hex, stableStringify } from "../../shared/hashing.js";
+import { isValidDate } from "../../shared/temporal-guards.js";
 
 /**
  * Produces a deterministic SHA-256 hex digest of a canonical JSON representation.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "./domain-exception";
-import { EntityNotFoundException } from "./entity-not-found-exception";
+import { DomainException } from "./domain-exception.js";
+import { EntityNotFoundException } from "./entity-not-found-exception.js";
 
 describe("EntityNotFoundException", () => {
     describe("constructor", () => {

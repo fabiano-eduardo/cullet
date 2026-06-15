@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PolicyHashing } from "./hash";
+import { PolicyHashing } from "./hash.js";
 
 describe("PolicyHashing.canonicalJson", () => {
     it("normalizes object key order recursively", () => {

@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { Result } from "../../../../result/result";
+import { Result } from "../../../../result/result.js";
 
-import { conditionNodeSchema } from "../condition-schema";
-import type { ConditionNode } from "../condition-types";
+import { conditionNodeSchema } from "../condition-schema.js";
+import type { ConditionNode } from "../condition-types.js";
 
 // ─── Pattern 1: Params ──────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ComputePayloadSchemaV1 } from "./compute-payload.schema";
+import { ComputePayloadSchemaV1 } from "./compute-payload.schema.js";
 
 describe("parseComputePayload (v1)", () => {
     describe("params pattern", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "./domain-exception";
-import { InvariantViolationException } from "./invariant-violation-exception";
+import { DomainException } from "./domain-exception.js";
+import { InvariantViolationException } from "./invariant-violation-exception.js";
 
 describe("InvariantViolationException", () => {
     describe("constructor", () => {

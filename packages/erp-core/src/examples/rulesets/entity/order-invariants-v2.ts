@@ -1,9 +1,9 @@
 import {
     DomainException,
     type RulesetId,
-} from "../../../core/domain/rulesets/entity-ruleset.contracts";
-import { type Order } from "./order";
-import { OrderInvariantsV1 } from "./order-invariants-v1";
+} from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
+import { type Order } from "./order.js";
+import { OrderInvariantsV1 } from "./order-invariants-v1.js";
 
 class OrderCancellationWindowError extends DomainException {}
 
