@@ -2,7 +2,7 @@
 
 Núcleo arquitetural para sistemas ERP e domínios transacionais. Primitives tipadas para domínio, policies, erros e application services com clean architecture pronta para receber adapters.
 
-Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../../../PHILOSOPHY.md).
+Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para os contratos comuns a todos os kits veja a [`PHILOSOPHY.md`](../../PHILOSOPHY.md).
 
 ---
 
@@ -108,5 +108,5 @@ recomendado quando ha risco de bleed entre composicoes concorrentes.
 - **Novas portas**: interface em `core/application/ports/`, implementação em `adapters/<lib>/`, sem vazar tipos da lib externa.
 - **Novas exceções de domínio**: derive de `DomainException` em `core/exceptions/`.
 - **Novos erros de aplicação**: derive de `AppError` e adicione o `code` discriminado em `core/errors/`.
-- **Mudança incompatível**: abra `versions/2.0.0/`. Regras em [`kits/VERSIONING.md`](../../../../kits/VERSIONING.md).
+- **Mudança incompatível**: evolua `src/` na branch da release e bumpe uma nova MAJOR (`2.0.0`) via changeset (`package.json`/`meta.json`). Regras em [`kits/VERSIONING.md`](../../kits/VERSIONING.md).
 - **Antes de publicar**: `npm run validate-kits` para garantir aderência à filosofia.

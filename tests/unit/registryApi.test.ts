@@ -35,7 +35,7 @@ describe("registry runtime API", () => {
         expect(erpCore).toMatchObject({
             name: "erp-core",
             description:
-                "Core ERP com clean architecture, temporalidade, policies e rule sets",
+                "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
             latest: erpCoreVersion,
             npmName: "@cullet/erp-core",
         });
@@ -54,7 +54,7 @@ describe("registry runtime API", () => {
                 version: erpCoreVersion,
                 compatibility: {
                     engines: {
-                        node: ">=18",
+                        node: ">=18.17",
                         typescript: ">=5.0.0",
                     },
                 },

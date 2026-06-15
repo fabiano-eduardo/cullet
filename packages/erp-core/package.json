@@ -1,7 +1,7 @@
 {
     "name": "@cullet/erp-core",
     "version": "1.0.6",
-    "description": "Core ERP with clean architecture, temporality, policies, and rule sets",
+    "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "type": "module",
     "repository": {
         "type": "git",
@@ -48,7 +48,8 @@
         "!src/**/*.test.ts",
         "meta.json",
         "KIT_CONTEXT.md",
-        "README.md"
+        "README.md",
+        "LICENSE"
     ],
     "sideEffects": false,
     "engines": {
