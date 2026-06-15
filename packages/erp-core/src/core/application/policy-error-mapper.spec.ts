@@ -5,11 +5,11 @@ import {
     BusinessRuleViolationError,
     NotFoundError,
     UnexpectedError,
-} from "../errors";
-import { ErrorCodes } from "../errors/error-codes";
-import type { PolicyEvaluationError } from "../policies/service/policy-evaluation-error";
+} from "../errors/index.js";
+import { ErrorCodes } from "../errors/error-codes.js";
+import type { PolicyEvaluationError } from "../policies/service/policy-evaluation-error.js";
 
-import { mapPolicyEvaluationError } from "./policy-error-mapper";
+import { mapPolicyEvaluationError } from "./policy-error-mapper.js";
 
 describe("mapPolicyEvaluationError", () => {
     describe("INVALID_CONTEXT", () => {

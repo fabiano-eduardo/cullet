@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { ValidationCode } from "../exceptions/validation-code";
-import { ValidationField } from "../exceptions/validation-field";
+import { ValidationCode } from "../exceptions/validation-code.js";
+import { ValidationField } from "../exceptions/validation-field.js";
 
-import { AuthenticationError } from "./authentication-error";
-import { AuthorizationError } from "./authorization-error";
-import { ErrorCodes } from "./error-codes";
-import { IntegrationError } from "./integration-error";
-import { NotFoundError } from "./not-found-error";
-import { UnexpectedError } from "./unexpected-error";
-import { ValidationError } from "./validation-error";
-import { NON_SERIALIZABLE_PLACEHOLDER } from "./utils";
+import { AuthenticationError } from "./authentication-error.js";
+import { AuthorizationError } from "./authorization-error.js";
+import { ErrorCodes } from "./error-codes.js";
+import { IntegrationError } from "./integration-error.js";
+import { NotFoundError } from "./not-found-error.js";
+import { UnexpectedError } from "./unexpected-error.js";
+import { ValidationError } from "./validation-error.js";
+import { NON_SERIALIZABLE_PLACEHOLDER } from "./utils/index.js";
 
 describe("catalog-errors factories", () => {
     describe("happy path", () => {

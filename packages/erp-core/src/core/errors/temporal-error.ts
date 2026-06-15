@@ -1,6 +1,6 @@
-import { AppError } from "./app-error";
-import { ErrorCodes } from "./error-codes";
-import type { AppErrorOptions } from "./types";
+import { AppError } from "./app-error.js";
+import { ErrorCodes } from "./error-codes.js";
+import type { AppErrorOptions } from "./types.js";
 
 type TemporalKind = "expired" | "not_yet_valid";
 

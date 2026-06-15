@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 
 import {
     assertTransactionTime,
     createTransactionTime,
-} from "./transaction-time";
+} from "./transaction-time.js";
 
 describe("transaction-time", () => {
     it("creates an open transaction-time range with defensive copies", () => {

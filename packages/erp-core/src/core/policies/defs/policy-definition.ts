@@ -1,10 +1,10 @@
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
-import type { PolicyKind } from "../catalog";
-import type { PolicyDefinitionId } from "../policy-ids";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
+import type { PolicyKind } from "../catalog/index.js";
+import type { PolicyDefinitionId } from "../policy-ids.js";
 
-import type { AnyPolicyPayload } from "./policy-payload.contracts";
-import type { PolicyScope } from "./policy-scope";
-import { POLICY_SEMVER_PATTERN } from "./policy-semver";
+import type { AnyPolicyPayload } from "./policy-payload.contracts.js";
+import type { PolicyScope } from "./policy-scope.js";
+import { POLICY_SEMVER_PATTERN } from "./policy-semver.js";
 
 // ─── Status ────────────────────────────────────────────────────────────────
 

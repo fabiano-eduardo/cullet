@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CPFRulesV1 } from "./cpf-rules-v1";
+import { CPFRulesV1 } from "./cpf-rules-v1.js";
 import {
     Customer,
     type CustomerCreateData,
     type CustomerSnapshot,
-} from "./customer";
-import { PersonNameRulesV2 } from "./person-name-rules-v2";
+} from "./customer.js";
+import { PersonNameRulesV2 } from "./person-name-rules-v2.js";
 
 function makeCustomerCreateData(
     overrides: Partial<CustomerCreateData> = {},

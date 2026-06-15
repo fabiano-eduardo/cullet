@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ConditionEvaluatorV1 } from "./condition-evaluator";
+import { ConditionEvaluatorV1 } from "./condition-evaluator.js";
 import type {
     ConditionEvaluationOptions,
     ConditionEvaluationReport,
     ConditionEvaluatorReporter,
-} from "../condition-evaluator-reporter";
-import type { PolicyContext } from "../gate-types";
-import type { ConditionLeafNode, ConditionNode } from "./condition-types";
+} from "../condition-evaluator-reporter.js";
+import type { PolicyContext } from "../gate-types.js";
+import type { ConditionLeafNode, ConditionNode } from "./condition-types.js";
 
 function evaluateCondition(
     node: ConditionNode,

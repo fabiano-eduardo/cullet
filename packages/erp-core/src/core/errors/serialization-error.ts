@@ -1,6 +1,6 @@
-import { AppError } from "./app-error";
-import { serializationErrorCode } from "./error-codes";
-import type { AppErrorOptions } from "./types";
+import { AppError } from "./app-error.js";
+import { serializationErrorCode } from "./error-codes.js";
+import type { AppErrorOptions } from "./types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

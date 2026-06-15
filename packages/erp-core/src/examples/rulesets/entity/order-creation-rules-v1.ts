@@ -1,5 +1,5 @@
-import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts";
-import { type OrderCreationData, type OrderCreationRuleset } from "./order";
+import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
+import { type OrderCreationData, type OrderCreationRuleset } from "./order.js";
 
 class OrderCreationValidationError extends DomainException {}
 

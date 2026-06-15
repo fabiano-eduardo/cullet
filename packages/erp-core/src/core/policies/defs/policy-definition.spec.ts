@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { asPolicyDefinitionId } from "../policy-ids";
-import { PolicyDefinition } from "./policy-definition";
+import { asPolicyDefinitionId } from "../policy-ids.js";
+import { PolicyDefinition } from "./policy-definition.js";
 
 describe("PolicyDefinition", () => {
     it("accepts policyVersion in semver format", () => {

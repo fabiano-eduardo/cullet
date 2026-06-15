@@ -3,16 +3,16 @@ export {
     createTransactionTime,
     type CreateTransactionTimeInput,
     type TransactionTime,
-} from "./transaction-time";
-export { contains, isClosed, isOpen, overlaps } from "./temporal-range";
+} from "./transaction-time.js";
+export { contains, isClosed, isOpen, overlaps } from "./temporal-range.js";
 export {
     createTemporalSnapshot,
     type CreateTemporalSnapshotInput,
     type TemporalSnapshot,
-} from "./temporal-snapshot";
+} from "./temporal-snapshot.js";
 export {
     assertValidTime,
     createValidTime,
     type CreateValidTimeInput,
     type ValidTime,
-} from "./valid-time";
+} from "./valid-time.js";

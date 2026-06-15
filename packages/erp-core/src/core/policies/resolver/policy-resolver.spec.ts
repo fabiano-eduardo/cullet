@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { PolicyDefinition } from "../defs";
-import type { PolicyScope } from "../defs/policy-scope";
-import { asPolicyDefinitionId, asSchoolId, asTenantId } from "../policy-ids";
+import { PolicyDefinition } from "../defs/index.js";
+import type { PolicyScope } from "../defs/policy-scope.js";
+import { asPolicyDefinitionId, asSchoolId, asTenantId } from "../policy-ids.js";
 
-import { PolicyResolver } from "./policy-resolver";
+import { PolicyResolver } from "./policy-resolver.js";
 
 const POLICY_KEY = "financial.billing.psp_selection" as const;
 const EFFECTIVE_FROM = new Date("2024-01-01T00:00:00.000Z");

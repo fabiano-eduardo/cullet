@@ -1,4 +1,4 @@
-import type { GatePayloadV1 } from "./v1/gate/gate-types-v1";
+import type { GatePayloadV1 } from "./v1/gate/gate-types-v1.js";
 
 export type { GatePayloadV1 };
 

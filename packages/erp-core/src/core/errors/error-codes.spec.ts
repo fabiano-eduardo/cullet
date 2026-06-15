@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { AlreadyExistsError } from "./conflict-error";
-import { ErrorCodes, serializationErrorCode } from "./error-codes";
-import { IdempotencyError } from "./idempotency-error";
-import { SerializationCodes } from "./serialization-error";
+import { AlreadyExistsError } from "./conflict-error.js";
+import { ErrorCodes, serializationErrorCode } from "./error-codes.js";
+import { IdempotencyError } from "./idempotency-error.js";
+import { SerializationCodes } from "./serialization-error.js";
 
 describe("ErrorCodes", () => {
     it("keeps the audited conflict and idempotency codes as the single source of truth", () => {

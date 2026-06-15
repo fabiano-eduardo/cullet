@@ -1,4 +1,4 @@
-import type { ComputePayload, GatePayload } from "../engines";
+import type { ComputePayload, GatePayload } from "../engines/index.js";
 
 export type AnyPolicyPayload = GatePayload | ComputePayload;
 

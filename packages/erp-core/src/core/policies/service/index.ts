@@ -1,5 +1,5 @@
-export { PolicyService } from "./policy-service";
-export { PolicyEvaluationErrors } from "./policy-evaluation-error";
+export { PolicyService } from "./policy-service.js";
+export { PolicyEvaluationErrors } from "./policy-evaluation-error.js";
 export type {
     EvaluateInput,
     PolicyDecision,
@@ -7,4 +7,4 @@ export type {
     PolicyEvaluationResult,
     PolicyServiceOptions,
     PolicyServiceParams,
-} from "./policy-service";
+} from "./policy-service.js";

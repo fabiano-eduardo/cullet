@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Result } from "../../result/result";
-import { asSchoolId, asTenantId } from "../policy-ids";
+import { Result } from "../../result/result.js";
+import { asSchoolId, asTenantId } from "../policy-ids.js";
 
-import { PolicyContextBuilder } from "./context-builder";
-import { ContextResolverRegistry } from "./context-registry";
-import type { ContextValueResolver } from "./context-resolver";
-import type { ContextSeed } from "./context-seed";
+import { PolicyContextBuilder } from "./context-builder.js";
+import { ContextResolverRegistry } from "./context-registry.js";
+import type { ContextValueResolver } from "./context-resolver.js";
+import type { ContextSeed } from "./context-seed.js";
 
 const seed: ContextSeed = {
     tenantId: asTenantId("tenant-1"),

@@ -1,6 +1,9 @@
-import type { AppError } from "../../errors";
-import type { EvaluateInput, PolicyEvaluationResult } from "../../policies";
-import type { Result } from "../../result/result";
+import type { AppError } from "../../errors/index.js";
+import type {
+    EvaluateInput,
+    PolicyEvaluationResult,
+} from "../../policies/index.js";
+import type { Result } from "../../result/result.js";
 
 type PolicyEvaluationInput = EvaluateInput;
 type PolicyEvaluationOutput = PolicyEvaluationResult;

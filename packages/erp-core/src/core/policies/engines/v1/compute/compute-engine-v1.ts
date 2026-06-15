@@ -1,14 +1,14 @@
-import { type CoreConfig, coreConfig } from "../../../../config";
-import { Result } from "../../../../result/result";
+import { type CoreConfig, coreConfig } from "../../../../config/index.js";
+import { Result } from "../../../../result/result.js";
 
-import type { ComputePayloadV1 as ComputePayload } from "./compute-payload.schema";
-import { DecisionTableResolverV1 } from "./resolve-decision-table-v1";
+import type { ComputePayloadV1 as ComputePayload } from "./compute-payload.schema.js";
+import { DecisionTableResolverV1 } from "./resolve-decision-table-v1.js";
 import type {
     ComputeEvaluator,
     ComputeOutcome,
     VersionedComputeEngine,
-} from "../../compute-types";
-import type { PolicyContext } from "../../gate-types";
+} from "../../compute-types.js";
+import type { PolicyContext } from "../../gate-types.js";
 
 // ─── Compute engine v1 ───────────────────────────────────────────────────────
 

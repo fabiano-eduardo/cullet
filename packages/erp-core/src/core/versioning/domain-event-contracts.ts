@@ -1,8 +1,8 @@
-import { UseCase } from "../application/use-case";
-import { Entity } from "../domain/entity";
-import { ValueObject } from "../domain/value-object";
-import { assertValidAggregateVersion } from "../shared/aggregate-version";
-import { type ContractVersion } from "./version";
+import { UseCase } from "../application/use-case.js";
+import { Entity } from "../domain/entity.js";
+import { ValueObject } from "../domain/value-object.js";
+import { assertValidAggregateVersion } from "../shared/aggregate-version.js";
+import { type ContractVersion } from "./version.js";
 
 interface DomainEventContractSelection {
     readonly entity?: boolean;

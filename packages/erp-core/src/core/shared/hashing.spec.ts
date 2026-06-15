@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { payloadHash, sha256Hex, stableStringify } from "./hashing";
+import { payloadHash, sha256Hex, stableStringify } from "./hashing.js";
 
 describe("stableStringify", () => {
     it("produces the same string regardless of key order", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTemporalSnapshot } from "./temporal-snapshot";
+import { createTemporalSnapshot } from "./temporal-snapshot.js";
 
 interface EnrollmentSnapshotData {
     student: {

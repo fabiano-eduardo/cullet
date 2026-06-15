@@ -1,6 +1,6 @@
 // core/domain/outcome.ts
 
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 
 /**
  * Outcome — Business decision abstraction.

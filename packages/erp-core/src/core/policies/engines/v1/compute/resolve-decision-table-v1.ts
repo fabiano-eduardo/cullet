@@ -1,9 +1,9 @@
-import { Result } from "../../../../result/result";
+import { Result } from "../../../../result/result.js";
 
-import type { ConditionEvaluationOptions } from "../../condition-evaluator-reporter";
+import type { ConditionEvaluationOptions } from "../../condition-evaluator-reporter.js";
 
-import { ConditionEvaluatorV1 } from "../condition-evaluator";
-import type { ComputeDecisionTablePayload } from "./compute-payload.schema";
+import { ConditionEvaluatorV1 } from "../condition-evaluator.js";
+import type { ComputeDecisionTablePayload } from "./compute-payload.schema.js";
 
 const COMPUTE_CONDITION_EVAL_FAILED_TAG = "COMPUTE_CONDITION_EVAL_FAILED";
 

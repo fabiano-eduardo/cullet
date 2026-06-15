@@ -1,9 +1,9 @@
-import { ValidationCode } from "../exceptions/validation-code";
-import { ValidationField } from "../exceptions/validation-field";
+import { ValidationCode } from "../exceptions/validation-code.js";
+import { ValidationField } from "../exceptions/validation-field.js";
 
-import { AppError } from "./app-error";
-import { ErrorCodes } from "./error-codes";
-import type { AppErrorOptions } from "./types";
+import { AppError } from "./app-error.js";
+import { ErrorCodes } from "./error-codes.js";
+import type { AppErrorOptions } from "./types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ValidationError

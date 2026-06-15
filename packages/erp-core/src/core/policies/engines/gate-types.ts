@@ -1,7 +1,7 @@
-import type { Outcome } from "../../result/outcome";
-import type { Result } from "../../result/result";
+import type { Outcome } from "../../result/outcome.js";
+import type { Result } from "../../result/result.js";
 
-import type { GatePayload } from "./gate-payload";
+import type { GatePayload } from "./gate-payload.js";
 
 // ─── Shared gate types (version-agnostic) ───────────────────────────────────
 

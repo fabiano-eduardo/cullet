@@ -7,6 +7,8 @@ import {
     DIST_DIR,
     kitFullControlAliasTarget,
     kitFullControlDir,
+    kitFullControlSubpathAlias,
+    kitFullControlSubpathAliasTarget,
     kitNodeModulesEntry,
     kitToolingDestinationDir,
     resolveKitPackageRoot,
@@ -33,6 +35,22 @@ describe("paths", () => {
         expect(kitFullControlAliasTarget("erp-core", "1.0.0")).toBe(
             "./cullet/erp-core@1.0.0/index.ts",
         );
+    });
+
+    it("derives the subpath wildcard alias from the npm name", () => {
+        expect(kitFullControlSubpathAlias("@cullet/erp-core")).toBe(
+            "@cullet/erp-core/*",
+        );
+    });
+
+    it("renders subpath wildcard targets covering file, barrel, and bundler forms", () => {
+        // A ordem importa: nodenext exige um caminho concreto (arquivo ou
+        // barril) antes do fallback bundler (`*`).
+        expect(kitFullControlSubpathAliasTarget("erp-core", "1.0.0")).toEqual([
+            "./cullet/erp-core@1.0.0/*.ts",
+            "./cullet/erp-core@1.0.0/*/index.ts",
+            "./cullet/erp-core@1.0.0/*",
+        ]);
     });
 
     it("resolves a tooling placement relative to the project cwd", () => {

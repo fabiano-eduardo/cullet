@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { AppError } from "./app-error";
-import { ErrorCodes } from "./error-codes";
-import { LegacyIncompatibleError } from "./legacy-incompatible-error";
+import { AppError } from "./app-error.js";
+import { ErrorCodes } from "./error-codes.js";
+import { LegacyIncompatibleError } from "./legacy-incompatible-error.js";
 
 describe("LegacyIncompatibleError", () => {
     describe("happy path", () => {

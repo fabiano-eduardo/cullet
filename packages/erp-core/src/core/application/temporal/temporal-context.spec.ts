@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 
 import {
     assertTemporalContext,
     createTemporalContext,
-} from "./temporal-context";
+} from "./temporal-context.js";
 
 describe("temporal-context", () => {
     it("uses requestedAt as the asOf fallback and creates defensive copies", () => {

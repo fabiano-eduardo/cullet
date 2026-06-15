@@ -1,9 +1,9 @@
-import { CPF } from "./cpf";
-import { PersonName } from "./person-name";
+import { CPF } from "./cpf.js";
+import { PersonName } from "./person-name.js";
 import {
     type RulesetId,
     type ValueObjectRuleset,
-} from "../../../core/domain/rulesets/value-object-ruleset.contracts";
+} from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 
 interface CustomerCreateData {
     readonly cpf: string;

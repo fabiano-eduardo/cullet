@@ -1,2 +1,2 @@
-export type { CacheStrategy, Page } from "./query";
-export { Query } from "./query";
+export type { CacheStrategy, Page } from "./query.js";
+export { Query } from "./query.js";

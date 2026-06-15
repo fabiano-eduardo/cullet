@@ -1,6 +1,6 @@
-import { PolicyContextPath } from "../../context";
-import { PolicyDateUtils } from "../../utils";
-import { Result } from "../../../result/result";
+import { PolicyContextPath } from "../../context/index.js";
+import { PolicyDateUtils } from "../../utils/index.js";
+import { Result } from "../../../result/result.js";
 
 import type {
     ConditionAndNode,
@@ -9,12 +9,12 @@ import type {
     ConditionNotNode,
     ConditionOp,
     ConditionOrNode,
-} from "./condition-types";
+} from "./condition-types.js";
 import type {
     ConditionEvaluationOptions,
     ConditionEvaluationReport,
-} from "../condition-evaluator-reporter";
-import type { PolicyContext } from "../gate-types";
+} from "../condition-evaluator-reporter.js";
+import type { PolicyContext } from "../gate-types.js";
 
 const CONDITION_EVAL_THROWN_TAG = "CONDITION_EVAL_THREW";
 const NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG =

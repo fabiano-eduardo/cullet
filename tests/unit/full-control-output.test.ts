@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     printAliasOutcome,
+    printAliasOutcomes,
     printExternalDepsWarning,
     printInstallPreview,
 } from "../../packages/cli/src/cli/commands/full-control/output.js";
@@ -128,5 +129,70 @@ describe("printAliasOutcome", () => {
     ] as const)("real run reports %s as %j", (status, label) => {
         printAliasOutcome(makeAliasResult({ status }), { dryRun: false });
         expect(loggedOutput()).toContain(`Alias ${label}`);
+    });
+});
+
+describe("printAliasOutcomes", () => {
+    it("reports one alias line per result", () => {
+        printAliasOutcomes(
+            [
+                makeAliasResult({ alias: "@cullet/erp-core" }),
+                makeAliasResult({
+                    alias: "@cullet/erp-core/*",
+                    target: "./cullet/erp-core@1.0.0/*",
+                }),
+            ],
+            { dryRun: false },
+        );
+
+        const output = loggedOutput();
+        expect(output).toContain(
+            "Alias criado: @cullet/erp-core -> ./cullet/erp-core@1.0.0/index.ts",
+        );
+        expect(output).toContain(
+            "Alias criado: @cullet/erp-core/* -> ./cullet/erp-core@1.0.0/*",
+        );
+    });
+
+    it("prints the baseUrl advisory only once across the batch", () => {
+        printAliasOutcomes(
+            [
+                makeAliasResult({
+                    alias: "@cullet/erp-core",
+                    baseUrlWasExplicit: true,
+                    consumerBaseUrl: "./src",
+                }),
+                makeAliasResult({
+                    alias: "@cullet/erp-core/*",
+                    target: "./cullet/erp-core@1.0.0/*",
+                    baseUrlWasExplicit: true,
+                    consumerBaseUrl: "./src",
+                }),
+            ],
+            { dryRun: false },
+        );
+
+        const occurrences =
+            loggedOutput().split('baseUrl do seu tsconfig esta como "./src"')
+                .length - 1;
+        expect(occurrences).toBe(1);
+    });
+
+    it("prints the missing-tsconfig warning once for the whole batch", () => {
+        printAliasOutcomes(
+            [
+                makeAliasResult({ status: "missing-tsconfig" }),
+                makeAliasResult({
+                    status: "missing-tsconfig",
+                    alias: "@cullet/erp-core/*",
+                }),
+            ],
+            { dryRun: false },
+        );
+
+        const occurrences =
+            loggedOutput().split("Nenhum tsconfig.json foi encontrado").length -
+            1;
+        expect(occurrences).toBe(1);
     });
 });

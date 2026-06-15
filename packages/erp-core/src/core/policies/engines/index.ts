@@ -1,4 +1,4 @@
-export type { ComputePayload, ComputePayloadV1 } from "./compute-payload";
+export type { ComputePayload, ComputePayloadV1 } from "./compute-payload.js";
 export type {
     ComputeEvaluator,
     ComputeEvaluatorRegistration,
@@ -6,7 +6,7 @@ export type {
     ComputeOutcomeData,
     ComputeStatus,
     VersionedComputeEngine,
-} from "./compute-types";
+} from "./compute-types.js";
 export type {
     ConditionEvaluationCause,
     ConditionEvaluationOptions,
@@ -14,12 +14,12 @@ export type {
     ConditionEvaluationReportLevel,
     ConditionEvaluationReportTag,
     ConditionEvaluatorReporter,
-} from "./condition-evaluator-reporter";
-export { ComputeEngineRegistry } from "./compute-engine-registry";
-export { ComputeEvaluatorRegistry } from "./compute-evaluator-registry";
-export { ComputeRegistry } from "./compute-registry";
-export { GateEngineRegistry } from "./gate-engine-registry";
-export type { GatePayload, GatePayloadV1 } from "./gate-payload";
+} from "./condition-evaluator-reporter.js";
+export { ComputeEngineRegistry } from "./compute-engine-registry.js";
+export { ComputeEvaluatorRegistry } from "./compute-evaluator-registry.js";
+export { ComputeRegistry } from "./compute-registry.js";
+export { GateEngineRegistry } from "./gate-engine-registry.js";
+export type { GatePayload, GatePayloadV1 } from "./gate-payload.js";
 export type {
     GateOutcome,
     GateOutcomeData,
@@ -30,19 +30,19 @@ export type {
     PolicyContext,
     PolicyViolation,
     VersionedGateEngine,
-} from "./gate-types";
+} from "./gate-types.js";
 export {
     ComputePayloadParsers,
     ComputePayloadParserRegistry,
-} from "./parse-compute-payload";
-export type { ComputePayloadParser } from "./parse-compute-payload";
+} from "./parse-compute-payload.js";
+export type { ComputePayloadParser } from "./parse-compute-payload.js";
 export {
     GatePayloadParsers,
     GatePayloadParserRegistry,
-} from "./parse-gate-payload";
-export type { GatePayloadParser } from "./parse-gate-payload";
+} from "./parse-gate-payload.js";
+export type { GatePayloadParser } from "./parse-gate-payload.js";
 export type {
     ComputeDecisionTablePayload,
     ComputeDecisionTableRule,
     ComputeParamsPayload,
-} from "./v1/compute";
+} from "./v1/compute/index.js";

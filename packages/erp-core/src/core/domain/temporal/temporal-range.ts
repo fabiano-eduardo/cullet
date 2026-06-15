@@ -1,6 +1,6 @@
-import { assertValidDate } from "../../shared/temporal-guards";
+import { assertValidDate } from "../../shared/temporal-guards.js";
 
-import { assertValidTime, type ValidTime } from "./valid-time";
+import { assertValidTime, type ValidTime } from "./valid-time.js";
 
 /**
  * Checks whether a temporal range is "open" (has no end date).

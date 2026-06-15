@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 
-import { contains, isClosed, isOpen, overlaps } from "./temporal-range";
-import { createValidTime } from "./valid-time";
+import { contains, isClosed, isOpen, overlaps } from "./temporal-range.js";
+import { createValidTime } from "./valid-time.js";
 
 describe("temporal-range", () => {
     it('isOpen identifies ranges without "to"', () => {

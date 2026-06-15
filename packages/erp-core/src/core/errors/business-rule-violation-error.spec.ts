@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { AppError } from "./app-error";
-import { BusinessRuleViolationError } from "./business-rule-violation-error";
-import { ErrorCodes } from "./error-codes";
+import { AppError } from "./app-error.js";
+import { BusinessRuleViolationError } from "./business-rule-violation-error.js";
+import { ErrorCodes } from "./error-codes.js";
 
 describe("BusinessRuleViolationError", () => {
     describe("happy path", () => {

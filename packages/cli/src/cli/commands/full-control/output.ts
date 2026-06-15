@@ -61,7 +61,7 @@ export function printInstallPreview(context: FullControlContext): void {
 
 export function printAliasOutcome(
     aliasResult: Awaited<ReturnType<typeof upsertPathAlias>>,
-    options: { dryRun: boolean },
+    options: { dryRun: boolean; suppressBaseUrlAdvisory?: boolean },
 ): void {
     const prefix = options.dryRun ? "[dry-run] " : "";
 
@@ -75,6 +75,7 @@ export function printAliasOutcome(
     }
 
     if (
+        !options.suppressBaseUrlAdvisory &&
         aliasResult.baseUrlWasExplicit &&
         aliasResult.consumerBaseUrl !== undefined &&
         aliasResult.consumerBaseUrl !== "."
@@ -109,4 +110,28 @@ export function printAliasOutcome(
             `${prefix}Alias ${actionLabel}: ${aliasResult.alias} -> ${aliasResult.target}`,
         ),
     );
+}
+
+/**
+ * Reporta o resultado de um lote de aliases (specifier raiz + wildcard de
+ * subpath). O aviso de baseUrl, quando aplicável, é impresso uma única vez; a
+ * mensagem de "tsconfig ausente" também não é duplicada.
+ */
+export function printAliasOutcomes(
+    aliasResults: Awaited<ReturnType<typeof upsertPathAlias>>[],
+    options: { dryRun: boolean },
+): void {
+    if (aliasResults.length === 0) return;
+
+    if (aliasResults[0].status === "missing-tsconfig") {
+        printAliasOutcome(aliasResults[0], options);
+        return;
+    }
+
+    aliasResults.forEach((aliasResult, index) => {
+        printAliasOutcome(aliasResult, {
+            ...options,
+            suppressBaseUrlAdvisory: index > 0,
+        });
+    });
 }

@@ -1,4 +1,4 @@
-import type { PolicyKind } from "../catalog";
+import type { PolicyKind } from "../catalog/index.js";
 
 // ─── Error Union ─────────────────────────────────────────────────────────────
 

@@ -4,11 +4,11 @@ vi.mock("../application/use-case", () => ({
     UseCase: { CONTRACT_VERSION: "1.0" },
 }));
 
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 import {
     buildDomainEventContractVersions,
     createDomainEventEnvelope,
-} from "./domain-event-contracts";
+} from "./domain-event-contracts.js";
 
 describe("buildDomainEventContractVersions()", () => {
     it("returns an empty object when no selection is made", () => {

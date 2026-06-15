@@ -1,6 +1,6 @@
-import { ValidationCode } from "../exceptions/validation-code";
-import { InvalidValueException } from "../exceptions/validation-exception";
-import { ValidationField } from "../exceptions/validation-field";
+import { ValidationCode } from "../exceptions/validation-code.js";
+import { InvalidValueException } from "../exceptions/validation-exception.js";
+import { ValidationField } from "../exceptions/validation-field.js";
 
 type Brand<TValue, TBrand extends string> = TValue & {
     readonly __brand: TBrand;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deepFreeze, makeImmutable } from "./immutable";
+import { deepFreeze, makeImmutable } from "./immutable.js";
 
 describe("deepFreeze", () => {
     it("freezes nested objects and arrays deeply", () => {

@@ -1,11 +1,11 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 import {
     ContextResolverRegistry,
     registerNamespacedContextResolversIn,
-} from "./context-registry";
+} from "./context-registry.js";
 
-import type { ContextValueResolver } from "./context-resolver";
+import type { ContextValueResolver } from "./context-resolver.js";
 
 /**
  * Official instance of the ContextResolverRegistry.

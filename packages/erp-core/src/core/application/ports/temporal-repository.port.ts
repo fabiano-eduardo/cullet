@@ -1,6 +1,6 @@
-import type { TemporalSnapshot } from "../../domain/temporal";
+import type { TemporalSnapshot } from "../../domain/temporal/index.js";
 
-import type { Repository } from "./repository.port";
+import type { Repository } from "./repository.port.js";
 
 type TemporalHistory<TEntity> = readonly TemporalSnapshot<TEntity>[];
 

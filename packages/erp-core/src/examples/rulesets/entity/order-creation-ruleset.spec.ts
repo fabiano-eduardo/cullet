@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Order, type OrderCreationData, type OrderItem } from "./order";
-import { OrderCreationRulesV1 } from "./order-creation-rules-v1";
-import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts";
+import { Order, type OrderCreationData, type OrderItem } from "./order.js";
+import { OrderCreationRulesV1 } from "./order-creation-rules-v1.js";
+import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
 
 const orderCreationRulesetV1 = new OrderCreationRulesV1();
 

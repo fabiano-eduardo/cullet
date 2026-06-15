@@ -1,13 +1,13 @@
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
-import type { ContextResolverRegistry } from "./context-registry";
+import type { ContextResolverRegistry } from "./context-registry.js";
 import type {
     ContextResolverResilienceOptions,
     ContextResolverRetryOptions,
     ContextValueResolver,
-} from "./context-resolver";
-import type { ContextSeed } from "./context-seed";
-import { PolicyContextPath } from "./path";
+} from "./context-resolver.js";
+import type { ContextSeed } from "./context-seed.js";
+import { PolicyContextPath } from "./path.js";
 
 interface NormalizedContextResolverRetryOptions {
     readonly maxAttempts: number;

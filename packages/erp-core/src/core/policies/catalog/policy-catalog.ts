@@ -1,7 +1,7 @@
-import { UnexpectedError } from "../../errors";
-import { Result } from "../../result/result";
+import { UnexpectedError } from "../../errors/index.js";
+import { Result } from "../../result/result.js";
 
-import { PolicyCatalogEntry } from "./policy-catalog-entry";
+import { PolicyCatalogEntry } from "./policy-catalog-entry.js";
 
 /**
  * In-code catalog of all known policies.

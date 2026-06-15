@@ -1,5 +1,5 @@
-import { makeImmutable } from "../../shared/immutable";
-import { assertValidDate } from "../../shared/temporal-guards";
+import { makeImmutable } from "../../shared/immutable.js";
+import { assertValidDate } from "../../shared/temporal-guards.js";
 
 interface TemporalContext {
     readonly asOf: Date;

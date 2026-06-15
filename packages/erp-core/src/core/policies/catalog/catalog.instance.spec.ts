@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { PolicyPackage } from "../package/policy-package";
+import type { PolicyPackage } from "../package/policy-package.js";
 
-import { PolicyCatalogFactory } from "./catalog.instance";
-import type { PolicyCatalogEntryProps } from "./policy-catalog-entry";
-import { PolicyKey } from "./policy-key";
+import { PolicyCatalogFactory } from "./catalog.instance.js";
+import type { PolicyCatalogEntryProps } from "./policy-catalog-entry.js";
+import { PolicyKey } from "./policy-key.js";
 
 const eligibilityKey = PolicyKey.parse(
     "financial.charges.charge_eligibility",

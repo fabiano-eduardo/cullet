@@ -1,7 +1,7 @@
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
-import { assertValidAggregateVersion } from "../shared/aggregate-version";
-import { assertValidDate, cloneDate } from "../shared/temporal-guards";
-import { type ContractVersion, version } from "../versioning/version";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
+import { assertValidAggregateVersion } from "../shared/aggregate-version.js";
+import { assertValidDate, cloneDate } from "../shared/temporal-guards.js";
+import { type ContractVersion, version } from "../versioning/version.js";
 
 interface EntityState<TIdentifier> {
     readonly id: TIdentifier;
@@ -12,7 +12,7 @@ interface EntityState<TIdentifier> {
 
 @version("1.0")
 abstract class Entity<TIdentifier> {
-    public static readonly CONTRACT_VERSION: ContractVersion;
+    declare public static readonly CONTRACT_VERSION: ContractVersion;
 
     private readonly _id: TIdentifier;
     private readonly _createdAt: Date;

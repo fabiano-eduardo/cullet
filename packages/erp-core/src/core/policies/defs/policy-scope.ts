@@ -1,5 +1,5 @@
-import type { PolicyScopeLevel } from "../catalog";
-import type { SchoolId, TenantId } from "../policy-ids";
+import type { PolicyScopeLevel } from "../catalog/index.js";
+import type { SchoolId, TenantId } from "../policy-ids.js";
 
 /**
  * Scope attached to a PolicyDefinition — defines where it applies.

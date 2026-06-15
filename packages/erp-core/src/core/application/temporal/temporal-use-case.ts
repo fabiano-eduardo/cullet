@@ -1,11 +1,11 @@
-import { UseCase } from "../use-case";
-import type { ContextSeed } from "../../policies";
-import type { Result } from "../../result/result";
+import { UseCase } from "../use-case.js";
+import type { ContextSeed } from "../../policies/index.js";
+import type { Result } from "../../result/result.js";
 
 import {
     createTemporalContext,
     type TemporalContext,
-} from "./temporal-context";
+} from "./temporal-context.js";
 
 interface TemporalUseCaseInput {
     readonly temporalContext?: TemporalContext;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ValidationField } from "./validation-field";
+import { ValidationField } from "./validation-field.js";
 
 describe("ValidationField", () => {
     describe("of()", () => {

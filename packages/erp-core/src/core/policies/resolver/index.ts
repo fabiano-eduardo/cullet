@@ -1,1 +1,1 @@
-export { PolicyResolver } from "./policy-resolver";
+export { PolicyResolver } from "./policy-resolver.js";

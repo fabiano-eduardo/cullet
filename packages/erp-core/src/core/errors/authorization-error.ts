@@ -1,6 +1,6 @@
-import { AppError } from "./app-error";
-import { ErrorCodes } from "./error-codes";
-import type { AppErrorOptions, ErrorSeverity } from "./types";
+import { AppError } from "./app-error.js";
+import { ErrorCodes } from "./error-codes.js";
+import type { AppErrorOptions, ErrorSeverity } from "./types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { comparePolicySemver } from "./policy-semver";
+import { comparePolicySemver } from "./policy-semver.js";
 
 describe("comparePolicySemver", () => {
     it("orders numeric pre-release identifiers numerically", () => {

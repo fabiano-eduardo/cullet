@@ -8,48 +8,48 @@ export type {
     JsonSafePrimitive,
     JsonSafeRecord,
     JsonSafeValue,
-} from "./types";
+} from "./types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { ErrorCodes, serializationErrorCode } from "./error-codes";
-export { assertJsonSafeMetadata } from "./utils";
+export { ErrorCodes, serializationErrorCode } from "./error-codes.js";
+export { assertJsonSafeMetadata } from "./utils/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error classes
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { AppError } from "./app-error";
+export { AppError } from "./app-error.js";
 export type {
     AuthenticationErrorMetadata,
     AuthenticationErrorReason,
-} from "./authentication-error";
-export { AuthenticationError } from "./authentication-error";
+} from "./authentication-error.js";
+export { AuthenticationError } from "./authentication-error.js";
 export type {
     AuthorizationErrorMetadata,
     AuthorizationErrorReason,
     AuthorizationRequirement,
-} from "./authorization-error";
-export { AuthorizationError } from "./authorization-error";
-export { BusinessRuleViolationError } from "./business-rule-violation-error";
+} from "./authorization-error.js";
+export { AuthorizationError } from "./authorization-error.js";
+export { BusinessRuleViolationError } from "./business-rule-violation-error.js";
 export type {
     ConflictErrorMetadata,
     ConflictKind,
     UniqueConstraintViolation,
-} from "./conflict-error";
+} from "./conflict-error.js";
 export {
     AlreadyExistsError,
     ConflictError,
     DuplicateError,
     translateUniqueViolationToDuplicate,
     UniqueConstraintViolationError,
-} from "./conflict-error";
+} from "./conflict-error.js";
 export type {
     IdempotencyErrorMetadata,
     IdempotencyFailureKind,
-} from "./idempotency-error";
+} from "./idempotency-error.js";
 export {
     IdempotencyError,
     IdempotencyInProgressError,
@@ -59,20 +59,20 @@ export {
     payloadHash,
     sha256Hex,
     stableStringify,
-} from "./idempotency-error";
+} from "./idempotency-error.js";
 export type {
     IntegrationErrorMetadata,
     IntegrationErrorReason,
-} from "./integration-error";
-export { IntegrationError } from "./integration-error";
-export { LegacyIncompatibleError } from "./legacy-incompatible-error";
-export { NotFoundError } from "./not-found-error";
+} from "./integration-error.js";
+export { IntegrationError } from "./integration-error.js";
+export { LegacyIncompatibleError } from "./legacy-incompatible-error.js";
+export { NotFoundError } from "./not-found-error.js";
 export type {
     SerializationBoundary,
     SerializationDirection,
     SerializationErrorMetadata,
     SerializationFailureCategory,
-} from "./serialization-error";
+} from "./serialization-error.js";
 export {
     SerializationInError as DeserializationError,
     safePreview,
@@ -81,19 +81,19 @@ export {
     SerializationInError,
     SerializationMessages,
     SerializationOutError,
-} from "./serialization-error";
+} from "./serialization-error.js";
 export type {
     TemporalErrorMetadata as ExpiredErrorMetadata,
     TemporalPrecision as ExpiredErrorPrecision,
     TemporalErrorMetadata,
     TemporalKind,
     TemporalPrecision,
-} from "./temporal-error";
+} from "./temporal-error.js";
 export {
     evaluateTemporalWindow,
     ExpiredError,
     NotYetValidError,
     TemporalError,
-} from "./temporal-error";
-export { UnexpectedError } from "./unexpected-error";
-export { ValidationError } from "./validation-error";
+} from "./temporal-error.js";
+export { UnexpectedError } from "./unexpected-error.js";
+export { ValidationError } from "./validation-error.js";

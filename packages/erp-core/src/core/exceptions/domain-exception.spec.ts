@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DomainException } from "./domain-exception";
+import { DomainException } from "./domain-exception.js";
 
 class ConcreteDomainException extends DomainException {
     constructor(message: string) {

@@ -216,20 +216,44 @@ export interface UpsertPathAliasOptions {
     dryRun?: boolean;
 }
 
-export async function upsertPathAlias(
+export interface PathAliasEntry {
+    /** Specifier registrado em compilerOptions.paths (ex.: "@cullet/erp-core" ou "@cullet/erp-core/*"). */
+    alias: string;
+    /**
+     * Caminho(s) relativo(s) que o alias resolve. Um array grava múltiplos
+     * fallbacks (ex.: arquivo, barril de diretório e forma bundler), tentados em
+     * ordem pelo TypeScript.
+     */
+    target: string | string[];
+}
+
+function stringArraysEqual(a: string[], b: string[]): boolean {
+    return (
+        a.length === b.length && a.every((value, index) => value === b[index])
+    );
+}
+
+/**
+ * Registra um ou mais aliases de `paths` em uma única leitura/gravação do
+ * tsconfig.json: garante `compilerOptions`/`baseUrl`/`paths` uma só vez, detecta
+ * o `baseUrl` do consumidor uma só vez e devolve um resultado por entrada (na
+ * mesma ordem). Não grava nada quando todas as entradas já estão corretas.
+ */
+export async function upsertPathAliases(
     projectRoot: string,
-    alias: string,
-    target: string,
+    entries: PathAliasEntry[],
     options: UpsertPathAliasOptions = {},
-): Promise<AliasUpdateResult> {
+): Promise<AliasUpdateResult[]> {
     const loadedTsconfig = await loadTsconfig(projectRoot);
 
     if (loadedTsconfig === null) {
-        return {
+        return entries.map((entry) => ({
             status: "missing-tsconfig",
-            alias,
-            target,
-        };
+            alias: entry.alias,
+            target: Array.isArray(entry.target)
+                ? entry.target[entry.target.length - 1]
+                : entry.target,
+        }));
     }
 
     const compilerOptions = readObjectField(
@@ -255,78 +279,119 @@ export async function upsertPathAlias(
         compilerOptions === undefined
             ? undefined
             : readObjectField(compilerOptions, "paths");
-    const hadAlias =
-        paths !== undefined &&
-        Object.prototype.hasOwnProperty.call(paths, alias);
-    const currentValue =
-        paths === undefined ? null : readStringArray(paths[alias]);
 
-    if (
-        currentValue !== null &&
-        currentValue.length === 1 &&
-        currentValue[0] === target
-    ) {
-        return {
-            status: "unchanged",
+    const { formattingOptions } = loadedTsconfig;
+    let nextContent = loadedTsconfig.rawContent;
+    let needsCompilerOptions = compilerOptions === undefined;
+    let needsBaseUrl = !baseUrlWasExplicit;
+    let needsPaths = paths === undefined;
+    let mutated = false;
+
+    const results: AliasUpdateResult[] = [];
+
+    for (const { alias, target } of entries) {
+        const targetList = Array.isArray(target) ? target : [target];
+        // Forma legível para o relatório: para wildcards multi-target, o último
+        // alvo (a forma "*") é o mapeamento conceitual; os demais são plumbing.
+        const displayTarget = targetList[targetList.length - 1];
+        const hadAlias =
+            paths !== undefined &&
+            Object.prototype.hasOwnProperty.call(paths, alias);
+        const currentValue =
+            paths === undefined ? null : readStringArray(paths[alias]);
+
+        if (
+            currentValue !== null &&
+            stringArraysEqual(currentValue, targetList)
+        ) {
+            results.push({
+                status: "unchanged",
+                alias,
+                target: displayTarget,
+                tsconfigPath: loadedTsconfig.path,
+                consumerBaseUrl,
+                baseUrlWasExplicit,
+            });
+            continue;
+        }
+
+        if (needsCompilerOptions) {
+            nextContent = applyJsoncEdit(
+                nextContent,
+                ["compilerOptions"],
+                {},
+                formattingOptions,
+            );
+            needsCompilerOptions = false;
+        }
+
+        if (needsBaseUrl) {
+            nextContent = applyJsoncEdit(
+                nextContent,
+                ["compilerOptions", "baseUrl"],
+                ".",
+                formattingOptions,
+            );
+            needsBaseUrl = false;
+        }
+
+        if (needsPaths) {
+            nextContent = applyJsoncEdit(
+                nextContent,
+                ["compilerOptions", "paths"],
+                {},
+                formattingOptions,
+            );
+            needsPaths = false;
+        }
+
+        nextContent = applyJsoncEdit(
+            nextContent,
+            ["compilerOptions", "paths", alias],
+            targetList,
+            formattingOptions,
+        );
+        mutated = true;
+
+        results.push({
+            status: hadAlias ? "updated" : "created",
             alias,
-            target,
+            target: displayTarget,
             tsconfigPath: loadedTsconfig.path,
             consumerBaseUrl,
             baseUrlWasExplicit,
-        };
+        });
     }
 
-    let nextContent = loadedTsconfig.rawContent;
-
-    if (compilerOptions === undefined) {
-        nextContent = applyJsoncEdit(
+    if (mutated) {
+        nextContent = normalizeTrailingNewline(
             nextContent,
-            ["compilerOptions"],
-            {},
-            loadedTsconfig.formattingOptions,
+            formattingOptions.eol ?? "\n",
+            loadedTsconfig.hadTrailingNewline,
         );
+
+        if (!options.dryRun) {
+            await writeFile(loadedTsconfig.path, nextContent, "utf8");
+        }
     }
 
-    if (!baseUrlWasExplicit) {
-        nextContent = applyJsoncEdit(
-            nextContent,
-            ["compilerOptions", "baseUrl"],
-            ".",
-            loadedTsconfig.formattingOptions,
-        );
-    }
+    return results;
+}
 
-    if (paths === undefined) {
-        nextContent = applyJsoncEdit(
-            nextContent,
-            ["compilerOptions", "paths"],
-            {},
-            loadedTsconfig.formattingOptions,
-        );
-    }
-
-    nextContent = applyJsoncEdit(
-        nextContent,
-        ["compilerOptions", "paths", alias],
-        [target],
-        loadedTsconfig.formattingOptions,
+/**
+ * Açúcar de chamada única sobre {@link upsertPathAliases}, preservando a API
+ * histórica usada por `info` e pelos kits tooling com superfície importável.
+ */
+export async function upsertPathAlias(
+    projectRoot: string,
+    alias: string,
+    target: string,
+    options: UpsertPathAliasOptions = {},
+): Promise<AliasUpdateResult> {
+    const [result] = await upsertPathAliases(
+        projectRoot,
+        [{ alias, target }],
+        options,
     );
-    nextContent = normalizeTrailingNewline(
-        nextContent,
-        loadedTsconfig.formattingOptions.eol ?? "\n",
-        loadedTsconfig.hadTrailingNewline,
-    );
-
-    if (!options.dryRun) {
-        await writeFile(loadedTsconfig.path, nextContent, "utf8");
-    }
-
-    return {
-        status: hadAlias ? "updated" : "created",
-        alias,
-        target,
-        tsconfigPath: loadedTsconfig.path,
-        consumerBaseUrl,
-        baseUrlWasExplicit,
-    };
+    return result;
 }

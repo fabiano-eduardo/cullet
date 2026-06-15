@@ -1,12 +1,12 @@
-import { UnexpectedError } from "../../errors";
+import { UnexpectedError } from "../../errors/index.js";
 
 import type {
     AsOfSource,
     PolicyKind,
     PolicyOwner,
     PolicyScopeLevel,
-} from "./catalog-types";
-import type { PolicyKey } from "./policy-key";
+} from "./catalog-types.js";
+import type { PolicyKey } from "./policy-key.js";
 
 /**
  * Properties for creating a PolicyCatalogEntry.

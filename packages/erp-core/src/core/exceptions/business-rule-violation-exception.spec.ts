@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { BusinessRuleViolationException } from "./business-rule-violation-exception";
-import { DomainException } from "./domain-exception";
+import { BusinessRuleViolationException } from "./business-rule-violation-exception.js";
+import { DomainException } from "./domain-exception.js";
 
 describe("BusinessRuleViolationException", () => {
     describe("constructor", () => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { Result } from "../../result/result";
+import { Result } from "../../result/result.js";
 
 import {
     ComputePayloadParsers,
     ComputePayloadParserRegistry,
-} from "./parse-compute-payload";
+} from "./parse-compute-payload.js";
 
 describe("ComputePayloadParserRegistry", () => {
     it("allows registering parsers dynamically per schema version", () => {

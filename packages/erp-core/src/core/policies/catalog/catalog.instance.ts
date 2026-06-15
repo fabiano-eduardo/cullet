@@ -1,7 +1,7 @@
-import type { PolicyPackage } from "../package/policy-package";
+import type { PolicyPackage } from "../package/policy-package.js";
 
-import { PolicyCatalog } from "./policy-catalog";
-import { PolicyCatalogEntry } from "./policy-catalog-entry";
+import { PolicyCatalog } from "./policy-catalog.js";
+import { PolicyCatalogEntry } from "./policy-catalog-entry.js";
 
 // ─── Factory ────────────────────────────────────────────────────────────────
 

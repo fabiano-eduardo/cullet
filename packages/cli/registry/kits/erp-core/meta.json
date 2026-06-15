@@ -38,7 +38,7 @@
         "readme": "README.md"
     },
     "lint": {
-        "nodenextImports": "off",
+        "nodenextImports": "warn",
         "noBareAny": "warn",
         "noExternalImports": "error",
         "noUpwardImports": "error",

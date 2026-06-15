@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { Result } from "../../result/result";
-import { UseCase } from "../use-case";
+import { Result } from "../../result/result.js";
+import { UseCase } from "../use-case.js";
 
-import { Command } from "./command";
-import { RequestedBy } from "./requested-by";
+import { Command } from "./command.js";
+import { RequestedBy } from "./requested-by.js";
 
 class SaveEntityCommand extends Command<
     { id: string; requestedBy: RequestedBy },

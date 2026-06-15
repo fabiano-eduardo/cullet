@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Order, type OrderSnapshot } from "./order";
+import { Order, type OrderSnapshot } from "./order.js";
 
 function makeHistoricalSnapshot(
     overrides: Partial<OrderSnapshot> = {},

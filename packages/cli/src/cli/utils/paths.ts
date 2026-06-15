@@ -52,6 +52,34 @@ export function kitFullControlAliasTarget(
 }
 
 /**
+ * Wildcard alias para os subpath exports do kit (ex.: `@cullet/erp-core/errors`).
+ * Sem ele, só o specifier raiz aponta para a cópia editável; os subpaths cairiam
+ * de volta no pacote original em node_modules.
+ */
+export function kitFullControlSubpathAlias(npmName: string): string {
+    return `${npmName}/*`;
+}
+
+/**
+ * Alvos do wildcard de subpath, em ordem de tentativa:
+ * 1. `<dir>/*.ts` — arquivo concreto (ex.: `exceptions/validation-field`);
+ * 2. `<dir>/*` + `/index.ts` — barril de diretório (ex.: `errors`);
+ * 3. `<dir>/*` — forma usada por `moduleResolution: bundler`.
+ *
+ * Os dois primeiros dão um caminho concreto exigido por
+ * `moduleResolution: node16/nodenext`, que não faz resolução directory→index em
+ * path-mapping. Sem esses fallbacks, sob nodenext os subpaths recairiam no
+ * `exports` do pacote original em node_modules em vez de apontarem para a cópia.
+ */
+export function kitFullControlSubpathAliasTarget(
+    name: string,
+    version: string,
+): string[] {
+    const base = `./cullet/${name}@${version}`;
+    return [`${base}/*.ts`, `${base}/*/index.ts`, `${base}/*`];
+}
+
+/**
  * Resolve the destination directory for a copy-only (`tooling`) kit. The
  * placement is declared by the kit (e.g. ".claude/") and resolved relative to
  * the consumer's project root. Throws if the placement would escape that root,

@@ -5,8 +5,8 @@ import {
     DuplicateError,
     translateUniqueViolationToDuplicate,
     UniqueConstraintViolationError,
-} from "./conflict-error";
-import { ErrorCodes } from "./error-codes";
+} from "./conflict-error.js";
+import { ErrorCodes } from "./error-codes.js";
 
 describe("ConflictError factories", () => {
     describe("AlreadyExistsError", () => {

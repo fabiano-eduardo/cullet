@@ -1,7 +1,7 @@
-import type { AsOfSource } from "../catalog";
-import type { ContextSeed } from "../context";
-import { Result } from "../../result/result";
-import { isValidDate } from "../../shared/temporal-guards";
+import type { AsOfSource } from "../catalog/index.js";
+import type { ContextSeed } from "../context/index.js";
+import { Result } from "../../result/result.js";
+import { isValidDate } from "../../shared/temporal-guards.js";
 
 const DEFAULT_MAX_AS_OF_FUTURE_YEARS = 10;
 

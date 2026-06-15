@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import packageMetadata from "../package.json" with { type: "json" };
 
-import { ERP_CORE_NAME, ERP_CORE_VERSION, erpCoreRelease } from "./index";
+import { ERP_CORE_NAME, ERP_CORE_VERSION, erpCoreRelease } from "./index.js";
 
 describe("erp-core index metadata", () => {
     it("derives ERP_CORE_VERSION from package.json", () => {

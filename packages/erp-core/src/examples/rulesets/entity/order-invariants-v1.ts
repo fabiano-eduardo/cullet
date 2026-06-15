@@ -1,12 +1,12 @@
 import {
     DomainException,
     type RulesetId,
-} from "../../../core/domain/rulesets/entity-ruleset.contracts";
+} from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
 import {
     type Order,
     type OrderInvariantRuleset,
     type OrderItem,
-} from "./order";
+} from "./order.js";
 
 class OrderInvariantError extends DomainException {}
 

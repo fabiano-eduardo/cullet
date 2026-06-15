@@ -1,4 +1,4 @@
-import { InvariantViolationException } from "../exceptions/invariant-violation-exception";
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 
 function assertValidAggregateVersion(aggregateVersion: number): void {
     if (!Number.isInteger(aggregateVersion) || aggregateVersion < 0) {

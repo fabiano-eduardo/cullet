@@ -1,6 +1,6 @@
 // Utilities for ensuring metadata is JSON-serializable.
 
-import type { JsonSafeRecord, JsonSafeValue } from "../types";
+import type { JsonSafeRecord, JsonSafeValue } from "../types.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants

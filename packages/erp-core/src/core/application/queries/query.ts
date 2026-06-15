@@ -1,7 +1,7 @@
-import { UseCase } from "../use-case";
-import { version } from "../../versioning/version";
-import type { AppError } from "../../errors";
-import type { Result } from "../../result/result";
+import { UseCase } from "../use-case.js";
+import { version } from "../../versioning/version.js";
+import type { AppError } from "../../errors/index.js";
+import type { Result } from "../../result/result.js";
 
 /**
  * Paginated result of a list query.

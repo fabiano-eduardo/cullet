@@ -4,17 +4,17 @@ import {
     CoreConfig,
     type PolicyEvent,
     type PolicyReporter,
-} from "../../../../config";
-import { Outcome } from "../../../../result/outcome";
-import { Result } from "../../../../result/result";
+} from "../../../../config/index.js";
+import { Outcome } from "../../../../result/outcome.js";
+import { Result } from "../../../../result/result.js";
 
-import { ComputeRegistry } from "../../compute-registry";
-import { ComputeEngineV1 } from "./compute-engine-v1";
+import { ComputeRegistry } from "../../compute-registry.js";
+import { ComputeEngineV1 } from "./compute-engine-v1.js";
 import type {
     ComputeEvaluator,
     ComputeEvaluatorRegistration,
     ComputeOutcome,
-} from "../../compute-types";
+} from "../../compute-types.js";
 
 class ComputeEngineV2 extends ComputeEngineV1 {
     // @ts-expect-error - intentional version override to test multi-version dispatch

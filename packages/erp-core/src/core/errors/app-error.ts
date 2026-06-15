@@ -1,8 +1,12 @@
 // Base application error for the domain/application layer.
 // Encapsulates a code, optional cause, and JSON-safe metadata.
 
-import type { AppErrorOptions, ErrorSeverity, JsonSafeRecord } from "./types";
-import { assertJsonSafeMetadata } from "./utils";
+import type {
+    AppErrorOptions,
+    ErrorSeverity,
+    JsonSafeRecord,
+} from "./types.js";
+import { assertJsonSafeMetadata } from "./utils/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppError (abstract base class)

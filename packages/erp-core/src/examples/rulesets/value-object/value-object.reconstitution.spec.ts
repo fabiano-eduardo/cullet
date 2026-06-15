@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { CPF } from "./cpf";
-import { PersonName } from "./person-name";
+import { CPF } from "./cpf.js";
+import { PersonName } from "./person-name.js";
 
 describe("CPF reconstitution", () => {
     it("does not re-validate a historical CPF that would fail current rules", () => {

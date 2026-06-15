@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PolicyContextPath } from "./path";
+import { PolicyContextPath } from "./path.js";
 
 describe("setPath", () => {
     it("creates intermediate objects when the path does not yet exist", () => {
