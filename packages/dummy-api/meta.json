@@ -1,7 +1,7 @@
 {
     "schemaVersion": "2",
     "name": "dummy-api",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Kit de exemplo minimo: esqueleto de core em clean architecture (camadas domain, application, errors e result) como referencia de estrutura para novos kits.",
     "compatibility": {
         "engines": {
@@ -37,7 +37,8 @@
     "changelog": [
         "1.0.1 - Corrige os exemplos de consumo nos READMEs dos kits: o import direto usa o nome npm com escopo (`@cullet/<kit>`) e o argumento do `npx cullet fc` é o nome do kit no registry (`erp-core`), não o nome com escopo. Adiciona a nota explicando o que o `fc` faz no `erp-core`.",
         "1.0.2 - Reescreve a descrição do pacote para refletir a entrega dupla do cullet — kits de biblioteca importáveis e kits de tooling copy-first via CLI — e a deixa consistente entre package.json e a saída do `cullet --help`. Só cullet entra (o package.json raiz é private, não publica). O reformat não precisa de changeset: a tarball publicada leva dist/ buildado, cuja saída não muda com a reformatação do src/.",
-        "1.0.3 - fix(cli): bundle each kit's metadata into the CLI package so `cullet info`/`list` keep showing the kit's context, compatibility, peer deps and deprecation when the CLI runs installed from npm."
+        "1.0.3 - fix(cli): bundle each kit's metadata into the CLI package so `cullet info`/`list` keep showing the kit's context, compatibility, peer deps and deprecation when the CLI runs installed from npm.",
+        "1.0.4 - Stop the `meta.json` `changelog` from drifting and clarify the `ValueObject` freeze contract."
     ],
     "deprecated": false
 }
