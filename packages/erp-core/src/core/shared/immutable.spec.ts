@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 import { deepFreeze, makeImmutable } from "./immutable.js";
 
 describe("deepFreeze", () => {
@@ -64,5 +65,19 @@ describe("makeImmutable", () => {
 
         expect(Object.isFrozen(frozen)).toBe(true);
         expect(frozen.self).toBe(frozen);
+    });
+
+    it("rejects values that structuredClone cannot clone", () => {
+        expect(() => makeImmutable({ handler: () => 1 })).toThrowError(
+            InvariantViolationException,
+        );
+    });
+
+    it("isolates a nested Date copy from later mutation of the source", () => {
+        const source = { when: new Date("2026-01-01T00:00:00.000Z") };
+        const copy = makeImmutable(source);
+        source.when.setFullYear(1999);
+
+        expect(copy.when.toISOString()).toBe("2026-01-01T00:00:00.000Z");
     });
 });

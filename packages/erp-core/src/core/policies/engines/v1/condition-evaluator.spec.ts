@@ -739,3 +739,25 @@ describe("ConditionEvaluatorV1.evaluate", () => {
         );
     });
 });
+
+describe("ConditionEvaluatorV1.extractFields", () => {
+    it("collects field paths across leaf, and/or and not nodes", () => {
+        const node: ConditionNode = {
+            and: [
+                { field: "a.x", op: "eq", value: 1 },
+                {
+                    or: [
+                        { field: "b.y", op: "gt", value: 2 },
+                        { not: { field: "c.z", op: "isNull", value: null } },
+                    ],
+                },
+            ],
+        };
+
+        expect(ConditionEvaluatorV1.extractFields(node)).toEqual([
+            "a.x",
+            "b.y",
+            "c.z",
+        ]);
+    });
+});

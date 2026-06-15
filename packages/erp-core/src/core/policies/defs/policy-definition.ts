@@ -83,6 +83,29 @@ export class PolicyDefinition<
         }
     }
 
+    private static assertCoherentBounds(props: {
+        readonly policyKey: string;
+        readonly effectiveFrom: Date;
+        readonly effectiveTo: Date | null;
+        readonly contextVersionMin: number;
+        readonly contextVersionMax: number;
+    }): void {
+        if (props.contextVersionMin > props.contextVersionMax) {
+            throw new InvariantViolationException(
+                `PolicyDefinition.contextVersionMin (${props.contextVersionMin}) must not exceed contextVersionMax (${props.contextVersionMax}). Policy key: ${props.policyKey}`,
+            );
+        }
+
+        if (
+            props.effectiveTo !== null &&
+            props.effectiveTo.getTime() <= props.effectiveFrom.getTime()
+        ) {
+            throw new InvariantViolationException(
+                `PolicyDefinition.effectiveTo must be later than effectiveFrom. Policy key: ${props.policyKey}`,
+            );
+        }
+    }
+
     public readonly id: PolicyDefinitionId;
     public readonly policyKey: K;
 
@@ -111,6 +134,7 @@ export class PolicyDefinition<
         this.id = props.id;
         this.policyKey = props.policyKey;
         PolicyDefinition.assertPolicyVersionIsSemver(props.policyVersion);
+        PolicyDefinition.assertCoherentBounds(props);
         this.policyVersion = props.policyVersion;
         this.payloadSchemaVersion = props.payloadSchemaVersion;
         this.contextVersionMin = props.contextVersionMin;

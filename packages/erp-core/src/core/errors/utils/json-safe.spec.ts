@@ -102,4 +102,8 @@ describe("assertJsonSafeMetadata", () => {
         // The whole point: serialization stays safe afterwards.
         expect(() => JSON.stringify(error.toJSON())).not.toThrow();
     });
+
+    it("returns an empty object when the input is undefined", () => {
+        expect(assertJsonSafeMetadata(undefined)).toEqual({});
+    });
 });

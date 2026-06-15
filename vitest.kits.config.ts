@@ -13,6 +13,27 @@ export default mergeConfig(
             include: ["packages/*/src/**/*.spec.ts"],
             exclude: ["node_modules", "dist"],
             testTimeout: 15_000,
+            // Coverage settings live here but stay opt-in: they only activate
+            // when a run passes `--coverage` (the erp-core CI slice does; local
+            // `test:kits` and the dummy-api slice do not, so neither pays for it
+            // nor trips the erp-core-scoped thresholds). The thresholds are
+            // pinned just below the measured floor so the kit's coverage can no
+            // longer silently regress.
+            coverage: {
+                provider: "v8",
+                include: ["packages/erp-core/src/**/*.ts"],
+                exclude: [
+                    "packages/erp-core/src/**/*.spec.ts",
+                    "packages/erp-core/src/examples/**",
+                ],
+                reporter: ["text"],
+                thresholds: {
+                    statements: 92,
+                    branches: 87,
+                    functions: 93,
+                    lines: 92,
+                },
+            },
         },
     }),
 );

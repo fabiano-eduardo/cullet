@@ -264,7 +264,10 @@ describe("InMemoryPolicyDefinitionRepository", () => {
 
         it("excludes definitions whose effectiveTo is at or before asOf", () => {
             const repository = new InMemoryPolicyDefinitionRepository([
-                gate({ effectiveTo: new Date("2025-06-01T00:00:00.000Z") }),
+                gate({
+                    effectiveFrom: new Date("2025-01-01T00:00:00.000Z"),
+                    effectiveTo: new Date("2025-06-01T00:00:00.000Z"),
+                }),
             ]);
 
             expect(findGlobal(repository)).toEqual([]);

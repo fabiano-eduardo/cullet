@@ -1,3 +1,5 @@
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
+
 type PrimitiveValue =
     | bigint
     | boolean
@@ -18,6 +20,12 @@ function deepFreeze<T>(value: T): T {
 }
 
 function deepFreezeInternal<T>(value: T, seen: WeakSet<object>): T {
+    // Primitives and `null` need no freezing. `Date` is intentionally returned
+    // as-is: `Object.freeze` cannot stop a Date's mutators (`setTime`,
+    // `setFullYear`, …) because they write an internal slot, not an own
+    // property — freezing it is a no-op against mutation. `makeImmutable`
+    // already hands us a `structuredClone` copy, so the caller's original Date
+    // is never aliased; deep-freezing of nested Dates is deliberately skipped.
     if (typeof value !== "object" || value === null || value instanceof Date) {
         return value;
     }
@@ -51,7 +59,21 @@ function makeImmutable<T>(value: T): DeepReadonly<T> {
         return value as DeepReadonly<T>;
     }
 
-    return deepFreeze(structuredClone(value)) as DeepReadonly<T>;
+    let snapshot: T;
+    try {
+        snapshot = structuredClone(value);
+    } catch (error) {
+        // `structuredClone` throws `DataCloneError` for functions, symbols and
+        // class instances. Surface it as a domain invariant instead of leaking
+        // a host-specific runtime error to callers building value objects.
+        throw new InvariantViolationException(
+            `makeImmutable requires a structured-cloneable value: ${
+                error instanceof Error ? error.message : String(error)
+            }`,
+        );
+    }
+
+    return deepFreeze(snapshot) as DeepReadonly<T>;
 }
 
 export { deepFreeze, makeImmutable, type DeepReadonly };
