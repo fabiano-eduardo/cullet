@@ -12,6 +12,22 @@ import { assertJsonSafeMetadata } from "./utils/index.js";
 // AppError (abstract base class)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Root of the application/domain error hierarchy. Every error the system raises
+ * on purpose extends `AppError`, which gives callers a single `instanceof` to
+ * catch and a uniform, serializable shape to log and transport.
+ *
+ * Beyond the native `Error` message it carries a stable `code` (the contract the
+ * outside world matches on), an optional non-leaking `publicMessage`, a
+ * severity, JSON-safe `metadata`, and the correlation/request/command ids that
+ * stitch an error back to the request that produced it. The metadata is
+ * validated as JSON-safe on construction, so a logger can serialize any
+ * `AppError` without hitting a circular reference or a non-serializable value.
+ *
+ * Abstract on purpose: callers should throw a specific subclass (e.g.
+ * {@link ValidationError}, {@link NotFoundError}) so the `code` and shape are
+ * meaningful, never a bare `AppError`.
+ */
 abstract class AppError extends Error {
     public readonly code: string;
     public readonly cause?: unknown;
@@ -36,6 +52,23 @@ abstract class AppError extends Error {
      */
     public readonly commandId?: string;
 
+    /**
+     * Builds the common error envelope shared by every subclass.
+     *
+     * `name` is taken from `new.target` so the thrown instance reports its
+     * concrete subclass name (not `"AppError"`), and the prototype is re-pinned
+     * via `setPrototypeOf` so `instanceof` keeps working after transpilation to
+     * older targets where extending built-ins breaks the chain. `createdAtIso`
+     * defaults to now, and `metadata` is validated as JSON-safe so the error is
+     * always serializable.
+     *
+     * Declared `protected`: instantiate a concrete subclass, never `AppError`.
+     *
+     * @param message - The internal, developer-facing message.
+     * @param code - The stable machine-readable code callers match on.
+     * @param options - Optional cause, metadata, severity, and correlation ids.
+     * @throws When `options.metadata` contains a value that is not JSON-safe.
+     */
     protected constructor(
         message: string,
         code: string,

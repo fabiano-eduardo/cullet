@@ -42,6 +42,18 @@ type IntegrationErrorConstructorParams = {
     metadata: IntegrationErrorMetadata;
 } & IntegrationErrorAppOptions;
 
+/**
+ * Raised when a call to an external provider fails — a timeout, an unreachable
+ * endpoint, or a malformed response. This is the boundary error that separates
+ * "our code is fine, the outside world misbehaved" from internal faults, which
+ * matters for retry and alerting decisions.
+ *
+ * Every instance records the `provider`, the `operation`, and timing
+ * (`startedAtIso` / `durationMs`) so failures are correlatable across services
+ * and a slow dependency is visible in the metadata. The discriminating
+ * {@link reason} lets callers decide whether a failure is worth retrying.
+ * Instances are frozen; construct through the static factories.
+ */
 class IntegrationError extends AppError {
     public readonly reason: IntegrationErrorReason;
 
@@ -56,6 +68,10 @@ class IntegrationError extends AppError {
         Object.freeze(this);
     }
 
+    /**
+     * The provider did not respond within the allotted time. Usually retryable,
+     * since a timeout leaves the outcome unknown rather than known-failed.
+     */
     static timeout(options: IntegrationErrorTimeoutOptions): IntegrationError {
         return new IntegrationError({
             message: "Timeout while integrating with external provider",
@@ -66,6 +82,10 @@ class IntegrationError extends AppError {
         });
     }
 
+    /**
+     * The provider could not be reached at all (connection refused, DNS
+     * failure, network partition) — the request never landed.
+     */
     static unreachable(
         options: IntegrationErrorEndpointOptions,
     ): IntegrationError {
@@ -78,6 +98,11 @@ class IntegrationError extends AppError {
         });
     }
 
+    /**
+     * The provider answered, but with something the system cannot use — an
+     * unexpected status, an unparsable body, or a contract mismatch. Unlike a
+     * timeout this is a definite failure, so blind retries rarely help.
+     */
     static badResponse(
         options: IntegrationErrorEndpointOptions,
     ): IntegrationError {
