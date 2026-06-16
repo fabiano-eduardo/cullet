@@ -14,6 +14,15 @@ export class PolicyCatalog {
         readonly PolicyCatalogEntry[]
     >;
 
+    /**
+     * Indexes the given entries up front into two lookups — one per exact
+     * variant, one per policy key (the "family") — and validates them eagerly:
+     * a duplicate variant or an internally inconsistent family throws here, at
+     * wiring time, so a malformed catalog fails fast at startup rather than on
+     * the first evaluation.
+     *
+     * @throws {UnexpectedError} When two entries resolve to the same variant key.
+     */
     constructor(entries: readonly PolicyCatalogEntry[]) {
         const families = new Map<string, PolicyCatalogEntry[]>();
         const versionedMap = new Map<string, PolicyCatalogEntry>();
@@ -43,6 +52,14 @@ export class PolicyCatalog {
         this.entriesByKey = families;
     }
 
+    /**
+     * Returns the single entry for a key. Deliberately strict: if the key has
+     * more than one variant it errs rather than guessing, steering the caller to
+     * {@link getVersioned} or {@link getFamily}. Use this only when a key is
+     * known to be unambiguous.
+     *
+     * @returns `ok` with the entry, or `err` when the key is unknown or ambiguous.
+     */
     get(key: string): Result<PolicyCatalogEntry, string> {
         const familyResult = this.getFamily(key);
         if (familyResult.isErr()) {
@@ -64,6 +81,13 @@ export class PolicyCatalog {
         return Result.ok(entry);
     }
 
+    /**
+     * Returns every variant registered under a key — the whole "family". This is
+     * the lookup the evaluation pipeline uses, since a single key may host
+     * several engine/schema variants that the resolver then chooses between.
+     *
+     * @returns `ok` with the family (always non-empty), or `err` when the key is unknown.
+     */
     getFamily(key: string): Result<readonly PolicyCatalogEntry[], string> {
         const family = this.entriesByKey.get(key);
         if (!family) {
@@ -73,6 +97,16 @@ export class PolicyCatalog {
         return Result.ok(family);
     }
 
+    /**
+     * Resolves the one entry matching an exact variant — kind plus engine and
+     * payload-schema versions. Falls back to the sole family member when a key
+     * has exactly one entry and that entry declares no explicit version
+     * selector, so unversioned single-variant policies "just work" without the
+     * caller spelling out versions.
+     *
+     * @param params - The key and the variant coordinates to match on.
+     * @returns `ok` with the matching entry, or `err` when no variant matches.
+     */
     getVersioned(params: {
         readonly key: string;
         readonly kind: "GATE" | "COMPUTE";
@@ -114,10 +148,12 @@ export class PolicyCatalog {
         );
     }
 
+    /** Lists every registered variant across all keys — useful for introspection and diagnostics. */
     list(): readonly PolicyCatalogEntry[] {
         return Array.from(this.versionedEntries.values());
     }
 
+    /** Returns whether any variant is registered under the given key. */
     has(key: string): boolean {
         return this.entriesByKey.has(key);
     }

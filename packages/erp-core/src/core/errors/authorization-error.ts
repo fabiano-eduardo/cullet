@@ -61,6 +61,19 @@ type AuthorizationErrorFactoryOptions = Omit<
 // AuthorizationError
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Raised when an authenticated actor is not allowed to perform a business
+ * action — the "you may not" error, distinct from authentication ("who are
+ * you"). Maps to an HTTP 403 at the edge.
+ *
+ * The discriminating {@link reason} records *why* access was denied (a flat
+ * forbid, a missing role/capability, an out-of-scope target, or a policy
+ * decision) so the boundary can shape the response without re-deriving it. The
+ * metadata is deliberately built around a stable business `action` and a
+ * type/id resource reference rather than an HTTP route or full payload, keeping
+ * sensitive data out of logs. Instances are frozen. Construct through the
+ * static factories, never directly.
+ */
 class AuthorizationError extends AppError {
     public readonly reason: AuthorizationErrorReason;
 
@@ -98,6 +111,12 @@ class AuthorizationError extends AppError {
     // Factories
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * A flat denial with no more specific reason — the actor simply may not
+     * perform this action. Reach for a more precise factory
+     * ({@link AuthorizationError.missingCapability}, {@link AuthorizationError.outOfScope},
+     * {@link AuthorizationError.policyDenied}) when the cause is known.
+     */
     static forbidden(
         input: AuthorizationErrorFactoryOptions,
     ): AuthorizationError {
@@ -110,6 +129,15 @@ class AuthorizationError extends AppError {
         });
     }
 
+    /**
+     * The action was denied by an evaluated policy. Captures the deciding
+     * policy's id, version, and evaluation instant into the metadata (with
+     * `decision: "deny"`) so the denial is auditable back to the exact policy
+     * that produced it.
+     *
+     * @param input - Factory options plus the required `policyId`,
+     *   `policyVersion`, and `evaluatedAtIso` of the deciding policy.
+     */
     static policyDenied(
         input: AuthorizationErrorFactoryOptions & {
             policyId: string;
@@ -130,6 +158,13 @@ class AuthorizationError extends AppError {
         });
     }
 
+    /**
+     * The actor lacks a required role or capability. The expected
+     * {@link AuthorizationRequirement} is recorded so the boundary can tell the
+     * caller precisely what grant is missing.
+     *
+     * @param input - Factory options plus the `required` role/capability/scope.
+     */
     static missingCapability(
         input: AuthorizationErrorFactoryOptions & {
             required: AuthorizationRequirement;
@@ -147,6 +182,14 @@ class AuthorizationError extends AppError {
         });
     }
 
+    /**
+     * The actor may perform the action in general, but not on *this* target —
+     * the resource falls outside the actor's permitted scope (e.g. a different
+     * school or tenant than the one they are bound to).
+     *
+     * @param input - Factory options plus the optional `required` scope that the
+     *   target failed to satisfy.
+     */
     static outOfScope(
         input: AuthorizationErrorFactoryOptions & {
             required?: AuthorizationRequirement;

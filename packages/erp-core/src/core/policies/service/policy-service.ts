@@ -36,6 +36,13 @@ import {
 
 // ─── Input ──────────────────────────────────────────────────────────────────
 
+/**
+ * Everything a single policy evaluation needs. `policyKey` names the policy,
+ * `scopeChain` narrows the search from most-specific to least-specific scope,
+ * `contextVersion` pins which context schema applies, and `seed` carries the
+ * raw facts the context builder expands. `decisionId` is the caller's
+ * idempotency/audit handle, echoed back on the result.
+ */
 export interface EvaluateInput {
     readonly decisionId: PolicyDecisionId;
     readonly policyKey: string;
@@ -44,11 +51,23 @@ export interface EvaluateInput {
     readonly seed: ContextSeed;
 }
 
+/**
+ * Cross-cutting knobs for a {@link PolicyService}: how the as-of instant is
+ * derived ({@link asOf}) and where evaluation telemetry is sent
+ * ({@link reporter}). Both are optional; the service defaults to a silent
+ * reporter so telemetry is opt-in.
+ */
 export interface PolicyServiceOptions {
     readonly asOf?: DeriveAsOfOptions;
     readonly reporter?: PolicyReporter;
 }
 
+/**
+ * The collaborators a {@link PolicyService} is wired with. Each is an injected
+ * port so the service stays storage- and engine-agnostic: the catalog defines
+ * the universe of policies, `defRepo` supplies their versioned definitions, the
+ * `resolver` picks the winning definition, and the engine registries execute it.
+ */
 export interface PolicyServiceParams {
     readonly catalog: PolicyCatalog;
     readonly contextBuilder: PolicyContextBuilder;
@@ -66,6 +85,13 @@ export type PolicyDecision = GateOutcome | ComputeOutcome;
 
 export type { PolicyEvaluationError } from "./policy-evaluation-error.js";
 
+/**
+ * The full record of one successful evaluation. Beyond the business
+ * {@link decision}, it pins the exact definition that produced it — id, key,
+ * version, payload hash, and engine version — together with the `asOf` instant
+ * the policy was selected for and the wall-clock `evaluatedAt`. That provenance
+ * is what makes a decision reproducible and auditable after the fact.
+ */
 export interface PolicyEvaluationResult {
     readonly decisionId: PolicyDecisionId;
     readonly ref: {
@@ -91,6 +117,18 @@ interface ResolvedPolicyCandidate {
 
 // ─── Service ────────────────────────────────────────────────────────────────
 
+/**
+ * Orchestrates the end-to-end evaluation of a policy: it parses and validates
+ * the context seed, derives the as-of instant, resolves the best matching
+ * definition for the requested key/scope/version, builds the context the policy
+ * needs, and runs it through the right engine (gate or compute).
+ *
+ * The service never throws for an expected failure: every step returns a
+ * {@link Result}, and the failures are folded into a typed
+ * {@link PolicyEvaluationError} so callers branch on `isErr()` rather than
+ * catching. Telemetry is best-effort — a throwing reporter can never abort an
+ * evaluation — which keeps observability strictly side-band.
+ */
 export class PolicyService {
     readonly #reporter: PolicyReporter;
     private readonly catalog: PolicyCatalog;
@@ -136,6 +174,21 @@ export class PolicyService {
         return Result.ok(candidate);
     }
 
+    /**
+     * Evaluates a policy and returns its decision.
+     *
+     * This is the single public entry point. It delegates the actual work to the
+     * private pipeline and wraps it with telemetry: a completed or failed event
+     * is reported either way, but reporting is guarded so it can never change the
+     * outcome. The returned {@link Result} is `ok` with a
+     * {@link PolicyEvaluationResult} on success, or `err` with a typed
+     * {@link PolicyEvaluationError} describing which stage rejected the input —
+     * the method itself does not throw for expected failures.
+     *
+     * @param input - The policy key, scope chain, context version, and seed to
+     *   evaluate, plus the caller's `decisionId`.
+     * @returns A `Result` carrying the decision or the evaluation error.
+     */
     async evaluate(
         input: EvaluateInput,
     ): Promise<Result<PolicyEvaluationResult, PolicyEvaluationError>> {

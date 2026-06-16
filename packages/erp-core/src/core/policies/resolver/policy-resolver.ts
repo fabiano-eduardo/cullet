@@ -14,6 +14,16 @@ import { Result } from "../../result/result.js";
  *   5. policyVersion descending (semver — final deterministic tiebreaker)
  */
 export class PolicyResolver {
+    /**
+     * Picks the single winning definition from an already-filtered candidate
+     * list by applying the class's ordering criteria in priority order. The sort
+     * runs over a copy, so the caller's array is left untouched, and the final
+     * semver tiebreaker guarantees the winner is fully deterministic — it never
+     * depends on the order the repository returned the candidates in.
+     *
+     * @param candidates - Definitions already filtered to match key, scope, and as-of.
+     * @returns `ok` with the highest-ranked definition, or `err` when the list is empty.
+     */
     resolveBest(
         candidates: readonly PolicyDefinition[],
     ): Result<PolicyDefinition, string> {
