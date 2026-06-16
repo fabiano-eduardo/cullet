@@ -16,6 +16,17 @@
         "Use 'cullet list' to see available kits",
         "Use 'cullet info <kit>@<version>' to view kit details before copying",
         "Each kit is a workspace package under packages/<name>/, published to npm as @cullet/<name> and versioned independently (semver)",
-        "ESM-only package, requires Node >= 18 and zod as peer dependency"
+        "ESM-only package, requires Node >= 18 and zod as peer dependency",
+        "erp-core (@cullet/erp-core) is a clean-architecture core for ERP/transactional domains: Entity, ValueObject, typed errors, Result, and declarative policies. It is NOT an ORM (no mapping magic, no persistence decorators), NOT an HTTP framework (no controllers, routing, or middleware), and NOT a workflow runtime (sagas, schedulers, queues belong in separate kits).",
+        "erp-core error flow is layered: domain code THROWS typed exceptions (DomainException, InvariantViolationException, InvalidStateTransitionException, ValidationException, BusinessRuleViolationException, EntityNotFoundException); the application layer RETURNS Result<T, AppError> instead of throwing; infrastructure TRANSLATES. Never use Result inside the domain.",
+        "Every intentional error extends the abstract AppError — never throw a bare AppError. It carries a stable machine-readable `code`, optional `publicMessage`, `severity`, JSON-safe `metadata`, correlation/request/command ids, and `toJSON()`. Catch with `instanceof AppError` and branch on `error.code` (values come from the `ErrorCodes` map, e.g. not_found, conf.duplicate, sec.authz.forbidden, int.timeout), not on the message.",
+        "Pick a concrete AppError subclass: ValidationError, NotFoundError, ConflictError (also AlreadyExistsError/DuplicateError/UniqueConstraintViolationError), AuthenticationError, AuthorizationError, IntegrationError, BusinessRuleViolationError, IdempotencyError, SerializationError, TemporalError (ExpiredError/NotYetValidError), or UnexpectedError.",
+        "Application use cases (UseCase/Command/Query) return Result<T, E> via Result.ok / Result.err. Consume it with isOk()/isErr(), match({ ok, err }), map/mapError/flatMap, getOrThrow() or getOrNull(); do not throw across the application boundary. Use Outcome for explicit business decisions.",
+        "Connect to a real stack by implementing the ports in application/ports/, never by editing core: LoggerPort/MetricsPort/TracerPort (observability, opt-in adapters), Repository<TEntity, TId> with findById/save/delete (define your own domain repository ports following this shape), TemporalRepository, and PolicyPort.evaluate(input) => Promise<Result<…, AppError>>. Keep ports pure — no framework or vendor imports.",
+        "Policies are data, not if-statements: declare them with PolicyDefinition/PolicyCatalog, resolve with PolicyResolver, evaluate with PolicyService, and translate failures with mapPolicyEvaluationError. Disable a policy with `enabled: false` instead of deleting it. Avoid shared singletons by composing explicitly: new CoreConfig(), new ContextResolverRegistry(), registerNamespacedContextResolversIn(...)."
+    ],
+    "previousVersions": [
+        { "tag": "cullet@0.5.10", "title": "0.5.10" },
+        { "tag": "cullet@0.5.9", "title": "0.5.9" }
     ]
 }

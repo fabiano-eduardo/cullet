@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import starlightLlmsTxt from "starlight-llms-txt";
 
 export default defineConfig({
   site: "https://fabiano-eduardo.github.io",
@@ -8,6 +9,7 @@ export default defineConfig({
     starlight({
       title: "cullet",
       description: "Catálogo de kits arquiteturais opinativos para TypeScript.",
+      plugins: [starlightLlmsTxt()],
       customCss: ["./src/styles/custom.css"],
       social: [
         {
