@@ -107,10 +107,10 @@ describe("temporal-use-case", () => {
         );
 
         expect(Object.isFrozen(seed)).toBe(true);
-        expect(seed.fields["now"]).not.toBe(originalNow);
-        expect((seed.fields["now"] as Date).toISOString()).toBe(
-            "2026-04-24T14:00:00.000Z",
-        );
+        // `seed.fields.now` is typed as `Date` (no cast) — this only compiles
+        // because `TemporalizedContextSeed` reflects the injected `now`.
+        expect(seed.fields.now).not.toBe(originalNow);
+        expect(seed.fields.now.toISOString()).toBe("2026-04-24T14:00:00.000Z");
         expect(seed.tenantId).toBe("tenant-001");
         expect(seed.schoolId).toBe("school-001");
     });

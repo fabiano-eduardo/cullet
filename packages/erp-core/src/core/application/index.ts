@@ -1,15 +1,20 @@
 export type { CommandInput } from "./commands/index.js";
-export { Command } from "./commands/index.js";
+export {
+    Command,
+    RequestedBy,
+    type RequestedByKind,
+} from "./commands/index.js";
 export type {
     LogPayload,
     LoggerPort,
     MetricLabels,
     MetricsPort,
-    PolicyEvaluationError,
     PolicyEvaluationInput,
     PolicyEvaluationOutput,
     PolicyPort,
+    PolicyPortError,
     Repository,
+    ResultRepository,
     TraceAttributeValue,
     TraceSpan,
     TracerPort,
@@ -28,4 +33,8 @@ export {
     TemporalUseCase,
     type TemporalUseCaseInput,
 } from "./temporal/index.js";
-export { type MaybePromise, UseCase } from "./use-case.js";
+export {
+    type MaybePromise,
+    UseCase,
+    type UseCaseObservability,
+} from "./use-case.js";
