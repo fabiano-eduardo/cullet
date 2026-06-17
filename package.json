@@ -52,6 +52,7 @@
         "test:e2e": "vitest run --config vitest.e2e.config.ts",
         "test:e2e:publish": "CULLET_E2E_PUBLISH=1 vitest run --config vitest.e2e.config.ts tests/e2e/publish-flow.test.ts",
         "test:kits": "vitest run --config vitest.kits.config.ts",
+        "test:live": "AI_HARNESS_LIVE=1 vitest run --config vitest.kits.config.ts packages/ai-harness/src/providers/live.spec.ts",
         "docs:dev": "npm --prefix docs run dev",
         "docs:build": "npm --prefix docs run build",
         "release:dry-run": "npm run build && node ./scripts/check-pack-contents.mjs --all",
