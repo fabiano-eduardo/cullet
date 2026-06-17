@@ -1,12 +1,12 @@
 {
+    "ai-harness": {
+        "versions": ["1.0.0"],
+        "latest": "1.0.0",
+        "description": "Provider-neutral AI agent harness: bring an API key (Anthropic, OpenAI, OpenRouter or Google), define tasks, and let the agent resolve them.",
+        "npmName": "@cullet/ai-harness"
+    },
     "dummy-api": {
-        "versions": [
-            "1.0.0",
-            "1.0.1",
-            "1.0.2",
-            "1.0.3",
-            "1.0.4"
-        ],
+        "versions": ["1.0.0", "1.0.1", "1.0.2", "1.0.3", "1.0.4"],
         "latest": "1.0.4",
         "description": "Kit de exemplo minimo: esqueleto de core em clean architecture (camadas domain, application, errors e result) como referencia de estrutura para novos kits.",
         "npmName": "@cullet/dummy-api"

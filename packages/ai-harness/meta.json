@@ -1,0 +1,54 @@
+{
+    "schemaVersion": "2",
+    "name": "ai-harness",
+    "version": "1.0.0",
+    "description": "Provider-neutral AI agent harness: bring an API key (Anthropic, OpenAI, OpenRouter or Google), define tasks, and let the agent resolve them.",
+    "compatibility": {
+        "engines": {
+            "node": ">=18.17",
+            "typescript": ">=5.0.0"
+        },
+        "directImport": {
+            "peerDependencies": []
+        },
+        "fullControl": {
+            "dependencies": []
+        }
+    },
+    "entryPoint": "index.ts",
+    "philosophy": {
+        "errorModel": "mixed",
+        "observability": [],
+        "testStyle": "vitest-no-mocks-in-core",
+        "externalDeps": [],
+        "testDeps": ["vitest"]
+    },
+    "docs": {
+        "context": "KIT_CONTEXT.md",
+        "readme": "README.md"
+    },
+    "lint": {
+        "nodenextImports": "warn",
+        "noBareAny": "warn",
+        "noExternalImports": "error",
+        "noUpwardImports": "error"
+    },
+    "exports": [
+        "createProvider",
+        "createAnthropicProvider",
+        "createOpenAIProvider",
+        "createOpenRouterProvider",
+        "createGoogleProvider",
+        "ProviderError",
+        "runHarness",
+        "defaultBuildPrompt",
+        "nextRunnableTask",
+        "countTasks",
+        "DEFAULT_LIMITS",
+        "DEFAULT_PROTECTED_PATTERNS"
+    ],
+    "changelog": [
+        "1.0.0 - Provider-neutral agent harness: fetch-based adapters for Anthropic, OpenAI, OpenRouter and Google; importable runHarness loop with injectable apply/verify strategies; opt-in Node runtime helpers under the ./node subpath."
+    ],
+    "deprecated": false
+}
