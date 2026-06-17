@@ -68,7 +68,7 @@ jobs:
             matrix:
                 include:
                     - package: cli
-                      build_command: npm run build --workspace cullet
+                      build_command: npm run build
                       typecheck_command: npm run typecheck
                       test_command: npm run test
                       validate_command: 'node -e "console.log(''Skipping validate-kit for cullet: packages/cli has no meta.json.'')"'
