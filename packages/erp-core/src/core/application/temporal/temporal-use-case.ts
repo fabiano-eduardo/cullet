@@ -11,7 +11,19 @@ interface TemporalUseCaseInput {
     readonly temporalContext?: TemporalContext;
 }
 
-type TemporalizedContextSeed<TSeed extends ContextSeed> = TSeed;
+/**
+ * A {@link ContextSeed} after temporal enrichment by
+ * {@link TemporalUseCase.buildPolicySeed}: structurally identical to `TSeed`,
+ * except `fields.now` is now guaranteed present as a `Date` (injected from the
+ * resolved {@link TemporalContext}). Downstream policies can therefore read
+ * `seed.fields.now` without a presence/type guard.
+ */
+type TemporalizedContextSeed<TSeed extends ContextSeed> = Omit<
+    TSeed,
+    "fields"
+> & {
+    readonly fields: TSeed["fields"] & { readonly now: Date };
+};
 
 abstract class TemporalUseCase<
     Input extends object,
@@ -33,7 +45,7 @@ abstract class TemporalUseCase<
                 ...seed.fields,
                 now: new Date(temporalContext.requestedAt.getTime()),
             },
-        }) as TSeed;
+        }) as TemporalizedContextSeed<TSeed>;
     }
 }
 
