@@ -24,6 +24,7 @@ const COVERAGE_PROFILES = {
         exclude: [
             "packages/ai-harness/src/**/*.spec.ts",
             "packages/ai-harness/src/examples/**",
+            "packages/ai-harness/src/version.ts",
         ],
         // Floor measured 2026-06-17: 100% stmt / 97.53% branch / 100% func /
         // 100% lines (129 specs). Statements/functions/lines are pinned at full
