@@ -5,11 +5,12 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     extractFileBlocks,
+    fileBlockPrompt,
     nodeFileWriter,
     readFileSafe,
     shellVerifier,
 } from "./node.js";
-import type { ApplyArgs } from "../harness/types.js";
+import type { ApplyArgs, Task } from "../harness/types.js";
 
 /** Wrap raw model text in the ApplyArgs shape the apply strategy receives. */
 function applyArgs(text: string): ApplyArgs {
@@ -241,6 +242,68 @@ describe("nodeFileWriter", () => {
             written: false,
             reason: "protected path",
         });
+    });
+
+    it("signals a no-op when non-empty output has no FILE: blocks", async () => {
+        const onWrite = vi.fn();
+        const apply = nodeFileWriter({ projectRoot: root, onWrite });
+
+        await apply(applyArgs("Sure! Here is the function you asked for."));
+
+        expect(onWrite).toHaveBeenCalledTimes(1);
+        expect(onWrite).toHaveBeenCalledWith({
+            path: "",
+            written: false,
+            reason: "no FILE: blocks in output",
+        });
+    });
+
+    it("stays silent on empty or whitespace-only output", async () => {
+        const onWrite = vi.fn();
+        const apply = nodeFileWriter({ projectRoot: root, onWrite });
+
+        await apply(applyArgs(""));
+        await apply(applyArgs("   \n\t  \n"));
+
+        expect(onWrite).not.toHaveBeenCalled();
+    });
+});
+
+describe("fileBlockPrompt", () => {
+    const task: Task = { id: "t-1", description: "do the thing" };
+
+    function contentOf(t: Task): string {
+        return (
+            fileBlockPrompt({ task: t, tasks: [t] }).messages.at(-1)?.content ??
+            ""
+        );
+    }
+
+    it("keeps the neutral prompt body intact", () => {
+        const content = contentOf(task);
+
+        expect(content).toContain("# Task");
+        expect(content).toContain("ID: t-1");
+        expect(content).toContain("do the thing");
+    });
+
+    it("appends the FILE: output contract the writer understands", () => {
+        const content = contentOf(task);
+
+        expect(content).toContain("# Output format");
+        expect(content).toContain("FILE: relative/path/from/project/root.ts");
+        // The contract trails the task description, not the other way around.
+        expect(content.indexOf("# Task")).toBeLessThan(
+            content.indexOf("# Output format"),
+        );
+    });
+
+    it("emits output the FILE: writer can round-trip", async () => {
+        // A model that echoes the instructed format should produce a block the
+        // writer applies — proving the prompt↔writer contract lines up.
+        const sample = "FILE: src/x.ts\n```ts\nexport const x = 1;\n```";
+        expect(extractFileBlocks(sample)).toHaveLength(1);
+        expect(contentOf(task)).toContain("FILE: ");
     });
 });
 
