@@ -85,7 +85,7 @@ export function createAnthropicProvider(
                     (block) =>
                         block.type === "text" && typeof block.text === "string",
                 )
-                .map((block) => block.text ?? "")
+                .map((block) => block.text!)
                 .join("");
 
             const thinkingText = data.content
@@ -94,7 +94,7 @@ export function createAnthropicProvider(
                         block.type === "thinking" &&
                         typeof block.thinking === "string",
                 )
-                .map((block) => block.thinking ?? "")
+                .map((block) => block.thinking!)
                 .join("");
 
             return {
