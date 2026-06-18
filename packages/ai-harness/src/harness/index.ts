@@ -1,5 +1,6 @@
 export { runHarness } from "./run.js";
 export { defaultBuildPrompt } from "./prompt.js";
+export { resolveSkills } from "./skills.js";
 export {
     countTasks,
     markDone,
@@ -19,6 +20,9 @@ export type {
     HarnessEvent,
     HarnessLimits,
     HarnessSummary,
+    ProviderResolver,
+    Skill,
+    SkillRegistry,
     StopReason,
     Task,
     TaskStatus,

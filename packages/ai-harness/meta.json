@@ -39,9 +39,11 @@
         "createOpenAIProvider",
         "createOpenRouterProvider",
         "createGoogleProvider",
+        "createProviderResolver",
         "ProviderError",
         "runHarness",
         "defaultBuildPrompt",
+        "resolveSkills",
         "nextRunnableTask",
         "countTasks",
         "DEFAULT_LIMITS",
@@ -50,7 +52,8 @@
     "changelog": [
         "1.1.0 - Add @cullet/ai-harness: a provider-neutral AI agent harness. Ships fetch-based adapters for Anthropic, OpenAI, OpenRouter and Google (no vendor SDK dependency), an importable `runHarness` loop with injectable `apply`/`verify`/`buildPrompt` strategies, and opt-in Node runtime helpers (file writing with guardrails, shell sensors, and a git checkpoint that commits passing tasks and rolls back failed attempts) under the `@cullet/ai-harness/node` subpath. The API key is always passed explicitly and no model id is hard-coded.",
         "1.2.0 - Close the prompt↔writer gap in the Node runtime.",
-        "1.3.0 - Add extended thinking (reasoning) support to the provider contract and Anthropic adapter"
+        "1.3.0 - Add extended thinking (reasoning) support to the provider contract and Anthropic adapter",
+        "1.4.0 - Add per-task provider/model selection (Task.provider/model, config.resolveProvider, and the createProviderResolver helper) and named skills injected into the prompt (Task.skills + config.skills registry, rendered by the default prompt)"
     ],
     "deprecated": false
 }

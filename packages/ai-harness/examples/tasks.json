@@ -2,6 +2,9 @@
     {
         "id": "task-001",
         "status": "pending",
+        "provider": "anthropic",
+        "model": "claude-opus-4-8",
+        "skills": ["clean-code"],
         "description": "Implementar UserRepository com os métodos findByEmail e create em src/repositories/user.repository.ts. O findByEmail recebe uma string email e retorna Promise<User | null>. O create recebe CreateUserInput (importar de src/modules/users/types.ts) e retorna Promise<User>. Usar o Prisma client importado de src/lib/prisma.ts.",
         "targetFiles": ["src/repositories/user.repository.ts"],
         "dependsOn": [],
@@ -12,6 +15,9 @@
     {
         "id": "task-002",
         "status": "pending",
+        "provider": "openai",
+        "model": "gpt-4o",
+        "skills": ["clean-code"],
         "description": "Implementar o use case createUser em src/modules/users/create.ts. Recebe CreateUserInput, valida com o schema Zod já definido em src/modules/users/schemas.ts, verifica se o email já existe via UserRepository.findByEmail (lançar ConflictError se existir), faz hash da senha com bcrypt (rounds=10), e persiste com UserRepository.create. Retorna Promise<User>.",
         "targetFiles": ["src/modules/users/create.ts"],
         "dependsOn": ["task-001"],

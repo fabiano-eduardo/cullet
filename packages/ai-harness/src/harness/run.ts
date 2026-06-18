@@ -5,6 +5,7 @@
 import type { AgentProvider } from "../providers/types.js";
 import { DEFAULT_LIMITS } from "../constants.js";
 import { defaultBuildPrompt } from "./prompt.js";
+import { resolveSkills } from "./skills.js";
 import {
     countTasks,
     markDone,
@@ -52,7 +53,6 @@ export async function runHarness(
         );
     }
 
-    const provider: AgentProvider = config.provider;
     const buildPrompt = config.buildPrompt ?? defaultBuildPrompt;
 
     let totalCostUSD = 0;
@@ -90,14 +90,34 @@ export async function runHarness(
         emit(config, { type: "task-start", task, attempt });
 
         try {
-            const request = await buildPrompt({ task, tasks: config.tasks });
+            const provider: AgentProvider | undefined =
+                (await config.resolveProvider?.(task)) ?? config.provider;
+            if (!provider) {
+                throw new Error(
+                    `no provider for task "${task.id}". Pass config.provider as a ` +
+                        `default, or a config.resolveProvider that returns one.`,
+                );
+            }
+
+            const skills = resolveSkills(task.skills, config.skills);
+            const request = await buildPrompt({
+                task,
+                tasks: config.tasks,
+                skills,
+            });
             const result = await provider.complete(request, config.signal);
 
             const costUSD = config.estimateCost
                 ? config.estimateCost(result.usage, provider)
                 : 0;
             totalCostUSD += costUSD;
-            emit(config, { type: "model-result", task, result, costUSD });
+            emit(config, {
+                type: "model-result",
+                task,
+                result,
+                costUSD,
+                provider,
+            });
 
             await config.apply({ task, result });
 

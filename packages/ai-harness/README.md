@@ -10,6 +10,8 @@ For the prompt-friendly summary see [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). For th
 
 - **Provider adapters** (`createProvider`) for **Anthropic**, **OpenAI**, **OpenRouter** and **Google Gemini** — all over `fetch`, no vendor SDK dependency. The API key is always passed explicitly.
 - **`runHarness`** — an importable orchestration loop that selects the next runnable task, prompts the model, applies the result, optionally verifies it, and retries with feedback.
+- **Per-task provider & model.** A task can name its own `provider` + `model`; `createProviderResolver` maps those to a concrete provider (with your keys, memoized). A single `provider` still works as a default/fallback.
+- **Skills** — named, reusable instruction blocks. A task lists `skills` by name; the harness resolves them against a registry and the default prompt injects them under a `# Skills` section.
 - **Architecture-neutral by design.** The harness makes no assumption about TDD, file layout, or toolchain. You inject `apply` (what to do with the output) and, optionally, `verify` (how to check success) and `buildPrompt`.
 - **Opt-in Node helpers** under `@cullet/ai-harness/node`: write `FILE:` blocks to disk with guardrails, prompt for that format with `fileBlockPrompt`, and run shell commands (lint/typecheck/tests/build — your call) as verification sensors.
 
@@ -89,6 +91,75 @@ npx cullet fc ai-harness@1.0.0
 | `google`     | none (fetch) | `generativelanguage.googleapis.com/v1beta` | `?key=`                 |
 
 `model` is always required — the kit ships no hard-coded model id so it cannot rot. Override `baseURL`, `headers` or `fetchImpl` for gateways, proxies, or tests.
+
+## Per-task provider & model
+
+Each task can declare which vendor and model it runs on, instead of one global provider. The core stays provider-neutral and **never reads API keys** — so the string→provider bridge is a `resolveProvider` hook you supply. `createProviderResolver` is the batteries-included one: you hand it the keys once, it reads each task's `provider`/`model` and returns a memoized `AgentProvider`.
+
+```ts
+import {
+    createProviderResolver,
+    runHarness,
+    type Task,
+} from "@cullet/ai-harness";
+
+const resolveProvider = createProviderResolver({
+    anthropic: {
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+        defaultModel: "claude-opus-4-8",
+    },
+    openai: { apiKey: process.env.OPENAI_API_KEY! },
+    defaultProvider: "anthropic", // for tasks that name no provider
+});
+
+const tasks: Task[] = [
+    {
+        id: "a",
+        description: "…",
+        provider: "anthropic",
+        model: "claude-opus-4-8",
+    },
+    { id: "b", description: "…", provider: "openai", model: "gpt-4o" },
+    { id: "c", description: "…" }, // uses defaultProvider + defaultModel
+];
+
+await runHarness({
+    resolveProvider,
+    // `provider` is still accepted as a plain fallback when you don't need a resolver.
+    tasks,
+    apply: /* … */ () => {},
+});
+```
+
+Resolution precedence: vendor is `task.provider` → `defaultProvider`; model is `task.model` → `<vendor>.defaultModel` → `defaultModel`. Providers are cached by `provider|model|baseURL`. A task with no resolvable provider (no resolver and no default) fails with a clear error. The resolved provider also flows into `estimateCost(usage, provider)` and the `model-result` event (`event.provider`), so per-model pricing and logging just work.
+
+## Skills
+
+Skills are named, reusable instruction blocks. Register them on `skills` and reference them by name from each task; the default prompt renders the resolved skills under a `# Skills` section (and `fileBlockPrompt` inherits it).
+
+```ts
+await runHarness({
+    provider,
+    skills: {
+        tdd: "Write a failing test before the implementation.",
+        "sql-safe": {
+            name: "SQL safety",
+            instructions:
+                "Never build SQL by string concatenation; use parameters.",
+        },
+    },
+    tasks: [
+        {
+            id: "a",
+            description: "Implement the repository.",
+            skills: ["tdd", "sql-safe"],
+        },
+    ],
+    apply: /* … */ () => {},
+});
+```
+
+A registry value can be a plain string (its key becomes the skill name) or a `Skill` object (`{ name?, instructions, description? }`). Referencing an unknown skill name fails fast, naming the missing skill. A custom `buildPrompt` receives the already-resolved skills via `args.skills` and can render them however it likes.
 
 ## Extended thinking (reasoning)
 

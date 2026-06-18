@@ -2,10 +2,33 @@ import type {
     AgentProvider,
     CompletionRequest,
     CompletionResult,
+    ProviderName,
     TokenUsage,
 } from "../providers/types.js";
 
 export type TaskStatus = "pending" | "done" | "failed";
+
+/**
+ * A reusable, named block of instructions injected into the prompt. Register
+ * skills on `HarnessConfig.skills` and reference them by name from
+ * `Task.skills`; the harness resolves names to `Skill`s and the default prompt
+ * renders them under a `# Skills` section.
+ */
+export interface Skill {
+    /** Display name, rendered as the section heading. Defaults to the registry key. */
+    name: string;
+    /** The instruction text injected into the prompt. */
+    instructions: string;
+    /** Optional one-line summary (not rendered by the default prompt). */
+    description?: string;
+}
+
+/**
+ * Maps a skill name to its instructions. A plain string is shorthand for a
+ * `Skill` whose `name` is the registry key and whose `instructions` are the
+ * string.
+ */
+export type SkillRegistry = Record<string, string | Skill>;
 
 /**
  * A unit of work for the agent. Deliberately architecture-neutral: it does not
@@ -26,6 +49,15 @@ export interface Task {
     outputSummary?: string | null;
     /** Extra free-form context appended to the prompt for this task. */
     context?: string;
+    /**
+     * Vendor to run this task on. Read by `config.resolveProvider` (e.g. the
+     * bundled `createProviderResolver`) to pick the `AgentProvider` per task.
+     */
+    provider?: ProviderName;
+    /** Model id for this task, e.g. "claude-opus-4-8". Consumed by `resolveProvider`. */
+    model?: string;
+    /** Names of `HarnessConfig.skills` to inject into this task's prompt. */
+    skills?: string[];
     /** Anything your strategies need (e.g. target files, module name). */
     metadata?: Record<string, unknown>;
 }
@@ -50,7 +82,18 @@ export interface VerifyOutcome {
 export interface BuildPromptArgs {
     task: Task;
     tasks: readonly Task[];
+    /** Skills referenced by `task.skills`, already resolved against the registry. */
+    skills?: readonly Skill[];
 }
+
+/**
+ * Resolve the `AgentProvider` for a task. Return `undefined` to fall back to
+ * `HarnessConfig.provider`. The harness never reads API keys itself, so this is
+ * where per-task provider/model selection (e.g. `createProviderResolver`) lives.
+ */
+export type ProviderResolver = (
+    task: Task,
+) => AgentProvider | Promise<AgentProvider> | undefined;
 export type BuildPromptFn = (
     args: BuildPromptArgs,
 ) => CompletionRequest | Promise<CompletionRequest>;
@@ -89,6 +132,8 @@ export type HarnessEvent =
           task: Task;
           result: CompletionResult;
           costUSD: number;
+          /** The provider that produced this result (per-task when resolved). */
+          provider: AgentProvider;
       }
     | { type: "task-done"; task: Task }
     | { type: "task-failed"; task: Task; feedback?: string }
@@ -96,8 +141,17 @@ export type HarnessEvent =
     | { type: "stop"; reason: StopReason };
 
 export interface HarnessConfig {
-    provider: AgentProvider;
+    /**
+     * Default provider, used when `resolveProvider` is absent or returns
+     * `undefined`. Optional only if `resolveProvider` covers every task; a task
+     * with no provider from either source throws at run time.
+     */
+    provider?: AgentProvider;
+    /** Pick the provider per task (e.g. `createProviderResolver`). */
+    resolveProvider?: ProviderResolver;
     tasks: Task[];
+    /** Named, reusable instruction blocks referenced by `Task.skills`. */
+    skills?: SkillRegistry;
     /** What to do with each model result (the only required strategy). */
     apply: ApplyFn;
     /** Optional success check. When omitted, an attempt succeeds once `apply` resolves. */
