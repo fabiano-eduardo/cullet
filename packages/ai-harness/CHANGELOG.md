@@ -1,5 +1,11 @@
 # @cullet/ai-harness
 
+## 1.3.0
+
+### Minor Changes
+
+- 7aee0a3: Add extended thinking (reasoning) support to the provider contract and Anthropic adapter
+
 ## 1.2.0
 
 ### Minor Changes
