@@ -1,6 +1,6 @@
 {
     "name": "@cullet/ai-harness",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Provider-neutral AI agent harness: bring an API key (Anthropic, OpenAI, OpenRouter or Google), define tasks, and let the agent resolve them.",
     "type": "module",
     "repository": {

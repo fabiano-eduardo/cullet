@@ -1,7 +1,7 @@
 {
     "schemaVersion": "2",
     "name": "ai-harness",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Provider-neutral AI agent harness: bring an API key (Anthropic, OpenAI, OpenRouter or Google), define tasks, and let the agent resolve them.",
     "compatibility": {
         "engines": {
@@ -48,7 +48,8 @@
         "DEFAULT_PROTECTED_PATTERNS"
     ],
     "changelog": [
-        "1.1.0 - Add @cullet/ai-harness: a provider-neutral AI agent harness. Ships fetch-based adapters for Anthropic, OpenAI, OpenRouter and Google (no vendor SDK dependency), an importable `runHarness` loop with injectable `apply`/`verify`/`buildPrompt` strategies, and opt-in Node runtime helpers (file writing with guardrails, shell sensors, and a git checkpoint that commits passing tasks and rolls back failed attempts) under the `@cullet/ai-harness/node` subpath. The API key is always passed explicitly and no model id is hard-coded."
+        "1.1.0 - Add @cullet/ai-harness: a provider-neutral AI agent harness. Ships fetch-based adapters for Anthropic, OpenAI, OpenRouter and Google (no vendor SDK dependency), an importable `runHarness` loop with injectable `apply`/`verify`/`buildPrompt` strategies, and opt-in Node runtime helpers (file writing with guardrails, shell sensors, and a git checkpoint that commits passing tasks and rolls back failed attempts) under the `@cullet/ai-harness/node` subpath. The API key is always passed explicitly and no model id is hard-coded.",
+        "1.2.0 - Close the prompt↔writer gap in the Node runtime."
     ],
     "deprecated": false
 }
