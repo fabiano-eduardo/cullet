@@ -10,7 +10,7 @@ Conectar um projeto a um agente de IA via chave de API, receber uma lista de tar
 
 - **`providers/`** — adapters neutros por fornecedor (Anthropic, OpenAI, OpenRouter, Google), todos sobre `fetch`. `createProvider({ provider, apiKey, model })` é a única porta de entrada. Nenhum SDK de fornecedor é dependência.
 - **`harness/`** — o núcleo neutro: `Task`, helpers puros de tarefa e o loop `runHarness`. Não conhece arquivos, testes nem toolchain.
-- **`runtime/node.ts`** — helpers opt-in para Node, no subpath `@cullet/ai-harness/node`: escrita de blocos `FILE:` com guardrails e sensores via shell. Side-effects de ambiente isolados aqui.
+- **`runtime/node.ts`** — helpers opt-in para Node, no subpath `@cullet/ai-harness/node`: escrita de blocos `FILE:` com guardrails, o `buildPrompt` `fileBlockPrompt` que pede esse formato, e sensores via shell. Side-effects de ambiente isolados aqui.
 
 ## [key-decisions] Decisões-chave
 
@@ -19,6 +19,7 @@ Conectar um projeto a um agente de IA via chave de API, receber uma lista de tar
 - **Chave por parâmetro.** A API key entra em `createProvider`; o kit nunca lê do ambiente por você.
 - **Sem `model` default.** `model` é obrigatório para o id de modelo não apodrecer no pacote.
 - **Side-effects de ambiente isolados** atrás do subpath `./node`, mantendo o import raiz neutro.
+- **Contrato de saída `FILE:` vive no `./node`, não no núcleo.** O `nodeFileWriter` só aplica blocos `FILE:`; o `defaultBuildPrompt` é neutro e não pede esse formato. Por isso o `fileBlockPrompt` (que embute o contrato) sai do subpath Node, ao lado do writer — eles são acoplados e devem ser usados em par. Sem esse par, o writer não recebe nada aplicável; para tornar o no-op observável, o `nodeFileWriter` reporta `onWrite({ written: false, reason: "no FILE: blocks in output" })` quando a saída é não-vazia mas sem blocos.
 
 ## [extension-points] Pontos de extensão
 

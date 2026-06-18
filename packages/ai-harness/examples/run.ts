@@ -29,6 +29,7 @@ import {
 } from "@cullet/ai-harness";
 import {
     createGitCheckpoint,
+    fileBlockPrompt,
     nodeFileWriter,
     shellVerifier,
 } from "@cullet/ai-harness/node";
@@ -85,6 +86,9 @@ async function main(): Promise<void> {
         provider,
         tasks,
         apply,
+        // `nodeFileWriter` only applies `FILE:` blocks, so the prompt must ask
+        // for that shape. `fileBlockPrompt` wraps the neutral default with it.
+        buildPrompt: fileBlockPrompt,
         verify: useGit ? checkpoint.wrapVerify(verify) : verify,
         limits: { maxAttempts: 3, maxCostUSD: 5, pauseBetweenTasksMs: 1_000 },
         // Token pricing varies per model — plug your own table in here.

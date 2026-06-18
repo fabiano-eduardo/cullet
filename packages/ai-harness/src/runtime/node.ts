@@ -6,7 +6,14 @@ import { execSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { DEFAULT_PROTECTED_PATTERNS } from "../constants.js";
-import type { ApplyFn, VerifyFn, VerifyOutcome } from "../harness/types.js";
+import { defaultBuildPrompt } from "../harness/prompt.js";
+import type {
+    ApplyFn,
+    BuildPromptArgs,
+    VerifyFn,
+    VerifyOutcome,
+} from "../harness/types.js";
+import type { CompletionRequest } from "../providers/types.js";
 
 export {
     createGitCheckpoint,
@@ -37,6 +44,42 @@ export function extractFileBlocks(output: string): FileBlock[] {
         blocks.push({ path: match[1].trim(), content: match[2] });
     }
     return blocks;
+}
+
+// The output contract the FILE: writer understands, appended to the neutral
+// core prompt. Kept here — not in the architecture-neutral `defaultBuildPrompt`
+// — because the `FILE:` format belongs to this Node runtime, alongside
+// `nodeFileWriter` and `extractFileBlocks` that consume it.
+const FILE_BLOCK_INSTRUCTIONS = [
+    "# Output format",
+    "Return the full contents of every file you create or modify, each in its own block:",
+    "",
+    "FILE: relative/path/from/project/root.ts",
+    "```ts",
+    "<the complete file contents>",
+    "```",
+    "",
+    "Rules:",
+    "- Start each file with a `FILE:` line, immediately followed by a fenced code block holding the entire file (not a diff or a snippet).",
+    "- Use paths relative to the project root; absolute paths and anything outside the root are refused.",
+    "- Anything outside these blocks is treated as commentary and is not written to disk.",
+].join("\n");
+
+/**
+ * A `buildPrompt` that wraps {@link defaultBuildPrompt} and appends the `FILE:`
+ * output contract. Pair it with {@link nodeFileWriter}: that writer only applies
+ * output shaped as `FILE:` fenced blocks, and the architecture-neutral default
+ * prompt never asks for that shape — so without this (or your own equivalent)
+ * the writer typically receives output it cannot apply and writes nothing.
+ */
+export function fileBlockPrompt(args: BuildPromptArgs): CompletionRequest {
+    const base = defaultBuildPrompt(args);
+    const messages = base.messages.map((message) => ({ ...message }));
+    const last = messages.at(-1);
+    if (last) {
+        last.content = `${last.content}\n\n${FILE_BLOCK_INSTRUCTIONS}`;
+    }
+    return { ...base, messages };
 }
 
 export interface NodeFileWriterOptions {
@@ -78,7 +121,21 @@ export function nodeFileWriter(options: NodeFileWriterOptions = {}): ApplyFn {
     const { allowedPatterns, dryRun } = options;
 
     return async ({ result }) => {
-        for (const block of extractFileBlocks(result.text)) {
+        const blocks = extractFileBlocks(result.text);
+
+        // Non-empty output that yielded no blocks means the format didn't
+        // match — the loop below would silently write nothing. Surface that
+        // no-op through onWrite instead of marking the task done for free.
+        if (blocks.length === 0 && result.text.trim() !== "") {
+            options.onWrite?.({
+                path: "",
+                written: false,
+                reason: "no FILE: blocks in output",
+            });
+            return;
+        }
+
+        for (const block of blocks) {
             const full = resolve(root, block.path);
             const rel = relative(root, full);
 
