@@ -17,6 +17,8 @@ export interface CompletionRequest {
     system?: string;
     maxTokens?: number;
     temperature?: number;
+    /** Request extended thinking with a dedicated token budget. Provider-neutral; each adapter translates to its API or ignores it. */
+    thinking?: { budgetTokens: number };
 }
 
 export interface TokenUsage {
@@ -30,6 +32,8 @@ export interface CompletionResult {
     usage: TokenUsage;
     /** The raw, provider-specific response body, for callers that need more. */
     raw: unknown;
+    /** Reasoning/thinking text when requested via `thinking` and returned by the provider. Always separate from `text`. */
+    reasoning?: string;
 }
 
 /**

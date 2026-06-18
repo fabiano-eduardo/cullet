@@ -90,6 +90,26 @@ npx cullet fc ai-harness@1.0.0
 
 `model` is always required — the kit ships no hard-coded model id so it cannot rot. Override `baseURL`, `headers` or `fetchImpl` for gateways, proxies, or tests.
 
+## Extended thinking (reasoning)
+
+Request reasoning/extended thinking by setting `thinking.budgetTokens` on `CompletionRequest`. The model's reasoning is returned separately in `CompletionResult.reasoning` — `text` stays the final answer only.
+
+```ts
+const request: CompletionRequest = {
+    messages: [{ role: "user", content: "Solve step by step" }],
+    maxTokens: 16_000,
+    thinking: { budgetTokens: 10_000 },
+};
+
+const result = await provider.complete(request);
+console.log(result.reasoning); // model's chain of thought
+console.log(result.text); // final answer
+```
+
+**Provider support:** only Anthropic implements thinking today. OpenAI, OpenRouter and Google accept the option without error but ignore it (`reasoning` is always `undefined`). When thinking is enabled on Anthropic, `temperature` is omitted (API constraint) and `maxTokens` must exceed `budgetTokens`.
+
+In the example script, set `AI_THINKING_BUDGET=10000` to enable thinking.
+
 ## Extending it
 
 - **Custom prompts**: pass `buildPrompt({ task, tasks })` to inject project rules, a system prompt, or output conventions. With `nodeFileWriter`, use `fileBlockPrompt` (or keep the `FILE:` contract in your own builder) so the model emits blocks the writer can apply.

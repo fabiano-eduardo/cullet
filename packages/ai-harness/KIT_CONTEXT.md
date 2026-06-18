@@ -2,36 +2,31 @@
 
 ## [purpose] Propósito
 
-Conectar um projeto a um agente de IA via chave de API, receber uma lista de tarefas e deixar o agente resolvê-las — com retry guiado por feedback e limites de tentativas/custo/prazo. É importável (caminho principal) e também copiável via `npx cullet fc`.
+Conectar um projeto a um agente de IA via chave de API, receber tarefas e deixar o agente resolvê-las — com retry guiado por feedback e limites de tentativas/custo/prazo.
 
 ## [layers] Estrutura do `src/`
 
-`cullet` não impõe arquitetura; o kit se organiza em três fronteiras simples:
-
-- **`providers/`** — adapters neutros por fornecedor (Anthropic, OpenAI, OpenRouter, Google), todos sobre `fetch`. `createProvider({ provider, apiKey, model })` é a única porta de entrada. Nenhum SDK de fornecedor é dependência.
-- **`harness/`** — o núcleo neutro: `Task`, helpers puros de tarefa e o loop `runHarness`. Não conhece arquivos, testes nem toolchain.
-- **`runtime/node.ts`** — helpers opt-in para Node, no subpath `@cullet/ai-harness/node`: escrita de blocos `FILE:` com guardrails, o `buildPrompt` `fileBlockPrompt` que pede esse formato, e sensores via shell. Side-effects de ambiente isolados aqui.
+- **`providers/`** — adapters neutros por fornecedor (Anthropic, OpenAI, OpenRouter, Google), todos sobre `fetch`. `createProvider` é a porta de entrada. Sem SDK.
+- **`harness/`** — núcleo neutro: `Task`, helpers de tarefa e o loop `runHarness`. Não conhece arquivos, testes nem toolchain.
+- **`runtime/node.ts`** — helpers opt-in no subpath `@cullet/ai-harness/node`: escrita de blocos `FILE:`, `fileBlockPrompt` e sensores via shell.
 
 ## [key-decisions] Decisões-chave
 
-- **Neutralidade de fornecedor.** O harness só fala com `AgentProvider.complete`; trocar de Anthropic para OpenRouter é trocar uma linha. Adapters via `fetch`, sem SDK.
-- **Neutralidade de arquitetura.** O que fazer com a saída (`apply`) e como verificar sucesso (`verify`) são **injetados** pelo consumidor. Nada de TDD, `targetFiles` ou `eslint/tsc/vitest` presumidos no núcleo.
-- **Chave por parâmetro.** A API key entra em `createProvider`; o kit nunca lê do ambiente por você.
-- **Sem `model` default.** `model` é obrigatório para o id de modelo não apodrecer no pacote.
-- **Side-effects de ambiente isolados** atrás do subpath `./node`, mantendo o import raiz neutro.
-- **Contrato de saída `FILE:` vive no `./node`, não no núcleo.** O `nodeFileWriter` só aplica blocos `FILE:`; o `defaultBuildPrompt` é neutro e não pede esse formato. Por isso o `fileBlockPrompt` (que embute o contrato) sai do subpath Node, ao lado do writer — eles são acoplados e devem ser usados em par. Sem esse par, o writer não recebe nada aplicável; para tornar o no-op observável, o `nodeFileWriter` reporta `onWrite({ written: false, reason: "no FILE: blocks in output" })` quando a saída é não-vazia mas sem blocos.
+- **Neutralidade de fornecedor.** O harness só fala com `AgentProvider.complete`; adapters via `fetch`, sem SDK.
+- **Neutralidade de arquitetura.** `apply` e `verify` são injetados; nada de TDD ou toolchain presumido.
+- **Chave por parâmetro.** O kit nunca lê do ambiente.
+- **Sem `model` default.** Obrigatório para não apodrecer.
+- **Side-effects isolados** atrás do subpath `./node`.
+- **Extended thinking.** `CompletionRequest.thinking?: { budgetTokens }` pede reasoning; `CompletionResult.reasoning` devolve o pensamento separado de `text`. Só Anthropic implementa; demais providers aceitam sem quebrar (no-op).
 
 ## [extension-points] Pontos de extensão
 
-- `buildPrompt({ task, tasks })` — molda o prompt (regras do projeto, system prompt, formato de saída).
-- `apply({ task, result })` — o que fazer com a saída do modelo (escrever arquivos, abrir PR, chamar tooling próprio).
-- `verify({ task })` — decide se a tentativa passou; o feedback volta no próximo prompt.
-- `estimateCost(usage, provider)` — converte tokens em USD para o teto de custo.
+- `buildPrompt`, `apply`, `verify` — injetáveis pelo consumidor.
+- `estimateCost` — converte tokens em USD para o teto.
 - `fetchImpl` / `baseURL` / `headers` — gateways, proxies e testes.
 
 ## [non-goals] Não-objetivos
 
-- **Não é framework de arquitetura.** Não dita camadas, pastas nem estilo de teste.
-- **Não embute SDK de fornecedor** nem chaves; não lê env por você.
-- **Não fixa modelos nem preços.** Modelo é input; custo é injetável.
-- **Não é runner acoplado a TDD.** Verificar por testes é helper opt-in do `./node`.
+- Não dita arquitetura, camadas nem estilo de teste.
+- Não embute SDK de fornecedor nem chaves.
+- Não fixa modelos nem preços.

@@ -211,4 +211,104 @@ describe("createAnthropicProvider", () => {
 
         expect(calls[0].init.signal).toBe(controller.signal);
     });
+
+    describe("extended thinking", () => {
+        it("sends thinking param and omits temperature when thinking is enabled", async () => {
+            const { fetchImpl, calls } = stubFetch(jsonResponse(okBody));
+            const provider = createAnthropicProvider({
+                apiKey: "key",
+                model: "m",
+                fetchImpl,
+            });
+
+            await provider.complete({
+                messages: [{ role: "user", content: "hi" }],
+                maxTokens: 16_000,
+                temperature: 0.5,
+                thinking: { budgetTokens: 10_000 },
+            });
+
+            const body = JSON.parse(calls[0].init.body as string);
+            expect(body.thinking).toEqual({
+                type: "enabled",
+                budget_tokens: 10_000,
+            });
+            expect("temperature" in body).toBe(false);
+        });
+
+        it("parses thinking blocks into reasoning and text blocks into text", async () => {
+            const { fetchImpl } = stubFetch(
+                jsonResponse({
+                    content: [
+                        { type: "thinking", thinking: "step 1" },
+                        { type: "thinking", thinking: "step 2" },
+                        { type: "text", text: "final answer" },
+                    ],
+                    usage: { input_tokens: 10, output_tokens: 20 },
+                }),
+            );
+            const provider = createAnthropicProvider({
+                apiKey: "key",
+                model: "m",
+                fetchImpl,
+            });
+
+            const result = await provider.complete({
+                messages: [{ role: "user", content: "hi" }],
+                maxTokens: 16_000,
+                thinking: { budgetTokens: 10_000 },
+            });
+
+            expect(result.text).toBe("final answer");
+            expect(result.reasoning).toBe("step 1step 2");
+        });
+
+        it("leaves reasoning undefined when thinking is not requested", async () => {
+            const { fetchImpl } = stubFetch(jsonResponse(okBody));
+            const provider = createAnthropicProvider({
+                apiKey: "key",
+                model: "m",
+                fetchImpl,
+            });
+
+            const result = await provider.complete({
+                messages: [{ role: "user", content: "hi" }],
+            });
+
+            expect(result.reasoning).toBeUndefined();
+        });
+
+        it("throws when max_tokens <= budgetTokens", async () => {
+            const { fetchImpl } = stubFetch(jsonResponse(okBody));
+            const provider = createAnthropicProvider({
+                apiKey: "key",
+                model: "m",
+                fetchImpl,
+            });
+
+            await expect(
+                provider.complete({
+                    messages: [{ role: "user", content: "hi" }],
+                    maxTokens: 5_000,
+                    thinking: { budgetTokens: 5_000 },
+                }),
+            ).rejects.toThrow("max_tokens (5000) must be greater than thinking.budgetTokens (5000)");
+        });
+
+        it("throws when default max_tokens <= budgetTokens", async () => {
+            const { fetchImpl } = stubFetch(jsonResponse(okBody));
+            const provider = createAnthropicProvider({
+                apiKey: "key",
+                model: "m",
+                fetchImpl,
+            });
+
+            await expect(
+                provider.complete({
+                    messages: [{ role: "user", content: "hi" }],
+                    thinking: { budgetTokens: 10_000 },
+                }),
+            ).rejects.toThrow("max_tokens (8000) must be greater than thinking.budgetTokens (10000)");
+        });
+    });
 });
