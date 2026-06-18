@@ -270,4 +270,22 @@ describe("createGoogleProvider", () => {
 
         expect(calls[0].init.signal).toBe(controller.signal);
     });
+
+    it("ignores thinking — body unchanged, reasoning undefined", async () => {
+        const { fetchImpl, calls } = stubFetch(jsonResponse(okBody));
+        const provider = createGoogleProvider({
+            apiKey: "k",
+            model: "m",
+            fetchImpl,
+        });
+
+        const result = await provider.complete({
+            messages: [{ role: "user", content: "hi" }],
+            thinking: { budgetTokens: 10_000 },
+        });
+
+        const body = JSON.parse(calls[0].init.body as string);
+        expect("thinking" in body).toBe(false);
+        expect(result.reasoning).toBeUndefined();
+    });
 });

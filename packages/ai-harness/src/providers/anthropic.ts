@@ -13,7 +13,7 @@ const DEFAULT_BASE_URL = "https://api.anthropic.com/v1";
 const ANTHROPIC_VERSION = "2023-06-01";
 
 interface AnthropicResponse {
-    content: Array<{ type: string; text?: string }>;
+    content: Array<{ type: string; text?: string; thinking?: string }>;
     usage: { input_tokens: number; output_tokens: number };
 }
 
@@ -30,6 +30,16 @@ export function createAnthropicProvider(
             request: CompletionRequest,
             signal?: AbortSignal,
         ): Promise<CompletionResult> {
+            const maxTokens = request.maxTokens ?? 8_000;
+
+            if (request.thinking) {
+                if (maxTokens <= request.thinking.budgetTokens) {
+                    throw new Error(
+                        `[anthropic] max_tokens (${maxTokens}) must be greater than thinking.budgetTokens (${request.thinking.budgetTokens})`,
+                    );
+                }
+            }
+
             const response = await fetchImpl(`${baseURL}/messages`, {
                 method: "POST",
                 signal,
@@ -41,8 +51,17 @@ export function createAnthropicProvider(
                 },
                 body: JSON.stringify({
                     model: options.model,
-                    max_tokens: request.maxTokens ?? 8_000,
-                    ...(request.temperature !== undefined
+                    max_tokens: maxTokens,
+                    ...(request.thinking
+                        ? {
+                              thinking: {
+                                  type: "enabled",
+                                  budget_tokens:
+                                      request.thinking.budgetTokens,
+                              },
+                          }
+                        : {}),
+                    ...(!request.thinking && request.temperature !== undefined
                         ? { temperature: request.temperature }
                         : {}),
                     ...(request.system ? { system: request.system } : {}),
@@ -66,7 +85,16 @@ export function createAnthropicProvider(
                     (block) =>
                         block.type === "text" && typeof block.text === "string",
                 )
-                .map((block) => block.text ?? "")
+                .map((block) => block.text!)
+                .join("");
+
+            const thinkingText = data.content
+                .filter(
+                    (block) =>
+                        block.type === "thinking" &&
+                        typeof block.thinking === "string",
+                )
+                .map((block) => block.thinking!)
                 .join("");
 
             return {
@@ -76,6 +104,7 @@ export function createAnthropicProvider(
                     outputTokens: data.usage.output_tokens,
                 },
                 raw: data,
+                ...(thinkingText ? { reasoning: thinkingText } : {}),
             };
         },
     };

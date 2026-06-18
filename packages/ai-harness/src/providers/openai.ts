@@ -41,6 +41,8 @@ function createOpenAICompatibleProvider(
                   ]
                 : request.messages;
 
+            // `request.thinking` is accepted but not mapped — OpenAI/OpenRouter reasoning APIs differ; planned for a follow-up.
+
             const response = await fetchImpl(`${baseURL}/chat/completions`, {
                 method: "POST",
                 signal,

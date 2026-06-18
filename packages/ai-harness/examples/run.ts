@@ -61,7 +61,12 @@ async function main(): Promise<void> {
     // 3. The project the agent works in. Point this at a real project root.
     const projectRoot = env("PROJECT_ROOT", process.cwd());
 
-    // 4. Strategies: write FILE: blocks to disk, and verify with your own commands.
+    // 4. Optional extended thinking budget (e.g. AI_THINKING_BUDGET=10000).
+    const thinkingBudget = process.env.AI_THINKING_BUDGET
+        ? Number(process.env.AI_THINKING_BUDGET)
+        : undefined;
+
+    // 5. Strategies: write FILE: blocks to disk, and verify with your own commands.
     const apply = nodeFileWriter({
         projectRoot,
         onWrite: ({ path, written, reason }) =>
@@ -81,14 +86,17 @@ async function main(): Promise<void> {
             console.log(`    git: ${action} (${taskId})`),
     });
 
-    // 5. Run. Mutates `tasks` in place, so you could persist progress between runs.
+    // 6. Run. Mutates `tasks` in place, so you could persist progress between runs.
     const summary = await runHarness({
         provider,
         tasks,
         apply,
-        // `nodeFileWriter` only applies `FILE:` blocks, so the prompt must ask
-        // for that shape. `fileBlockPrompt` wraps the neutral default with it.
-        buildPrompt: fileBlockPrompt,
+        buildPrompt: thinkingBudget
+            ? async (args) => {
+                  const req = await fileBlockPrompt(args);
+                  return { ...req, thinking: { budgetTokens: thinkingBudget } };
+              }
+            : fileBlockPrompt,
         verify: useGit ? checkpoint.wrapVerify(verify) : verify,
         limits: { maxAttempts: 3, maxCostUSD: 5, pauseBetweenTasksMs: 1_000 },
         // Token pricing varies per model — plug your own table in here.
@@ -100,6 +108,13 @@ async function main(): Promise<void> {
                     console.log(
                         `\n▶ ${event.task.id} (attempt ${event.attempt})`,
                     );
+                    break;
+                case "model-result":
+                    if (event.result.reasoning) {
+                        console.log(
+                            `  💭 ${event.result.reasoning.slice(0, 200)}`,
+                        );
+                    }
                     break;
                 case "task-done":
                     console.log(`  ✅ ${event.task.id}`);

@@ -38,6 +38,8 @@ export function createGoogleProvider(options: ProviderOptions): AgentProvider {
                     parts: [{ text: m.content }],
                 }));
 
+            // `request.thinking` is accepted but not mapped — Gemini uses `thinkingConfig`; planned for a follow-up.
+
             const url = `${baseURL}/models/${encodeURIComponent(options.model)}:generateContent?key=${encodeURIComponent(options.apiKey)}`;
             const response = await fetchImpl(url, {
                 method: "POST",
