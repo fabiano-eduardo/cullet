@@ -3,9 +3,10 @@
         "versions": [
             "1.0.0",
             "1.1.0",
-            "1.2.0"
+            "1.2.0",
+            "1.3.0"
         ],
-        "latest": "1.2.0",
+        "latest": "1.3.0",
         "description": "Provider-neutral AI agent harness: bring an API key (Anthropic, OpenAI, OpenRouter or Google), define tasks, and let the agent resolve them.",
         "npmName": "@cullet/ai-harness"
     },
