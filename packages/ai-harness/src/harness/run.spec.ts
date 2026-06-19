@@ -287,6 +287,137 @@ describe("runHarness", () => {
         ).toBe("out");
     });
 
+    it("emits the resolving provider on the model-result event", async () => {
+        const tasks: Task[] = [{ id: "t", description: "x" }];
+        const { provider } = fakeProvider({ t: "out" });
+        const events: HarnessEvent[] = [];
+
+        await runHarness({
+            provider,
+            tasks,
+            apply: () => {},
+            onEvent: (e) => events.push(e),
+            limits: { pauseBetweenTasksMs: 0 },
+        });
+
+        const modelResult = events.find(
+            (e) => e.type === "model-result",
+        ) as Extract<HarnessEvent, { type: "model-result" }>;
+        expect(modelResult.provider).toBe(provider);
+    });
+
+    it("prefers resolveProvider over the default provider, per task", async () => {
+        const tasks: Task[] = [
+            { id: "a", description: "a", provider: "openai" },
+            { id: "b", description: "b" },
+        ];
+        const fallback = fakeProvider({ a: "1", b: "2" });
+        const special = fakeProvider({ a: "1", b: "2" });
+        const usedFor: Record<string, string> = {};
+
+        await runHarness({
+            provider: fallback.provider,
+            resolveProvider: (task) =>
+                task.provider === "openai" ? special.provider : undefined,
+            tasks,
+            apply: () => {},
+            onEvent: (e) => {
+                if (e.type === "model-result") {
+                    usedFor[e.task.id] =
+                        e.provider === special.provider
+                            ? "special"
+                            : "fallback";
+                }
+            },
+            limits: { pauseBetweenTasksMs: 0 },
+        });
+
+        // resolveProvider handled task "a"; task "b" fell back to config.provider.
+        expect(usedFor).toEqual({ a: "special", b: "fallback" });
+        expect(special.requests).toHaveLength(1);
+        expect(fallback.requests).toHaveLength(1);
+    });
+
+    it("awaits an async resolveProvider", async () => {
+        const tasks: Task[] = [{ id: "t", description: "x" }];
+        const { provider, requests } = fakeProvider({ t: "out" });
+
+        const summary = await runHarness({
+            resolveProvider: async () => provider,
+            tasks,
+            apply: () => {},
+            limits: { pauseBetweenTasksMs: 0 },
+        });
+
+        expect(requests).toHaveLength(1);
+        expect(summary.done).toBe(1);
+    });
+
+    it("fails the task with a clear error when no provider can be resolved", async () => {
+        const tasks: Task[] = [{ id: "t", description: "x" }];
+
+        const summary = await runHarness({
+            tasks,
+            apply: () => {},
+            limits: { maxAttempts: 1, pauseBetweenTasksMs: 0 },
+        });
+
+        expect(summary.failed).toBe(1);
+        expect(tasks[0].lastFeedback).toContain('no provider for task "t"');
+    });
+
+    it("resolves task.skills against the registry and passes them to buildPrompt", async () => {
+        const tasks: Task[] = [
+            { id: "t", description: "x", skills: ["tdd", "sql-safe"] },
+        ];
+        const { provider } = fakeProvider({ t: "out" });
+        let seenSkills: { name: string; instructions: string }[] = [];
+
+        await runHarness({
+            provider,
+            tasks,
+            skills: {
+                tdd: "Write a failing test first.",
+                "sql-safe": {
+                    name: "SQL safety",
+                    instructions: "Never concatenate SQL.",
+                },
+            },
+            apply: () => {},
+            buildPrompt: ({ skills }) => {
+                seenSkills = (skills ?? []).map((s) => ({
+                    name: s.name,
+                    instructions: s.instructions,
+                }));
+                return { messages: [{ role: "user", content: "x" }] };
+            },
+            limits: { pauseBetweenTasksMs: 0 },
+        });
+
+        expect(seenSkills).toEqual([
+            { name: "tdd", instructions: "Write a failing test first." },
+            { name: "SQL safety", instructions: "Never concatenate SQL." },
+        ]);
+    });
+
+    it("fails the task when it references an unknown skill", async () => {
+        const tasks: Task[] = [
+            { id: "t", description: "x", skills: ["missing"] },
+        ];
+        const { provider } = fakeProvider({ t: "out" });
+
+        const summary = await runHarness({
+            provider,
+            tasks,
+            skills: { tdd: "..." },
+            apply: () => {},
+            limits: { maxAttempts: 1, pauseBetweenTasksMs: 0 },
+        });
+
+        expect(summary.failed).toBe(1);
+        expect(tasks[0].lastFeedback).toContain('unknown skill "missing"');
+    });
+
     it("uses a custom buildPrompt override and passes it the task list", async () => {
         const tasks: Task[] = [{ id: "t", description: "x" }];
         const { provider, requests } = fakeProvider({});

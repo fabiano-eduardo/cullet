@@ -7,6 +7,7 @@ import type { BuildPromptArgs } from "./types.js";
 
 export function defaultBuildPrompt({
     task,
+    skills,
 }: BuildPromptArgs): CompletionRequest {
     const sections: string[] = [];
 
@@ -14,6 +15,15 @@ export function defaultBuildPrompt({
 
     if (task.context) {
         sections.push(`# Context\n${task.context}`);
+    }
+
+    if (skills && skills.length > 0) {
+        const blocks = skills
+            .map((skill) => `## ${skill.name}\n${skill.instructions}`)
+            .join("\n\n");
+        sections.push(
+            `# Skills\nApply the following skills when relevant.\n\n${blocks}`,
+        );
     }
 
     if (task.lastFeedback) {
