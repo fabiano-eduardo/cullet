@@ -12,7 +12,9 @@
             "peerDependencies": [
                 {
                     "name": "zod",
-                    "range": ">=3.22.0 <5"
+                    "range": ">=3.22.0 <5",
+                    "optional": true,
+                    "notes": "Only required by the `./policies` subpath (gate/compute engines). The domain/result/errors/exceptions/rulesets/versioning/plugins subpaths are zod-free."
                 }
             ]
         },
@@ -51,6 +53,16 @@
     "exports": [
         "Entity",
         "ValueObject",
+        "PluginManager",
+        "Result",
+        "Outcome",
+        "RulesetRegistry",
+        "DomainException",
+        "InvariantViolationException",
+        "ValidationException",
+        "ValidationField",
+        "version",
+        "createDomainEventEnvelope",
         "AppError",
         "ValidationError",
         "NotFoundError",
