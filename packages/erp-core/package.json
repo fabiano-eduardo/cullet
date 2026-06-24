@@ -19,9 +19,25 @@
             "types": "./dist/application/index.d.ts",
             "import": "./dist/application/index.js"
         },
+        "./domain": {
+            "types": "./dist/domain/index.d.ts",
+            "import": "./dist/domain/index.js"
+        },
         "./errors": {
             "types": "./dist/errors/index.d.ts",
             "import": "./dist/errors/index.js"
+        },
+        "./exceptions": {
+            "types": "./dist/exceptions/index.d.ts",
+            "import": "./dist/exceptions/index.js"
+        },
+        "./exceptions/validation-field": {
+            "types": "./dist/exceptions/validation-field.d.ts",
+            "import": "./dist/exceptions/validation-field.js"
+        },
+        "./plugins": {
+            "types": "./dist/plugins/index.d.ts",
+            "import": "./dist/plugins/index.js"
         },
         "./policies": {
             "types": "./dist/policies/index.d.ts",
@@ -35,9 +51,17 @@
             "types": "./dist/policies/engines/v1/gate/index.d.ts",
             "import": "./dist/policies/engines/v1/gate/index.js"
         },
-        "./exceptions/validation-field": {
-            "types": "./dist/exceptions/validation-field.d.ts",
-            "import": "./dist/exceptions/validation-field.js"
+        "./result": {
+            "types": "./dist/result/index.d.ts",
+            "import": "./dist/result/index.js"
+        },
+        "./rulesets": {
+            "types": "./dist/rulesets/index.d.ts",
+            "import": "./dist/rulesets/index.js"
+        },
+        "./versioning": {
+            "types": "./dist/versioning/index.d.ts",
+            "import": "./dist/versioning/index.js"
         },
         "./package.json": "./package.json"
     },
@@ -61,6 +85,11 @@
     },
     "peerDependencies": {
         "zod": ">=3.22.0 <5"
+    },
+    "peerDependenciesMeta": {
+        "zod": {
+            "optional": true
+        }
     },
     "publishConfig": {
         "access": "public"
