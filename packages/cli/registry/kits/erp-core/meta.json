@@ -53,6 +53,7 @@
     "exports": [
         "Entity",
         "ValueObject",
+        "UuidIdentifier",
         "PluginManager",
         "Result",
         "Outcome",

@@ -2,6 +2,7 @@ export * from "./errors/index.js";
 export * from "./exceptions/index.js";
 export * from "./application/index.js";
 export { Entity, type EntityState } from "./domain/entity.js";
+export { UuidIdentifier } from "./domain/uuid-identifier.js";
 export {
     ValueObject,
     type DeepReadonly,
