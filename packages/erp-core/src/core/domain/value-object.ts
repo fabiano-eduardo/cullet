@@ -1,5 +1,20 @@
+import { PluginManager } from "../plugins/index.js";
 import { type DeepReadonly, makeImmutable } from "../shared/immutable.js";
 import { type ContractVersion, version } from "../versioning/version.js";
+
+/**
+ * Extension point for value-object equality. A plugin implementing this
+ * contract overrides how any two value objects are compared, letting the host
+ * application swap in a structural comparator (e.g. `lodash.isEqual` over the
+ * wrapped `value`) without every value object having to implement `equals` by
+ * hand.
+ */
+type ValueObjectPluginContract = {
+    equals: (
+        a: ValueObject<unknown, unknown>,
+        b: ValueObject<unknown, unknown>,
+    ) => boolean;
+};
 
 /**
  * Base class for value objects — domain concepts defined entirely by their
@@ -19,6 +34,15 @@ import { type ContractVersion, version } from "../versioning/version.js";
 @version("1.0")
 abstract class ValueObject<T, P> {
     declare public static readonly CONTRACT_VERSION: ContractVersion;
+
+    /**
+     * Registry of equality plugins shared by every value object. Empty by
+     * default — when nothing is registered, {@link equals} falls back to a
+     * structural comparison of the wrapped `value`. Hosts register a plugin
+     * (e.g. `lodash.isEqual`) once at startup to customise equality globally.
+     */
+    public static readonly plugins =
+        new PluginManager<ValueObjectPluginContract>();
 
     /** The wrapped data, deep-frozen so it can never be mutated after construction. */
     public readonly value: DeepReadonly<T>;
@@ -65,11 +89,19 @@ abstract class ValueObject<T, P> {
 
     /**
      * Compares this value object with another by content. Because value objects
-     * carry no identity, subclasses implement equality over the wrapped data
-     * (typically the primitive form), so two independently constructed instances
-     * holding the same data are considered equal.
+     * carry no identity, two independently constructed instances holding the
+     * same data are considered equal.
+     *
+     * Delegates to the registered equality {@link plugins}; with no plugin
+     * registered it falls back to comparing the serialized wrapped `value`.
+     * Subclasses may still override for a faster or domain-specific comparison.
      */
-    public abstract equals(other: this): boolean;
+    public equals(other: this): boolean {
+        return ValueObject.plugins.invoke("equals", [this, other], {
+            fallback: (a, b) =>
+                JSON.stringify(a.value) === JSON.stringify(b.value),
+        });
+    }
 
     /**
      * Projects the value object down to a plain, serializable primitive form —
@@ -78,4 +110,4 @@ abstract class ValueObject<T, P> {
     public abstract toPrimitive(): P;
 }
 
-export { type DeepReadonly, ValueObject };
+export { type DeepReadonly, ValueObject, type ValueObjectPluginContract };
