@@ -82,10 +82,6 @@
                 "default": "./dist/domain/index.cjs"
             }
         },
-        "./domain": {
-            "types": "./dist/domain/index.d.ts",
-            "import": "./dist/domain/index.js"
-        },
         "./errors": {
             "import": {
                 "types": "./dist/errors/index.d.ts",
@@ -125,18 +121,6 @@
                 "types": "./dist/plugins/index.d.cts",
                 "default": "./dist/plugins/index.cjs"
             }
-        },
-        "./exceptions": {
-            "types": "./dist/exceptions/index.d.ts",
-            "import": "./dist/exceptions/index.js"
-        },
-        "./exceptions/validation-field": {
-            "types": "./dist/exceptions/validation-field.d.ts",
-            "import": "./dist/exceptions/validation-field.js"
-        },
-        "./plugins": {
-            "types": "./dist/plugins/index.d.ts",
-            "import": "./dist/plugins/index.js"
         },
         "./policies": {
             "import": {
@@ -197,16 +181,6 @@
                 "types": "./dist/versioning/index.d.cts",
                 "default": "./dist/versioning/index.cjs"
             }
-            "types": "./dist/result/index.d.ts",
-            "import": "./dist/result/index.js"
-        },
-        "./rulesets": {
-            "types": "./dist/rulesets/index.d.ts",
-            "import": "./dist/rulesets/index.js"
-        },
-        "./versioning": {
-            "types": "./dist/versioning/index.d.ts",
-            "import": "./dist/versioning/index.js"
         },
         "./package.json": "./package.json"
     },
