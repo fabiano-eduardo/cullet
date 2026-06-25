@@ -12,6 +12,11 @@ export type {
 export { ProviderError } from "./types.js";
 export { createProvider } from "./factory.js";
 export type { CreateProviderOptions } from "./factory.js";
+export { createProviderResolver } from "./resolver.js";
+export type {
+    ProviderResolverConfig,
+    ProviderResolverVendorConfig,
+} from "./resolver.js";
 export { createAnthropicProvider } from "./anthropic.js";
 export {
     createOpenAIProvider,

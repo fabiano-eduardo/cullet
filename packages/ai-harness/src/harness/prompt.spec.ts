@@ -55,6 +55,31 @@ describe("defaultBuildPrompt", () => {
         );
     });
 
+    it("renders a Skills section from resolved skills", () => {
+        const request = defaultBuildPrompt({
+            task: { id: "t-1", description: "do the thing" },
+            tasks: [],
+            skills: [
+                { name: "tdd", instructions: "Write a failing test first." },
+                { name: "SQL safety", instructions: "Never concatenate SQL." },
+            ],
+        });
+        const content = request.messages[0]?.content ?? "";
+
+        expect(content).toContain("# Skills");
+        expect(content).toContain("## tdd\nWrite a failing test first.");
+        expect(content).toContain("## SQL safety\nNever concatenate SQL.");
+    });
+
+    it("omits the Skills section when there are no skills", () => {
+        const withEmpty = defaultBuildPrompt({
+            task: { id: "t-1", description: "x" },
+            tasks: [],
+            skills: [],
+        });
+        expect(withEmpty.messages[0]?.content ?? "").not.toContain("# Skills");
+    });
+
     it("produces a single user message", () => {
         const request = defaultBuildPrompt({
             task: { id: "t-1", description: "x" },

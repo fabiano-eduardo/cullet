@@ -1,7 +1,7 @@
 {
     "schemaVersion": "2",
     "name": "erp-core",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "compatibility": {
         "engines": {
@@ -89,7 +89,8 @@
         "1.0.9 - Harden erp-core invariants and error serialization",
         "1.0.10 - Stop the `meta.json` `changelog` from drifting and clarify the `ValueObject` freeze contract.",
         "1.0.11 - Document the public API surface with TSDoc.",
-        "1.1.0 - **New: `ResultRepository`, `UseCaseObservability`, and `./application` subpath**"
+        "1.1.0 - **New: `ResultRepository`, `UseCaseObservability`, and `./application` subpath**",
+        "1.2.0 - Add zod-free subpaths for the stable core primitives and a value-object equality plugin system."
     ],
     "deprecated": false
 }
