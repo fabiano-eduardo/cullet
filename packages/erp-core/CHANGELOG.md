@@ -1,5 +1,29 @@
 # @cullet/erp-core
 
+## 1.3.0
+
+### Minor Changes
+
+- e4f08ed: Add zod-free subpaths for the stable core primitives and a value-object equality plugin system.
+    - **New subpath exports**, each importable without pulling in the policy engines (and therefore `zod`): `@cullet/erp-core/domain` (`Entity`, `ValueObject`, `DeepReadonly`, `ValueObjectPluginContract`), `./result` (`Result`, `Ok`, `Err`, `Outcome`, `CommonOutcomeStatus`), `./exceptions` (the full domain-exception hierarchy — `DomainException`, `InvariantViolationException`, `InvalidStateTransitionException`, `BusinessRuleViolationException`, `EntityNotFoundException`, `ValidationException`/`InvalidValueException`/`MultipleValidationException`/`ValidationViolation`, `ValidationCode`, `ValidationField`), `./rulesets` (`RulesetRegistry` + the ruleset contracts) and `./versioning` (the `@version` decorator and domain-event contracts). Previously these were reachable only from the root barrel, which transitively imports `zod`. Every symbol stays re-exported from the root too.
+    - **`ValueObject.plugins`** — a new `PluginManager`-backed extension point (`./plugins` subpath). `ValueObject.equals` is no longer abstract: it delegates to the registered equality plugin and falls back to a structural `JSON.stringify` comparison when none is registered, so hosts can register one comparator (e.g. `lodash.isEqual`) instead of implementing `equals` on every value object. Subclasses that already override `equals` are unaffected.
+    - **`UuidIdentifier`** (from `@cullet/erp-core/domain`) — an abstract `ValueObject<string, string>` base for UUID-backed typed identifiers. It owns the UUID format check in one place (`UuidIdentifier.isValid`) and carries a phantom `TBrand` type parameter so concrete ids (e.g. `class OrderId extends UuidIdentifier<"OrderId">`) stay nominally incompatible despite their identical `string` shape. Subclasses supply their own validating `create`/`reconstitute`.
+    - **`zod` is now an optional peer dependency.** Only the `./policies` subpath (gate/compute engines) requires it; every other subpath is zod-free.
+
+    All additive — no breaking changes for existing consumers.
+
+### Patch Changes
+
+- e4f08ed: Ship a dual ESM/CJS build so CommonJS consumers can import the subpaths.
+
+    `tsdown` now emits both formats (`format: ["esm", "cjs"]`), and `package.json`
+    adds a `require` condition — resolving to the `.cjs` output with `.d.cts`
+    types — next to the existing `import` condition for every subpath, plus
+    `main`/`module`/`typesVersions`. The package was previously ESM-only, so
+    importing a subpath such as `@cullet/erp-core/errors` from a CommonJS project
+    (`moduleResolution: node16`/`nodenext`) failed type-checking with TS1479 and
+    would throw `ERR_REQUIRE_ESM` at runtime.
+
 ## 1.2.0
 
 ### Minor Changes
