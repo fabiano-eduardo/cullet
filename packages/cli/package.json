@@ -21,9 +21,7 @@
         "cli",
         "starter-kit"
     ],
-    "bin": {
-        "cullet": "./dist/cli/index.js"
-    },
+    "bin": "./dist/cli/index.js",
     "exports": {
         "./registry": {
             "types": "./dist/registry/index.d.ts",
