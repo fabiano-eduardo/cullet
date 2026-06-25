@@ -8,60 +8,179 @@
         "url": "git+https://github.com/fabiano-eduardo/cullet.git",
         "directory": "packages/erp-core"
     },
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "typesVersions": {
+        "*": {
+            "application": [
+                "./dist/application/index.d.ts"
+            ],
+            "domain": [
+                "./dist/domain/index.d.ts"
+            ],
+            "errors": [
+                "./dist/errors/index.d.ts"
+            ],
+            "exceptions": [
+                "./dist/exceptions/index.d.ts"
+            ],
+            "exceptions/validation-field": [
+                "./dist/exceptions/validation-field.d.ts"
+            ],
+            "plugins": [
+                "./dist/plugins/index.d.ts"
+            ],
+            "policies": [
+                "./dist/policies/index.d.ts"
+            ],
+            "policies/engines": [
+                "./dist/policies/engines/index.d.ts"
+            ],
+            "policies/engines/v1/gate": [
+                "./dist/policies/engines/v1/gate/index.d.ts"
+            ],
+            "result": [
+                "./dist/result/index.d.ts"
+            ],
+            "rulesets": [
+                "./dist/rulesets/index.d.ts"
+            ],
+            "versioning": [
+                "./dist/versioning/index.d.ts"
+            ]
+        }
+    },
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
         },
         "./application": {
-            "types": "./dist/application/index.d.ts",
-            "import": "./dist/application/index.js"
+            "import": {
+                "types": "./dist/application/index.d.ts",
+                "default": "./dist/application/index.js"
+            },
+            "require": {
+                "types": "./dist/application/index.d.cts",
+                "default": "./dist/application/index.cjs"
+            }
         },
         "./domain": {
-            "types": "./dist/domain/index.d.ts",
-            "import": "./dist/domain/index.js"
+            "import": {
+                "types": "./dist/domain/index.d.ts",
+                "default": "./dist/domain/index.js"
+            },
+            "require": {
+                "types": "./dist/domain/index.d.cts",
+                "default": "./dist/domain/index.cjs"
+            }
         },
         "./errors": {
-            "types": "./dist/errors/index.d.ts",
-            "import": "./dist/errors/index.js"
+            "import": {
+                "types": "./dist/errors/index.d.ts",
+                "default": "./dist/errors/index.js"
+            },
+            "require": {
+                "types": "./dist/errors/index.d.cts",
+                "default": "./dist/errors/index.cjs"
+            }
         },
         "./exceptions": {
-            "types": "./dist/exceptions/index.d.ts",
-            "import": "./dist/exceptions/index.js"
+            "import": {
+                "types": "./dist/exceptions/index.d.ts",
+                "default": "./dist/exceptions/index.js"
+            },
+            "require": {
+                "types": "./dist/exceptions/index.d.cts",
+                "default": "./dist/exceptions/index.cjs"
+            }
         },
         "./exceptions/validation-field": {
-            "types": "./dist/exceptions/validation-field.d.ts",
-            "import": "./dist/exceptions/validation-field.js"
+            "import": {
+                "types": "./dist/exceptions/validation-field.d.ts",
+                "default": "./dist/exceptions/validation-field.js"
+            },
+            "require": {
+                "types": "./dist/exceptions/validation-field.d.cts",
+                "default": "./dist/exceptions/validation-field.cjs"
+            }
         },
         "./plugins": {
-            "types": "./dist/plugins/index.d.ts",
-            "import": "./dist/plugins/index.js"
+            "import": {
+                "types": "./dist/plugins/index.d.ts",
+                "default": "./dist/plugins/index.js"
+            },
+            "require": {
+                "types": "./dist/plugins/index.d.cts",
+                "default": "./dist/plugins/index.cjs"
+            }
         },
         "./policies": {
-            "types": "./dist/policies/index.d.ts",
-            "import": "./dist/policies/index.js"
+            "import": {
+                "types": "./dist/policies/index.d.ts",
+                "default": "./dist/policies/index.js"
+            },
+            "require": {
+                "types": "./dist/policies/index.d.cts",
+                "default": "./dist/policies/index.cjs"
+            }
         },
         "./policies/engines": {
-            "types": "./dist/policies/engines/index.d.ts",
-            "import": "./dist/policies/engines/index.js"
+            "import": {
+                "types": "./dist/policies/engines/index.d.ts",
+                "default": "./dist/policies/engines/index.js"
+            },
+            "require": {
+                "types": "./dist/policies/engines/index.d.cts",
+                "default": "./dist/policies/engines/index.cjs"
+            }
         },
         "./policies/engines/v1/gate": {
-            "types": "./dist/policies/engines/v1/gate/index.d.ts",
-            "import": "./dist/policies/engines/v1/gate/index.js"
+            "import": {
+                "types": "./dist/policies/engines/v1/gate/index.d.ts",
+                "default": "./dist/policies/engines/v1/gate/index.js"
+            },
+            "require": {
+                "types": "./dist/policies/engines/v1/gate/index.d.cts",
+                "default": "./dist/policies/engines/v1/gate/index.cjs"
+            }
         },
         "./result": {
-            "types": "./dist/result/index.d.ts",
-            "import": "./dist/result/index.js"
+            "import": {
+                "types": "./dist/result/index.d.ts",
+                "default": "./dist/result/index.js"
+            },
+            "require": {
+                "types": "./dist/result/index.d.cts",
+                "default": "./dist/result/index.cjs"
+            }
         },
         "./rulesets": {
-            "types": "./dist/rulesets/index.d.ts",
-            "import": "./dist/rulesets/index.js"
+            "import": {
+                "types": "./dist/rulesets/index.d.ts",
+                "default": "./dist/rulesets/index.js"
+            },
+            "require": {
+                "types": "./dist/rulesets/index.d.cts",
+                "default": "./dist/rulesets/index.cjs"
+            }
         },
         "./versioning": {
-            "types": "./dist/versioning/index.d.ts",
-            "import": "./dist/versioning/index.js"
+            "import": {
+                "types": "./dist/versioning/index.d.ts",
+                "default": "./dist/versioning/index.js"
+            },
+            "require": {
+                "types": "./dist/versioning/index.d.cts",
+                "default": "./dist/versioning/index.cjs"
+            }
         },
         "./package.json": "./package.json"
     },

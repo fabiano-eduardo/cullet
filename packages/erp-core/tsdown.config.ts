@@ -18,7 +18,7 @@ export default defineConfig({
     ],
     external: ["zod", "pino"],
     dts: true,
-    format: ["esm"],
+    format: ["esm", "cjs"],
     target: "node18",
     hash: false,
     clean: true,
