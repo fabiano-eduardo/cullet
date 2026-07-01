@@ -12,13 +12,14 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 - **`result/`** — `Result<T, E>` e `Outcome` para retorno tipado da camada de aplicação.
 - **`application/`** — `UseCase` base, `commands/`, `queries/`, `ports/`. Casos de uso consomem portas e retornam `Result`.
 - **`policies/`** — catálogo, definições, resolução e avaliação de policies declarativas.
+- **`rbac/`** — RBAC puro e zod-free: `Permission`/`Role`/`Grant`/`Scope`, o decisor `RbacAuthorizer` e a `AuthorizerPort`; subpath dedicado `./rbac`.
 - **`versioning/`** — utilidades de versionamento de agregados temporais.
 
 ## [key-decisions] Decisões-chave
 
 - **Domínio lança, aplicação retorna `Result`, infra traduz.** Não há `Result` no domínio.
 - **Sem lib de log/observabilidade no runtime.** Portas vivem em `application/ports/`; adapters são opt-in.
-- **Temporalidade interna ao kit** — o kit mantém suporte temporal no código-base, mas a API pública principal nao publica um `Timeline<T>` nem helpers temporais dedicados no barrel raiz.
+- **Temporalidade interna ao kit** — suporte temporal no código-base, mas a API pública não publica `Timeline<T>` nem helpers temporais no barrel raiz.
 - **Policies como dados**, não como if-statements: avaliáveis, compostas, serializáveis.
 - **Policies permitem disable sem remover código**: `PolicyDefinition` aceita `enabled: false` e o repositório ignora definições desabilitadas.
 - **Composição isolada é de primeira classe**: use `new CoreConfig()`, `new ContextResolverRegistry()` e `registerNamespacedContextResolversIn(...)` quando precisar evitar singletons compartilhados.
@@ -30,7 +31,7 @@ Implemente as portas em `application/ports/` para conectar a stack real:
 
 - `LoggerPort`, `MetricsPort`, `TracerPort` — observabilidade.
 - Repositórios específicos do seu domínio, sempre com verbo mínimo.
-- `AuthorizerPort` / `AuthenticatorPort` quando aplicável.
+- `AuthorizerPort` (RBAC) / `AuthenticatorPort` quando aplicável.
 
 ## [non-goals] Não-objetivos
 

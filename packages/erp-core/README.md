@@ -13,6 +13,7 @@ Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para 
 - **Erros de aplicação** — `AppError` discriminada por `code`: `ValidationError`, `NotFoundError`, `ConflictError`, `AuthorizationError`, `IntegrationError`.
 - **Result** — `Result<T, E>` e `Outcome` para retorno tipado da aplicação.
 - **Policies** — `PolicyCatalog`, `PolicyDefinition`, `PolicyResolver`, `PolicyService` e tipos associados para avaliação declarativa.
+- **RBAC** — primitivas puras e zod-free no subpath [`./rbac`](#rbac-controle-de-acesso-por-papéis): `Permission`, `Role`, `Grant`, `Scope`, o decisor `RbacAuthorizer` e a `AuthorizerPort`. Veja a [seção dedicada](#rbac-controle-de-acesso-por-papéis).
 - **Application** — `UseCase`/`Command` (CQS, entrada `CommandInput` com `RequestedBy`), portas de persistência (`Repository` e a variante `ResultRepository`), `PolicyPort`, portas de observabilidade (`LoggerPort`, `MetricsPort`, `TracerPort`) e `mapPolicyEvaluationError`. Veja o [exemplo end-to-end](#exemplo-end-to-end).
 - **Exemplos** — rulesets de referência em `examples/rulesets/`, fora da superfície principal de domínio.
 
@@ -172,6 +173,86 @@ result.match({
 permite sinalizar not-found / concorrência otimista sem quebrar o fluxo. Uma
 implementação in-memory de referência está em
 [`src/examples/application/in-memory-account-repository.example.ts`](./src/examples/application/in-memory-account-repository.example.ts).
+
+## RBAC (controle de acesso por papéis)
+
+Primitivas puras e **zod-free** para responder "este ator pode executar esta
+ação neste recurso?". O subpath `@cullet/erp-core/rbac` não puxa `zod` — só
+instale `zod` se também for usar `./policies`. O decisor `RbacAuthorizer` é 100%
+puro (sem I/O) e devolve `Result`; carregar os `Grant`s do ator é responsabilidade
+do consumidor, atrás de uma `AuthorizerPort` — simétrico ao `PolicyPort`.
+
+```ts
+import {
+    Permission,
+    Role,
+    Grant,
+    Scope,
+    RbacAuthorizer,
+    type AuthorizerPort,
+    type AccessRequest,
+} from "@cullet/erp-core/rbac";
+import { RequestedBy } from "@cullet/erp-core";
+import { Result } from "@cullet/erp-core/result";
+import type { AuthorizationError } from "@cullet/erp-core/errors";
+
+// 1. Papéis e permissões são dados do SEU domínio — o kit só dá os tipos.
+const ROLES = {
+    cashier: Role.of("cashier", [
+        Permission.of("orders:read"),
+        Permission.of("orders:cancel"),
+    ]),
+    manager: Role.of("manager", [Permission.of("orders:*")]),
+    admin: Role.of("admin", [Permission.of("*:*")]), // super-permissão
+};
+
+// 2. Adapter da porta: carrega os Grants (do SEU store) e delega ao decisor puro.
+class RbacAuthorizerAdapter implements AuthorizerPort {
+    private readonly engine = new RbacAuthorizer();
+
+    constructor(
+        private readonly loadGrants: (
+            subject: string,
+        ) => Promise<readonly Grant[]>,
+    ) {}
+
+    async authorize(
+        request: AccessRequest,
+    ): Promise<Result<void, AuthorizationError>> {
+        const grants = await this.loadGrants(request.actor.raw);
+        const decision = this.engine.authorize(request, grants);
+        return decision.isErr()
+            ? Result.err(decision.error)
+            : Result.ok(undefined);
+    }
+}
+
+// 3. No caso de uso, injete só a porta e pergunte antes de mutar.
+const authorizer = new RbacAuthorizerAdapter(async (subject) => [
+    Grant.of({
+        subject: RequestedBy.parse(subject),
+        role: ROLES.cashier,
+        scope: Scope.of("school:42"),
+    }),
+]);
+
+const decision = await authorizer.authorize({
+    actor: RequestedBy.fromUser("550e8400-e29b-41d4-a716-446655440000"),
+    action: "order.cancel",
+    required: Permission.of("orders:cancel"),
+    resource: { type: "Order", id: "order-1" },
+    scope: Scope.of("school:42"),
+});
+// decision.isErr() → AuthorizationError com `reason`/`code`/`metadata` prontos
+// para a borda HTTP traduzir em 403.
+```
+
+O `reason` discriminado (`missing_role` / `missing_capability` / `out_of_scope`)
+e o `code` (`sec.authz.*`) já vêm preenchidos para a borda mapear sem re-derivar
+nada. Para regras declarativas além de "tem a permissão" (ABAC), `rbacContextFields(actor, grants)`
+projeta `actor.roles`/`actor.permissions` no `seed.fields` de uma policy de gate
+(aí sim com `./policies` + `zod`). O exemplo interno compilado e testado está em
+[`src/examples/application/authorize-cancel-order.example.ts`](./src/examples/application/authorize-cancel-order.example.ts).
 
 ## Composicao sem singletons
 

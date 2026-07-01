@@ -40,6 +40,9 @@
             "policies/engines/v1/gate": [
                 "./dist/policies/engines/v1/gate/index.d.ts"
             ],
+            "rbac": [
+                "./dist/rbac/index.d.ts"
+            ],
             "result": [
                 "./dist/result/index.d.ts"
             ],
@@ -150,6 +153,16 @@
             "require": {
                 "types": "./dist/policies/engines/v1/gate/index.d.cts",
                 "default": "./dist/policies/engines/v1/gate/index.cjs"
+            }
+        },
+        "./rbac": {
+            "import": {
+                "types": "./dist/rbac/index.d.ts",
+                "default": "./dist/rbac/index.js"
+            },
+            "require": {
+                "types": "./dist/rbac/index.d.cts",
+                "default": "./dist/rbac/index.cjs"
             }
         },
         "./result": {

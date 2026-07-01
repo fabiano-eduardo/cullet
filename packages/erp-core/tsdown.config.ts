@@ -12,6 +12,7 @@ export default defineConfig({
         "src/policies/index.ts",
         "src/policies/engines/index.ts",
         "src/policies/engines/v1/gate/index.ts",
+        "src/rbac/index.ts",
         "src/result/index.ts",
         "src/rulesets/index.ts",
         "src/versioning/index.ts",
