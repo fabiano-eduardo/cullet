@@ -13,6 +13,9 @@ export * from "./domain/rulesets/index.js";
 // consumers that want to stay off `zod` should prefer the dedicated `./rbac`
 // subpath, since the root barrel pulls in `./policies` (and therefore `zod`).
 export * from "./rbac/index.js";
+// ABAC primitives (zod-free), same rationale as RBAC re: the dedicated `./abac`
+// subpath for staying off `zod`.
+export * from "./abac/index.js";
 export * from "./plugins/index.js";
 export * from "./versioning/index.js";
 // NOTE: `./policies` re-exports Result/Ok/Err/Outcome/CommonOutcomeStatus and

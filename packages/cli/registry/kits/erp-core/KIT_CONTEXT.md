@@ -12,7 +12,8 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 - **`result/`** — `Result<T, E>` e `Outcome` para retorno tipado da camada de aplicação.
 - **`application/`** — `UseCase` base, `commands/`, `queries/`, `ports/`. Casos de uso consomem portas e retornam `Result`.
 - **`policies/`** — catálogo, definições, resolução e avaliação de policies declarativas.
-- **`rbac/`** — RBAC puro e zod-free: `Permission`/`Role`/`Grant`/`Scope`, o decisor `RbacAuthorizer` e a `AuthorizerPort`; subpath dedicado `./rbac`.
+- **`rbac/`** — RBAC zod-free (`./rbac`): `Permission`/`Role`/`Grant`/`Scope`, decisor `RbacAuthorizer`, `AuthorizerPort`.
+- **`abac/`** — ABAC zod-free (`./abac`): `AbacRule`/`AbacPolicySet` + combinação, decisor `AbacAuthorizer`, `AbacAuthorizerPort`, `CompositeAuthorizer`.
 - **`versioning/`** — utilidades de versionamento de agregados temporais.
 
 ## [key-decisions] Decisões-chave
@@ -30,8 +31,8 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 Implemente as portas em `application/ports/` para conectar a stack real:
 
 - `LoggerPort`, `MetricsPort`, `TracerPort` — observabilidade.
-- Repositórios específicos do seu domínio, sempre com verbo mínimo.
-- `AuthorizerPort` (RBAC) / `AuthenticatorPort` quando aplicável.
+- Repositórios do seu domínio, sempre com verbo mínimo.
+- `AuthorizerPort`/`AbacAuthorizerPort`/`AuthenticatorPort`.
 
 ## [non-goals] Não-objetivos
 

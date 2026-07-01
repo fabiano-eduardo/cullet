@@ -14,6 +14,7 @@ Para o sumário prompt-friendly veja [`KIT_CONTEXT.md`](./KIT_CONTEXT.md). Para 
 - **Result** — `Result<T, E>` e `Outcome` para retorno tipado da aplicação.
 - **Policies** — `PolicyCatalog`, `PolicyDefinition`, `PolicyResolver`, `PolicyService` e tipos associados para avaliação declarativa.
 - **RBAC** — primitivas puras e zod-free no subpath [`./rbac`](#rbac-controle-de-acesso-por-papéis): `Permission`, `Role`, `Grant`, `Scope`, o decisor `RbacAuthorizer` e a `AuthorizerPort`. Veja a [seção dedicada](#rbac-controle-de-acesso-por-papéis).
+- **ABAC** — primitivas puras e zod-free no subpath [`./abac`](#abac-controle-de-acesso-por-atributos): `AbacRule`/`AbacPolicySet` com algoritmos de combinação, o decisor `AbacAuthorizer`, a `AbacAuthorizerPort` e o `CompositeAuthorizer`. Veja a [seção dedicada](#abac-controle-de-acesso-por-atributos).
 - **Application** — `UseCase`/`Command` (CQS, entrada `CommandInput` com `RequestedBy`), portas de persistência (`Repository` e a variante `ResultRepository`), `PolicyPort`, portas de observabilidade (`LoggerPort`, `MetricsPort`, `TracerPort`) e `mapPolicyEvaluationError`. Veja o [exemplo end-to-end](#exemplo-end-to-end).
 - **Exemplos** — rulesets de referência em `examples/rulesets/`, fora da superfície principal de domínio.
 
@@ -253,6 +254,84 @@ nada. Para regras declarativas além de "tem a permissão" (ABAC), `rbacContextF
 projeta `actor.roles`/`actor.permissions` no `seed.fields` de uma policy de gate
 (aí sim com `./policies` + `zod`). O exemplo interno compilado e testado está em
 [`src/examples/application/authorize-cancel-order.example.ts`](./src/examples/application/authorize-cancel-order.example.ts).
+
+## ABAC (controle de acesso por atributos)
+
+Quando a decisão depende de **atributos** do sujeito, do recurso e do ambiente
+(não só de um papel estático), o subpath `@cullet/erp-core/abac` — também
+**zod-free** — dá um decisor puro que avalia regras `PERMIT`/`DENY` sobre esses
+atributos. `AbacRule` reusa a mesma DSL de condição do gate; `AbacPolicySet`
+combina as regras por um algoritmo (`deny-overrides` por padrão, mais
+`permit-overrides` / `first-applicable`) e é **fechado por padrão**. O decisor
+reusa o avaliador de condição puro do gate — sem arrastar `zod`.
+
+```ts
+import {
+    AbacRule,
+    AbacPolicySet,
+    AbacAuthorizer,
+    type AbacAuthorizerPort,
+    type AbacRequest,
+} from "@cullet/erp-core/abac";
+import { RequestedBy } from "@cullet/erp-core";
+import { Result } from "@cullet/erp-core/result";
+import type { AuthorizationError } from "@cullet/erp-core/errors";
+
+// 1. Regras são dados do SEU domínio (condição na DSL de gate, sobre atributos).
+const POLICIES = AbacPolicySet.of([
+    AbacRule.of({
+        id: "order.cancel.open-in-hours",
+        version: 1,
+        effect: "PERMIT",
+        condition: {
+            and: [
+                { field: "resource.status", op: "eq", value: "OPEN" },
+                { field: "env.businessHours", op: "eq", value: true },
+            ],
+        },
+    }),
+    AbacRule.of({
+        id: "order.cancel.deny-locked",
+        version: 1,
+        effect: "DENY", // deny-overrides ⇒ trava explícita vence qualquer PERMIT
+        condition: { field: "resource.locked", op: "eq", value: true },
+    }),
+]);
+
+// 2. Adapter da porta: resolve atributos dinâmicos e delega ao decisor puro.
+class AbacAuthorizerAdapter implements AbacAuthorizerPort {
+    private readonly engine = new AbacAuthorizer();
+
+    async authorize(
+        request: AbacRequest,
+    ): Promise<Result<void, AuthorizationError>> {
+        const decision = this.engine.authorize(request, POLICIES);
+        return decision.isErr()
+            ? Result.err(decision.error)
+            : Result.ok(undefined);
+    }
+}
+
+const authorizer = new AbacAuthorizerAdapter();
+const decision = await authorizer.authorize({
+    actor: RequestedBy.fromUser("550e8400-e29b-41d4-a716-446655440000"),
+    action: "order.cancel",
+    resource: { type: "Order", id: "order-1" },
+    attributes: {
+        resource: { status: "OPEN", locked: false },
+        environment: { businessHours: true },
+    },
+});
+// decision.isErr() → AuthorizationError (`policy_denied`, ou `forbidden` no
+// fail-closed) pronto para a borda traduzir em 403.
+```
+
+**RBAC ou ABAC?** RBAC responde "o ator _tem_ a capacidade?" (papel→permissão
+estático); ABAC responde "…_neste_ contexto?" (atributos do recurso/ambiente). Os
+dois compõem: o `CompositeAuthorizer` roda o RBAC e, se passar, refina com o ABAC.
+Para regras geridas como **dado** (versionadas, por tenant, vindas de JSON), use o
+motor `./policies` (aí sim com `zod`). O exemplo interno compilado e testado está
+em [`src/examples/application/authorize-cancel-order-abac.example.ts`](./src/examples/application/authorize-cancel-order-abac.example.ts).
 
 ## Composicao sem singletons
 
