@@ -159,6 +159,32 @@ class AuthorizationError extends AppError {
     }
 
     /**
+     * The actor holds no role at all that bears on the action — the most basic
+     * denial, distinct from {@link AuthorizationError.missingCapability} (which
+     * means the actor *has* roles, just none granting the required capability).
+     * The expected {@link AuthorizationRequirement} is recorded so the boundary
+     * can tell the caller what grant is missing.
+     *
+     * @param input - Factory options plus the `required` role/capability/scope.
+     */
+    static missingRole(
+        input: AuthorizationErrorFactoryOptions & {
+            required: AuthorizationRequirement;
+        },
+    ): AuthorizationError {
+        return new AuthorizationError({
+            message: "Missing required role to perform the action",
+            code: ErrorCodes.authorization.missingRole,
+            reason: "missing_role",
+            metadata: {
+                reason: "missing_role",
+                ...extractMetadataOnly(input),
+            },
+            ...extractAppErrorOptions(input),
+        });
+    }
+
+    /**
      * The actor lacks a required role or capability. The expected
      * {@link AuthorizationRequirement} is recorded so the boundary can tell the
      * caller precisely what grant is missing.

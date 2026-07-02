@@ -14,7 +14,7 @@
                     "name": "zod",
                     "range": ">=3.22.0 <5",
                     "optional": true,
-                    "notes": "Only required by the `./policies` subpath (gate/compute engines). The domain/result/errors/exceptions/rulesets/versioning/plugins subpaths are zod-free."
+                    "notes": "Only required by the `./policies` subpath (gate/compute engines). The domain/result/errors/exceptions/rulesets/versioning/plugins/rbac/abac subpaths are zod-free."
                 }
             ]
         },
@@ -75,7 +75,20 @@
         "PolicyDecision",
         "PolicyResolver",
         "PolicyService",
-        "mapPolicyEvaluationError"
+        "mapPolicyEvaluationError",
+        "Permission",
+        "Role",
+        "Grant",
+        "Scope",
+        "PermissionSet",
+        "RbacAuthorizer",
+        "AuthorizerPort",
+        "AbacRule",
+        "AbacPolicySet",
+        "AbacAuthorizer",
+        "AbacAuthorizerPort",
+        "abacContext",
+        "CompositeAuthorizer"
     ],
     "changelog": [
         "1.0.1 - Corrige os exemplos de consumo nos READMEs dos kits: o import direto usa o nome npm com escopo (`@cullet/<kit>`) e o argumento do `npx cullet fc` é o nome do kit no registry (`erp-core`), não o nome com escopo. Adiciona a nota explicando o que o `fc` faz no `erp-core`.",

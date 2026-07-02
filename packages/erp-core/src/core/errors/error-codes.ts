@@ -8,6 +8,7 @@ const ErrorCodes = {
     authorization: {
         forbidden: "sec.authz.forbidden",
         policyDenied: "sec.authz.policy_denied",
+        missingRole: "sec.authz.missing_role",
         missingCapability: "sec.authz.missing_capability",
         outOfScope: "sec.authz.out_of_scope",
     },

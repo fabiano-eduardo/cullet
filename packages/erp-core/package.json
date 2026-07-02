@@ -13,6 +13,9 @@
     "types": "./dist/index.d.ts",
     "typesVersions": {
         "*": {
+            "abac": [
+                "./dist/abac/index.d.ts"
+            ],
             "application": [
                 "./dist/application/index.d.ts"
             ],
@@ -40,6 +43,9 @@
             "policies/engines/v1/gate": [
                 "./dist/policies/engines/v1/gate/index.d.ts"
             ],
+            "rbac": [
+                "./dist/rbac/index.d.ts"
+            ],
             "result": [
                 "./dist/result/index.d.ts"
             ],
@@ -60,6 +66,16 @@
             "require": {
                 "types": "./dist/index.d.cts",
                 "default": "./dist/index.cjs"
+            }
+        },
+        "./abac": {
+            "import": {
+                "types": "./dist/abac/index.d.ts",
+                "default": "./dist/abac/index.js"
+            },
+            "require": {
+                "types": "./dist/abac/index.d.cts",
+                "default": "./dist/abac/index.cjs"
             }
         },
         "./application": {
@@ -150,6 +166,16 @@
             "require": {
                 "types": "./dist/policies/engines/v1/gate/index.d.cts",
                 "default": "./dist/policies/engines/v1/gate/index.cjs"
+            }
+        },
+        "./rbac": {
+            "import": {
+                "types": "./dist/rbac/index.d.ts",
+                "default": "./dist/rbac/index.js"
+            },
+            "require": {
+                "types": "./dist/rbac/index.d.cts",
+                "default": "./dist/rbac/index.cjs"
             }
         },
         "./result": {

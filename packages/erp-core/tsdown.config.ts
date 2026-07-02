@@ -3,6 +3,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
     entry: [
         "src/index.ts",
+        "src/abac/index.ts",
         "src/application/index.ts",
         "src/domain/index.ts",
         "src/errors/index.ts",
@@ -12,6 +13,7 @@ export default defineConfig({
         "src/policies/index.ts",
         "src/policies/engines/index.ts",
         "src/policies/engines/v1/gate/index.ts",
+        "src/rbac/index.ts",
         "src/result/index.ts",
         "src/rulesets/index.ts",
         "src/versioning/index.ts",
