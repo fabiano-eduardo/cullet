@@ -1,5 +1,27 @@
 # @cullet/erp-core
 
+## 1.4.0
+
+### Minor Changes
+
+- 32c5693: Add a zod-free ABAC module and the `./abac` subpath.
+    - **New `@cullet/erp-core/abac` subpath** (importable without pulling in the policy engines or `zod`): `AbacRule` (a PERMIT/DENY effect plus a condition over attributes, reusing the gate/compute condition DSL) and `AbacPolicySet` (rules + a combining algorithm + a default effect). Every symbol is also re-exported from the root.
+    - **`AbacAuthorizer`** — a pure, I/O-free decisor that answers "do these attributes authorize this action?" and returns a `Result<AbacDecision, AuthorizationError>`, never throwing. It reuses the gate engine's pure condition evaluator as a matcher, then resolves the matched rules with the set's combining algorithm (`deny-overrides` by default, plus `permit-overrides` / `first-applicable`). Closed by default: a request matching nothing is denied. A condition-evaluation failure (a missing attribute, a wrong-typed operand) fails closed as `AuthorizationError.forbidden`; a rule denial maps to `AuthorizationError.policyDenied`, attributed to the deciding rule's id/version. No new error surface was needed.
+    - **`abacContext(request)`** — flattens an `AbacRequest`'s `subject`/`resource`/`action`/`environment` attribute bags into the nested context a rule's dotted `field` (e.g. `resource.status`) resolves against.
+    - **`AbacAuthorizerPort`** — the application seam (symmetric to RBAC's `AuthorizerPort`) a use case injects; the consumer's adapter resolves the dynamic attributes and delegates to `AbacAuthorizer`.
+    - **`CompositeAuthorizer`** — sequences an RBAC `AuthorizerPort` then an `AbacAuthorizerPort`, short-circuiting on the RBAC denial: the standard hybrid "does the actor hold the capability, _and_ do the attributes allow it here?" flow.
+
+    All additive — no breaking changes for existing consumers.
+
+- 32c5693: Add a zod-free RBAC module and the `./rbac` subpath.
+    - **New `@cullet/erp-core/rbac` subpath** (importable without pulling in the policy engines or `zod`): the pure domain primitives `Permission` (`"resource:action"` with single-level wildcards), `Role`, `Grant` (a role binding: actor ↔ role ↔ scope), `Scope` (`"tenant:{id}"` / `"school:{id}"` / global `"*"`) and `PermissionSet`. `Role` and `Grant` round-trip through `toPrimitive`/`fromProps` for persistence. Every symbol is also re-exported from the root.
+    - **`RbacAuthorizer`** — a pure decisor with no I/O and no clock that answers "may this actor perform this action in this scope?" and returns a `Result<void, AuthorizationError>`. Authorization decisions are always values, never thrown; it runs role → capability → scope so the denial carries the most informative `reason` (`missing_role` / `missing_capability` / `out_of_scope`). A wildcard `required` permission is caller misuse and throws `InvalidValueException`.
+    - **`AuthorizerPort`** — the application seam (symmetric to `PolicyPort`) a use case injects; the consumer's adapter loads the actor's grants and delegates to `RbacAuthorizer`. This fills the `AuthorizerPort` extension point KIT_CONTEXT.md already promised.
+    - **`AuthorizationError.missingRole(...)`** plus the dedicated `ErrorCodes.authorization.missingRole` (`"sec.authz.missing_role"`) — the actor holds no relevant role at all, distinct from `missingCapability`.
+    - **`rbacContextFields(actor, grants)`** — an optional bridge that projects an actor's roles/permissions into flat `actor.roles`/`actor.permissions` fields for a declarative gate policy (ABAC), without importing the engine or `zod`.
+
+    All additive — no breaking changes for existing consumers.
+
 ## 1.3.0
 
 ### Minor Changes
