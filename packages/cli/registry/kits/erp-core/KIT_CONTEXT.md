@@ -34,6 +34,12 @@ Implemente as portas em `application/ports/` para conectar a stack real:
 - Repositórios do seu domínio, sempre com verbo mínimo.
 - `AuthorizerPort`/`AbacAuthorizerPort`/`AuthenticatorPort`.
 
+## [known-limits] Limitações conhecidas
+
+- **Dois registries são estado global de processo** (a promessa "composição sem singletons" não os cobre): `GatePayloadParsers` (parsers de payload gate) e `ValueObject.plugins` (plugin de igualdade) valem para o processo inteiro — hosts multi-tenant no mesmo processo compartilham esses registros mesmo usando `CoreConfig`/registries isolados.
+- **ABAC é fail-closed por regra não-avaliável**: toda condição do set é avaliada, independente do algoritmo de combinação — adicionar uma regra que referencia um atributo que um call site não fornece passa a negar (403 `forbidden`) nesses call sites até o atributo ser suprido.
+- **`Date` aninhado em `ValueObject` não é congelável** (`Object.freeze` não bloqueia `setTime`): o clone protege do caller, mas quem lê `value` consegue mutar o `Date` interno. Prefira ISO string/timestamp no estado do VO.
+
 ## [non-goals] Não-objetivos
 
 - **Não é ORM.** Nenhuma mágica de mapeamento, nenhum decorator de persistência.

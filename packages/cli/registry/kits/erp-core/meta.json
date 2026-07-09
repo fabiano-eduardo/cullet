@@ -83,6 +83,7 @@
         "PermissionSet",
         "RbacAuthorizer",
         "AuthorizerPort",
+        "rbacContextFields",
         "AbacRule",
         "AbacPolicySet",
         "AbacAuthorizer",

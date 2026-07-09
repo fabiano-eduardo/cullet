@@ -1,5 +1,6 @@
 import { PluginManager } from "../plugins/index.js";
 import { type DeepReadonly, makeImmutable } from "../shared/immutable.js";
+import { stableStringify } from "../shared/stable-stringify.js";
 import { type ContractVersion, version } from "../versioning/version.js";
 
 /**
@@ -27,6 +28,12 @@ type ValueObjectPluginContract = {
  * deep-frozen on construction, so a value object can be shared freely without
  * any risk of a consumer mutating shared state. Subclasses seal the instance
  * itself with {@link finalize} once their own fields are set.
+ *
+ * One exception: nested `Date` instances are cloned but NOT frozen —
+ * `Object.freeze` does not block `setTime`/`setFullYear`, so a consumer of
+ * `value` can still mutate an inner `Date` in place. Store instants as ISO
+ * strings or epoch timestamps in the wrapped state (converting to `Date` only
+ * in an accessor) when that guarantee matters.
  *
  * @typeParam T - The shape of the wrapped data.
  * @typeParam P - The primitive form produced by {@link toPrimitive} / {@link toJSON}.
@@ -61,7 +68,7 @@ abstract class ValueObject<T, P> {
      * `@version` decorator — used to detect state persisted under an older shape.
      */
     public get contractVersion(): ContractVersion {
-        return ValueObject.CONTRACT_VERSION;
+        return (this.constructor as typeof ValueObject).CONTRACT_VERSION;
     }
 
     /**
@@ -93,13 +100,15 @@ abstract class ValueObject<T, P> {
      * same data are considered equal.
      *
      * Delegates to the registered equality {@link plugins}; with no plugin
-     * registered it falls back to comparing the serialized wrapped `value`.
+     * registered it falls back to comparing the serialized wrapped `value`,
+     * with object keys sorted so insertion order (e.g. code-built vs
+     * JSON-rehydrated) never affects the result.
      * Subclasses may still override for a faster or domain-specific comparison.
      */
     public equals(other: this): boolean {
         return ValueObject.plugins.invoke("equals", [this, other], {
             fallback: (a, b) =>
-                JSON.stringify(a.value) === JSON.stringify(b.value),
+                stableStringify(a.value) === stableStringify(b.value),
         });
     }
 

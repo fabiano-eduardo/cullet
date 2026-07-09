@@ -1,5 +1,8 @@
 import { PolicyContextPath } from "../../context/index.js";
-import { PolicyDateUtils } from "../../utils/index.js";
+// Import the date util directly (not the utils barrel): the barrel re-exports
+// PolicyHashing, whose node:crypto import would needlessly drag a Node-only
+// API into the zod-free ./abac subpath.
+import { PolicyDateUtils } from "../../utils/date.js";
 import { Result } from "../../../result/result.js";
 
 import type {
@@ -211,6 +214,32 @@ export class ConditionEvaluatorV1 {
         );
 
         return Result.err(message);
+    }
+
+    private static containsInvalidDate(value: unknown): boolean {
+        if (value instanceof Date) {
+            return !PolicyDateUtils.isValid(value);
+        }
+        if (Array.isArray(value)) {
+            return value.some((item) =>
+                ConditionEvaluatorV1.containsInvalidDate(item),
+            );
+        }
+        return false;
+    }
+
+    // Valid Dates become their ISO string so equality/set operators compare
+    // instants instead of references; every other value passes through.
+    private static normalizeDateOperand(value: unknown): unknown {
+        if (value instanceof Date) {
+            return value.toISOString();
+        }
+        if (Array.isArray(value)) {
+            return value.map((item) =>
+                ConditionEvaluatorV1.normalizeDateOperand(item),
+            );
+        }
+        return value;
     }
 
     private reportDateOperandError(
@@ -525,6 +554,32 @@ export class ConditionEvaluatorV1 {
                 !Array.isArray(node.value)
             ) {
                 return this.reportInvalidSetOperand(node, actual);
+            }
+
+            if (
+                node.op === "eq" ||
+                node.op === "neq" ||
+                node.op === "in" ||
+                node.op === "notIn"
+            ) {
+                // A Date operand would otherwise compare by reference and
+                // silently never match. Normalize valid Dates (either side,
+                // including set items) to their ISO string; an invalid Date is
+                // a context/configuration error, like the relational path.
+                if (
+                    ConditionEvaluatorV1.containsInvalidDate(actual) ||
+                    ConditionEvaluatorV1.containsInvalidDate(node.value)
+                ) {
+                    return this.reportDateOperandError(node, actual);
+                }
+
+                return Result.ok(
+                    this.evaluateOperator(
+                        ConditionEvaluatorV1.normalizeDateOperand(actual),
+                        node.op,
+                        ConditionEvaluatorV1.normalizeDateOperand(node.value),
+                    ),
+                );
             }
 
             return Result.ok(

@@ -1,12 +1,5 @@
+import { UUID_PATTERN } from "../shared/uuid.js";
 import { ValueObject } from "./value-object.js";
-
-/**
- * Canonical RFC-4122 UUID (versions 1–5), matched case-insensitively. Declared
- * once here so the dozens of typed identifiers a domain accumulates never have
- * to re-state the pattern.
- */
-const UUID_PATTERN =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Base class for UUID-backed identity value objects.

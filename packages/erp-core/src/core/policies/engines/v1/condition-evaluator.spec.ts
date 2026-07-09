@@ -738,6 +738,75 @@ describe("ConditionEvaluatorV1.evaluate", () => {
             }),
         );
     });
+
+    describe("Date operands in eq/neq/in/notIn", () => {
+        const ISO = "2026-01-01T00:00:00.000Z";
+
+        it("eq matches a context Date against an equal ISO string in the rule", () => {
+            const result = evaluateCondition(
+                { field: "when", op: "eq", value: ISO },
+                { when: new Date(ISO) },
+                options,
+            );
+
+            expect(result.getOrNull()).toBe(true);
+        });
+
+        it("eq matches two equal Date instances by instant, not reference", () => {
+            const result = evaluateCondition(
+                { field: "when", op: "eq", value: new Date(ISO) },
+                { when: new Date(ISO) },
+                options,
+            );
+
+            expect(result.getOrNull()).toBe(true);
+        });
+
+        it("neq distinguishes different instants", () => {
+            const result = evaluateCondition(
+                { field: "when", op: "neq", value: ISO },
+                { when: new Date("2027-06-06T12:00:00.000Z") },
+                options,
+            );
+
+            expect(result.getOrNull()).toBe(true);
+        });
+
+        it("in finds a context Date among ISO strings and Dates in the set", () => {
+            const result = evaluateCondition(
+                {
+                    field: "when",
+                    op: "in",
+                    value: ["2025-01-01T00:00:00.000Z", new Date(ISO)],
+                },
+                { when: new Date(ISO) },
+                options,
+            );
+
+            expect(result.getOrNull()).toBe(true);
+        });
+
+        it("notIn holds when the instant is absent from the set", () => {
+            const result = evaluateCondition(
+                { field: "when", op: "notIn", value: [ISO] },
+                { when: new Date("2027-06-06T12:00:00.000Z") },
+                options,
+            );
+
+            expect(result.getOrNull()).toBe(true);
+        });
+
+        it("reports INVALID_DATE_OPERAND for an invalid Date instead of silently not matching", () => {
+            const result = evaluateCondition(
+                { field: "when", op: "eq", value: ISO },
+                { when: new Date("not-a-date") },
+                options,
+            );
+
+            expect(result.isErr()).toBe(true);
+            expect(result.errorOrNull()).toContain("INVALID_DATE_OPERAND");
+        });
+    });
 });
 
 describe("ConditionEvaluatorV1.extractFields", () => {

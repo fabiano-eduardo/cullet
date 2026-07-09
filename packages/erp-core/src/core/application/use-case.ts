@@ -34,7 +34,7 @@ abstract class UseCase<
     declare public static readonly CONTRACT_VERSION: ContractVersion;
 
     public get contractVersion(): ContractVersion {
-        return UseCase.CONTRACT_VERSION;
+        return (this.constructor as typeof UseCase).CONTRACT_VERSION;
     }
 
     /**

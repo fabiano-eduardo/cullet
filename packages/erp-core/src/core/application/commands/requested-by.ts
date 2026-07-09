@@ -1,10 +1,12 @@
 import { ValidationCode } from "../../exceptions/validation-code.js";
 import { InvalidValueException } from "../../exceptions/validation-exception.js";
 import { ValidationField } from "../../exceptions/validation-field.js";
+import { UUID_PATTERN } from "../../shared/uuid.js";
 
 // Identifies who triggered a Command.
 // Two valid formats:
-//   - Human user: UUID v4 (e.g.: "550e8400-e29b-41d4-a716-446655440000")
+//   - Human user: canonical RFC-4122 UUID, versions 1–5 — the same pattern
+//     `UuidIdentifier` enforces (e.g.: "550e8400-e29b-41d4-a716-446655440000")
 //   - System identity: "system:<job>" where <job> is [a-z][a-z0-9]*(-[a-z0-9]+)*
 //     (e.g.: "system:late-fee-job", "system:email-sender")
 //
@@ -14,9 +16,6 @@ import { ValidationField } from "../../exceptions/validation-field.js";
 type RequestedByKind = "user" | "system";
 
 const REQUESTED_BY_FIELD = ValidationField.of("requestedBy");
-
-const UUID_PATTERN =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // system:<job> where <job> starts with a lowercase letter and may have hyphens between segments
 const SYSTEM_IDENTITY_PATTERN = /^system:[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;

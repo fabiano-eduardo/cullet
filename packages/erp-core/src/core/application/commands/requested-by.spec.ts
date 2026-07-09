@@ -23,6 +23,18 @@ describe("RequestedBy", () => {
                 InvalidValueException,
             );
         });
+
+        it("rejects hex shapes that are not canonical RFC-4122 (same contract as UuidIdentifier)", () => {
+            const nilUuid = "00000000-0000-0000-0000-000000000000";
+            const bogusVersion = "3f9a1c2e-7b4d-0e2a-9c1f-2b6d8e0a1f33";
+
+            expect(() => RequestedBy.fromUser(nilUuid)).toThrow(
+                InvalidValueException,
+            );
+            expect(() => RequestedBy.fromUser(bogusVersion)).toThrow(
+                InvalidValueException,
+            );
+        });
     });
 
     describe("fromSystem", () => {
