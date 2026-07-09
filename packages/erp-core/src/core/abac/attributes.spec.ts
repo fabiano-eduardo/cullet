@@ -49,7 +49,7 @@ describe("abacContext", () => {
         ).toBe(USER);
     });
 
-    it("lets the actor id, resource reference and action name win over bag keys", () => {
+    it("lets the actor id and resource reference win over bag keys", () => {
         const context = abacContext({
             actor,
             action: "a",
@@ -57,20 +57,18 @@ describe("abacContext", () => {
             attributes: {
                 subject: { id: "spoofed" },
                 resource: { type: "Spoofed", status: "OPEN" },
-                action: { name: "spoofed", channel: "web" },
             },
         });
 
         expect(context.subject).toEqual({ id: USER });
         expect(context.resource).toEqual({ type: "Order", status: "OPEN" });
-        expect(context.action).toEqual({ name: "a", channel: "web" });
     });
 
     it("produces empty bags when no attributes are supplied", () => {
         expect(abacContext({ actor, action: "a", attributes: {} })).toEqual({
             subject: { id: USER },
             resource: {},
-            action: { name: "a" },
+            action: {},
             env: {},
         });
     });

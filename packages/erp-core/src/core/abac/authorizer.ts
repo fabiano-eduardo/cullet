@@ -5,11 +5,7 @@ import { Result } from "../result/result.js";
 
 import type { AbacRequest } from "./abac-request.js";
 import { abacContext } from "./attributes.js";
-import {
-    combine,
-    type CombineResult,
-    type CombiningAlgorithm,
-} from "./combining.js";
+import { combine, type CombiningAlgorithm } from "./combining.js";
 import type { AbacPolicySet } from "./domain/policy-set.js";
 import type { AbacRule } from "./domain/rule.js";
 
@@ -40,15 +36,8 @@ interface AbacDecision {
  * A denial maps to {@link AuthorizationError.policyDenied}, attributed to the
  * deciding rule's `id`/`version`; a condition-evaluation failure (a missing
  * attribute, a wrong-typed operand) fails closed as
- * {@link AuthorizationError.forbidden}. Under `deny-overrides` /
- * `permit-overrides` every rule's condition is evaluated, so a single
- * non-evaluable rule fails the whole decision closed — adding a rule that
- * references an attribute a call site does not provide turns that call site
- * into a 403 until the attribute is supplied. Under `first-applicable`, rules
- * are evaluated in order and evaluation stops at the first applicable one
- * (XACML semantics): rules after it — evaluable or not — never influence the
- * decision. Loading the dynamic attributes is the consumer's job (behind an
- * `AbacAuthorizerPort` adapter); this class only decides.
+ * {@link AuthorizationError.forbidden}. Loading the dynamic attributes is the
+ * consumer's job (behind an `AbacAuthorizerPort` adapter); this class only decides.
  */
 class AbacAuthorizer {
     private readonly coreConfig: CoreConfig;
@@ -67,54 +56,30 @@ class AbacAuthorizer {
             this.coreConfig.getConditionEvaluationOptions(ENGINE_VERSION),
         );
 
-        // Fail closed: a technical evaluation error is never a silent PERMIT.
-        const failClosed = (details: string | undefined) =>
-            Result.err(
-                AuthorizationError.forbidden({
-                    action: request.action,
-                    resource: request.resource,
-                    actor: { userId: request.actor.raw },
-                    details,
-                }),
-            );
-
-        let combined: CombineResult;
-        if (policies.algorithm === "first-applicable") {
-            // Evaluate in order and stop at the first applicable rule (XACML
-            // first-applicable): later rules never run, so a non-evaluable rule
-            // after the deciding one cannot fail the decision.
-            combined = { effect: policies.defaultEffect };
-            for (const rule of policies.rules) {
-                const matched = evaluator.evaluate(rule.condition);
-                if (matched.isErr()) {
-                    return failClosed(matched.errorOrNull() ?? undefined);
-                }
-                if (matched.getOrThrow()) {
-                    combined = { effect: rule.effect, decidingRule: rule };
-                    break;
-                }
+        const applicable: AbacRule[] = [];
+        for (const rule of policies.rules) {
+            const matched = evaluator.evaluate(rule.condition);
+            if (matched.isErr()) {
+                // Fail closed: a technical evaluation error is never a silent PERMIT.
+                return Result.err(
+                    AuthorizationError.forbidden({
+                        action: request.action,
+                        resource: request.resource,
+                        actor: { userId: request.actor.raw },
+                        details: matched.errorOrNull() ?? undefined,
+                    }),
+                );
             }
-        } else {
-            // deny-/permit-overrides: an applicable rule anywhere in the set can
-            // decide, so every condition must evaluate.
-            const applicable: AbacRule[] = [];
-            for (const rule of policies.rules) {
-                const matched = evaluator.evaluate(rule.condition);
-                if (matched.isErr()) {
-                    return failClosed(matched.errorOrNull() ?? undefined);
-                }
-                if (matched.getOrThrow()) {
-                    applicable.push(rule);
-                }
+            if (matched.getOrThrow()) {
+                applicable.push(rule);
             }
-            combined = combine(
-                policies.algorithm,
-                applicable,
-                policies.defaultEffect,
-            );
         }
 
-        const { effect, decidingRule } = combined;
+        const { effect, decidingRule } = combine(
+            policies.algorithm,
+            applicable,
+            policies.defaultEffect,
+        );
 
         if (effect === "PERMIT") {
             return Result.ok({

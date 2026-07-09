@@ -12,7 +12,7 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 - **`result/`** — `Result<T, E>` e `Outcome` para retorno tipado da camada de aplicação.
 - **`application/`** — `UseCase` base, `commands/`, `queries/`, `ports/`. Casos de uso consomem portas e retornam `Result`.
 - **`policies/`** — catálogo, definições, resolução e avaliação de policies declarativas.
-- **`rbac/`** — RBAC zod-free (`./rbac`): `Permission`/`Role`/`Grant`/`Scope`, decisor `RbacAuthorizer`, `AuthorizerPort`, `definePermissionCatalog` (catálogo tipado de permissões do consumidor).
+- **`rbac/`** — RBAC zod-free (`./rbac`): `Permission`/`Role`/`Grant`/`Scope`, decisor `RbacAuthorizer`, `AuthorizerPort`.
 - **`abac/`** — ABAC zod-free (`./abac`): `AbacRule`/`AbacPolicySet` + combinação, decisor `AbacAuthorizer`, `AbacAuthorizerPort`, `CompositeAuthorizer`.
 - **`versioning/`** — utilidades de versionamento de agregados temporais.
 
@@ -37,7 +37,7 @@ Implemente as portas em `application/ports/` para conectar a stack real:
 ## [known-limits] Limitações conhecidas
 
 - **Dois registries são estado global de processo** (a promessa "composição sem singletons" não os cobre): `GatePayloadParsers` (parsers de payload gate) e `ValueObject.plugins` (plugin de igualdade) valem para o processo inteiro — hosts multi-tenant no mesmo processo compartilham esses registros mesmo usando `CoreConfig`/registries isolados.
-- **ABAC é fail-closed por regra não-avaliável**: sob `deny-overrides`/`permit-overrides` toda condição do set é avaliada — adicionar uma regra que referencia um atributo que um call site não fornece passa a negar (403 `forbidden`) nesses call sites até o atributo ser suprido. Sob `first-applicable` a avaliação para na primeira regra aplicável (regras posteriores não são avaliadas).
+- **ABAC é fail-closed por regra não-avaliável**: toda condição do set é avaliada, independente do algoritmo de combinação — adicionar uma regra que referencia um atributo que um call site não fornece passa a negar (403 `forbidden`) nesses call sites até o atributo ser suprido.
 - **`Date` aninhado em `ValueObject` não é congelável** (`Object.freeze` não bloqueia `setTime`): o clone protege do caller, mas quem lê `value` consegue mutar o `Date` interno. Prefira ISO string/timestamp no estado do VO.
 
 ## [non-goals] Não-objetivos

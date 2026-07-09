@@ -7,10 +7,8 @@ import type { AbacRequest } from "./abac-request.js";
  * condition evaluator reads (it resolves dotted fields like `resource.status` by
  * walking nested objects). The actor lands as `subject.id`; the four attribute
  * bags nest under `subject` / `resource` / `action` / `env`; a `resource`
- * reference adds `resource.type` / `resource.id`; the request's action label
- * lands as `action.name`, so rules can discriminate by action without the
- * consumer duplicating it into the bag. The actor id, the resource reference
- * and the action name win over any same-named keys in the attribute bags.
+ * reference adds `resource.type` / `resource.id`. The actor id and the resource
+ * reference win over any same-named keys in the attribute bags.
  *
  * Consumers fold dynamic facts (e.g. RBAC roles/permissions derived from grants,
  * or a computed `ownerIsActor` flag) into `attributes.subject` / `resource` so
@@ -35,7 +33,7 @@ export function abacContext(request: AbacRequest): PolicyContext {
     return {
         subject,
         resource,
-        action: { ...attributes.action, name: request.action },
+        action: { ...attributes.action },
         env: { ...attributes.environment },
     };
 }
