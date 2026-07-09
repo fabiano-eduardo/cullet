@@ -83,6 +83,8 @@
         "PermissionSet",
         "RbacAuthorizer",
         "AuthorizerPort",
+        "definePermissionCatalog",
+        "rbacContextFields",
         "AbacRule",
         "AbacPolicySet",
         "AbacAuthorizer",
@@ -104,7 +106,7 @@
         "1.0.11 - Document the public API surface with TSDoc.",
         "1.1.0 - **New: `ResultRepository`, `UseCaseObservability`, and `./application` subpath**",
         "1.2.0 - Add zod-free subpaths for the stable core primitives and a value-object equality plugin system.",
-        "1.3.0 - Add zod-free subpaths for the stable core primitives and a value-object equality plugin system."
+        "1.3.0 - Add the zod-free RBAC (`./rbac`) and ABAC (`./abac`) modules: pure domain model (Permission/Role/Grant/Scope, AbacRule/AbacPolicySet), pure decisors (RbacAuthorizer, AbacAuthorizer, CompositeAuthorizer), application ports (AuthorizerPort, AbacAuthorizerPort) and the policy-engine bridge (rbacContextFields, abacContext)."
     ],
     "deprecated": false
 }
