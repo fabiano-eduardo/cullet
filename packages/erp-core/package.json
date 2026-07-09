@@ -1,6 +1,6 @@
 {
     "name": "@cullet/erp-core",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "type": "module",
     "repository": {
