@@ -130,6 +130,60 @@ describe("AbacAuthorizer", () => {
         });
     });
 
+    it("first-applicable stops at the first applicable rule: a broken later rule is never evaluated", () => {
+        const needsMissing = AbacRule.of({
+            id: "needs-x",
+            version: 1,
+            effect: "DENY",
+            condition: { field: "resource.missing", op: "eq", value: 1 },
+        });
+
+        const result = authorizer.authorize(
+            request({ status: "OPEN" }),
+            AbacPolicySet.of([permitOpen, needsMissing], {
+                algorithm: "first-applicable",
+            }),
+        );
+
+        expect(result.isOk()).toBe(true);
+        expect(result.getOrThrow().matchedRule).toBe("permit-open");
+    });
+
+    it("first-applicable still fails closed when a broken rule precedes the first applicable one", () => {
+        const needsMissing = AbacRule.of({
+            id: "needs-x",
+            version: 1,
+            effect: "DENY",
+            condition: { field: "resource.missing", op: "eq", value: 1 },
+        });
+
+        const result = authorizer.authorize(
+            request({ status: "OPEN" }),
+            AbacPolicySet.of([needsMissing, permitOpen], {
+                algorithm: "first-applicable",
+            }),
+        );
+
+        expect(result.errorOrNull()?.reason).toBe("forbidden");
+    });
+
+    it("exposes the request action as action.name in the rule context", () => {
+        const permitCancel = AbacRule.of({
+            id: "permit-cancel",
+            version: 1,
+            effect: "PERMIT",
+            condition: { field: "action.name", op: "eq", value: "order.cancel" },
+        });
+
+        const result = authorizer.authorize(
+            request({ status: "OPEN" }),
+            AbacPolicySet.of([permitCancel]),
+        );
+
+        expect(result.isOk()).toBe(true);
+        expect(result.getOrThrow().matchedRule).toBe("permit-cancel");
+    });
+
     it("permits via a PERMIT default when the set is empty", () => {
         const result = authorizer.authorize(
             request({ status: "OPEN" }),
