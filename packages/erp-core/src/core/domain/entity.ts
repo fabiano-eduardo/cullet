@@ -112,7 +112,7 @@ abstract class Entity<TIdentifier> {
      * an older shape.
      */
     public get contractVersion(): ContractVersion {
-        return Entity.CONTRACT_VERSION;
+        return (this.constructor as typeof Entity).CONTRACT_VERSION;
     }
 
     /**

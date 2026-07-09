@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { version } from "../versioning/version.js";
 import { ValueObject } from "./value-object.js";
 
 class StringVO extends ValueObject<string, string> {
@@ -151,6 +152,14 @@ describe("ValueObject", () => {
 
             expect(vo.contractVersion).toBe("1.0");
         });
+
+        it("reports the subclass's own @version when re-decorated", () => {
+            @version("2.0")
+            class VersionedVO extends StringVO {}
+
+            expect(new VersionedVO("x").contractVersion).toBe("2.0");
+            expect(new StringVO("x").contractVersion).toBe("1.0");
+        });
     });
 
     describe("equals()", () => {
@@ -192,6 +201,29 @@ describe("ValueObject", () => {
             });
 
             expect(a.equals(b)).toBe(false);
+        });
+
+        it("base fallback ignores key insertion order (code-built vs JSON-rehydrated)", () => {
+            class PairVO extends ValueObject<
+                Record<string, number>,
+                Record<string, number>
+            > {
+                constructor(value: Record<string, number>) {
+                    super(value);
+                    this.finalize();
+                }
+
+                toPrimitive(): Record<string, number> {
+                    return this.value as Record<string, number>;
+                }
+            }
+
+            const built = new PairVO({ a: 1, b: 2 });
+            const rehydrated = new PairVO(
+                JSON.parse('{"b":2,"a":1}') as Record<string, number>,
+            );
+
+            expect(built.equals(rehydrated)).toBe(true);
         });
     });
 });
