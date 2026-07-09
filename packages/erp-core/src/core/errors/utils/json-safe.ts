@@ -30,18 +30,23 @@ function sanitizeValue(value: unknown, seen: WeakSet<object>): JsonSafeValue {
 
     const type = typeof value;
 
-    // Primitives
-    if (type === "string" || type === "number" || type === "boolean") {
+    // Primitives (non-finite numbers are not JSON-representable — placeholder)
+    if (type === "number") {
+        return Number.isFinite(value)
+            ? (value as number)
+            : NON_SERIALIZABLE_PLACEHOLDER;
+    }
+    if (type === "string" || type === "boolean") {
         return value as JsonSafeValue;
     }
 
+    // `undefined` only reaches here as an array item: object properties with
+    // undefined values are omitted by the plain-object branch below. Both
+    // mirror `JSON.stringify` semantics.
+    if (value === undefined) return null;
+
     // Non-serializable primitives
-    if (
-        type === "bigint" ||
-        type === "function" ||
-        type === "symbol" ||
-        value === undefined
-    ) {
+    if (type === "bigint" || type === "function" || type === "symbol") {
         return NON_SERIALIZABLE_PLACEHOLDER;
     }
 
@@ -69,6 +74,7 @@ function sanitizeValue(value: unknown, seen: WeakSet<object>): JsonSafeValue {
     seen.add(value);
     const result: Record<string, JsonSafeValue> = {};
     for (const [key, val] of Object.entries(value)) {
+        if (val === undefined) continue;
         result[key] = sanitizeValue(val, seen);
     }
     seen.delete(value);
@@ -82,11 +88,14 @@ function sanitizeValue(value: unknown, seen: WeakSet<object>): JsonSafeValue {
 /**
  * Ensures metadata is JSON-serializable.
  *
- * **Allowed:** string, number, boolean, null, arrays, and plain objects.
+ * **Allowed:** finite number, string, boolean, null, arrays, and plain objects.
+ *
+ * **Dropped (mirroring `JSON.stringify`):** object properties whose value is
+ * `undefined` (the key is omitted); an `undefined` array item becomes `null`.
  *
  * **Converted to placeholder:** Date, BigInt, class instances, functions,
- * symbols, undefined, and circular references (which would otherwise make
- * `JSON.stringify` throw).
+ * symbols, non-finite numbers (`NaN`/`Infinity`), and circular references
+ * (which would otherwise make `JSON.stringify` throw).
  *
  * @throws {TypeError} If `input` is not a plain object at the root level.
  */

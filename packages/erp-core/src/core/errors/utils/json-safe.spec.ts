@@ -32,7 +32,8 @@ describe("assertJsonSafeMetadata", () => {
             big: 10n,
             fn: () => 1,
             sym: Symbol("x"),
-            missing: undefined,
+            nan: Number.NaN,
+            inf: Number.POSITIVE_INFINITY,
         });
 
         expect(result).toEqual({
@@ -40,8 +41,25 @@ describe("assertJsonSafeMetadata", () => {
             big: NON_SERIALIZABLE_PLACEHOLDER,
             fn: NON_SERIALIZABLE_PLACEHOLDER,
             sym: NON_SERIALIZABLE_PLACEHOLDER,
-            missing: NON_SERIALIZABLE_PLACEHOLDER,
+            nan: NON_SERIALIZABLE_PLACEHOLDER,
+            inf: NON_SERIALIZABLE_PLACEHOLDER,
         });
+    });
+
+    it("mirrors JSON.stringify for undefined: omits object keys, nulls array items", () => {
+        const result = assertJsonSafeMetadata({
+            present: "yes",
+            missing: undefined,
+            nested: { alsoMissing: undefined, kept: 1 },
+            items: [1, undefined, 2],
+        });
+
+        expect(result).toEqual({
+            present: "yes",
+            nested: { kept: 1 },
+            items: [1, null, 2],
+        });
+        expect(Object.keys(result)).not.toContain("missing");
     });
 
     it("replaces a direct self-reference with the circular placeholder", () => {
