@@ -44,7 +44,12 @@ abstract class Query<
     Data extends QueryOutput = never,
     Failure = AppError,
 > extends UseCase<Input, Result<Data, Failure>> {
-    protected cacheStrategy(): CacheStrategy {
+    /**
+     * Declares how infrastructure should cache this query's result. Public so
+     * a caching adapter can actually read it off the instance; overrides must
+     * stay public.
+     */
+    public cacheStrategy(): CacheStrategy {
         return { kind: "NO_CACHE" };
     }
 }
