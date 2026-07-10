@@ -23,11 +23,7 @@ import { PolicyResolver } from "../resolver/index.js";
 import { Result } from "../../result/result.js";
 import { isValidDate } from "../../shared/temporal-guards.js";
 
-import type {
-    PolicyEvent,
-    PolicyReporter,
-} from "../../config/policy-reporter.js";
-import { SilentPolicyReporter } from "../../config/silent-policy-reporter.js";
+import { type CoreConfig, coreConfig } from "../../config/index.js";
 
 import {
     PolicyEvaluationErrors,
@@ -52,14 +48,13 @@ export interface EvaluateInput {
 }
 
 /**
- * Cross-cutting knobs for a {@link PolicyService}: how the as-of instant is
- * derived ({@link asOf}) and where evaluation telemetry is sent
- * ({@link reporter}). Both are optional; the service defaults to a silent
- * reporter so telemetry is opt-in.
+ * Cross-cutting knobs for a {@link PolicyService}: today just how the as-of
+ * instant is derived ({@link asOf}). Telemetry is not configured here — it
+ * flows through the injected {@link CoreConfig}, the core's single
+ * observability seam, so a host wires reporting in one place.
  */
 export interface PolicyServiceOptions {
     readonly asOf?: DeriveAsOfOptions;
-    readonly reporter?: PolicyReporter;
 }
 
 /**
@@ -75,6 +70,12 @@ export interface PolicyServiceParams {
     readonly resolver: PolicyResolver;
     readonly gateEngines: GateEngineRegistry;
     readonly computeRegistry: ComputeRegistry;
+    /**
+     * The observability seam telemetry is emitted through. Defaults to the
+     * shared {@link coreConfig} singleton; inject an isolated instance for
+     * tests or multi-tenant hosts.
+     */
+    readonly coreConfig?: CoreConfig;
     readonly options?: PolicyServiceOptions;
 }
 
@@ -130,7 +131,7 @@ interface ResolvedPolicyCandidate {
  * evaluation — which keeps observability strictly side-band.
  */
 export class PolicyService {
-    readonly #reporter: PolicyReporter;
+    readonly #coreConfig: CoreConfig;
     private readonly catalog: PolicyCatalog;
     private readonly contextBuilder: PolicyContextBuilder;
     private readonly defRepo: PolicyDefinitionRepository;
@@ -147,15 +148,7 @@ export class PolicyService {
         this.gateEngines = params.gateEngines;
         this.computeRegistry = params.computeRegistry;
         this.options = params.options ?? {};
-        this.#reporter = this.options.reporter ?? new SilentPolicyReporter();
-    }
-
-    #reportSafely(event: PolicyEvent): void {
-        try {
-            this.#reporter.report(event);
-        } catch {
-            // Falhas de telemetria nao podem interromper a avaliacao de politicas.
-        }
+        this.#coreConfig = params.coreConfig ?? coreConfig;
     }
 
     private resolveEvaluationNow(seed: ContextSeed): Result<Date, string> {
@@ -195,7 +188,7 @@ export class PolicyService {
         const result = await this.#evaluate(input);
         if (result.isErr()) {
             const error = result.errorOrNull()!;
-            this.#reportSafely({
+            this.#coreConfig.reportSafely({
                 kind: "policy-evaluation-failed",
                 level: "error",
                 policyKey: "policyKey" in error ? error.policyKey : undefined,
@@ -206,7 +199,7 @@ export class PolicyService {
             });
         } else {
             const ok = result.getOrNull()!;
-            this.#reportSafely({
+            this.#coreConfig.reportSafely({
                 kind: "policy-evaluation-completed",
                 level: "info",
                 policyKey: ok.ref.policyKey,
@@ -283,7 +276,7 @@ export class PolicyService {
             catalogEntry: versionedCatalogEntry,
         } = definitionResult.getOrNull()!;
 
-        this.#reportSafely({
+        this.#coreConfig.reportSafely({
             kind: "policy-resolution",
             level: "info",
             policyKey,
