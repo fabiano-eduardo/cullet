@@ -121,6 +121,23 @@ describe("assertJsonSafeMetadata", () => {
         expect(() => JSON.stringify(error.toJSON())).not.toThrow();
     });
 
+    it("keeps a '__proto__' data key as own data instead of reparenting", () => {
+        // A payload from JSON.parse can carry an own enumerable "__proto__" key;
+        // it must survive as data (not silently swap the prototype).
+        const input = JSON.parse('{"__proto__": {"polluted": true}, "ok": 1}');
+
+        const result = assertJsonSafeMetadata(input);
+
+        expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(
+            true,
+        );
+        expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+        expect((result as Record<string, unknown>)["__proto__"]).toEqual({
+            polluted: true,
+        });
+        expect(result.ok).toBe(1);
+    });
+
     it("returns an empty object when the input is undefined", () => {
         expect(assertJsonSafeMetadata(undefined)).toEqual({});
     });
