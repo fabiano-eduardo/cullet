@@ -38,14 +38,17 @@ class ValidationError extends AppError {
             field: field.value,
             validationCode: code.value,
         };
+        // `field`/`validationCode` spread last so caller metadata is merged
+        // over them without ever overwriting them by accident.
         const mergedMetadata = options?.metadata
-            ? { ...baseMetadata, ...options.metadata }
+            ? { ...options.metadata, ...baseMetadata }
             : baseMetadata;
 
         super(message, ErrorCodes.validation, {
             ...options,
             metadata: mergedMetadata,
         });
+        Object.freeze(this);
     }
 }
 

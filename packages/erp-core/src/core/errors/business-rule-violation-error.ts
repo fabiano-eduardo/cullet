@@ -14,14 +14,17 @@ class BusinessRuleViolationError extends AppError {
         options?: AppErrorOptions,
     ) {
         const baseMetadata = detail ? { rule, detail } : { rule };
+        // Reserved keys (`rule`/`detail`) spread last so caller metadata cannot
+        // clobber them.
         const mergedMetadata = options?.metadata
-            ? { ...baseMetadata, ...options.metadata }
+            ? { ...options.metadata, ...baseMetadata }
             : baseMetadata;
 
         super(message, ErrorCodes.businessRuleViolation, {
             ...options,
             metadata: mergedMetadata,
         });
+        Object.freeze(this);
     }
 }
 

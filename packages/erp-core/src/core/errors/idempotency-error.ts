@@ -359,7 +359,9 @@ function resolveKeyIdentity(
         (key ? (key.length <= 8 ? key : key.slice(0, 8)) : undefined);
 
     return {
-        keyHash: keyHash,
+        // Derive the hash from the raw key when the caller didn't supply one —
+        // cheap traceability without leaking the key itself.
+        keyHash: keyHash ?? (key ? sha256Hex(key) : undefined),
         keyPreview: preview,
     };
 }
