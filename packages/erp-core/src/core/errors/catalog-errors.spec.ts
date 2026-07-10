@@ -292,5 +292,31 @@ describe("catalog-errors factories", () => {
             });
             expect(error.metadata).not.toHaveProperty("criteria");
         });
+
+        it("does not let caller metadata clobber reserved keys", () => {
+            const notFound = new NotFoundError(
+                "invoice",
+                { id: "INV-1" },
+                {
+                    metadata: { resource: "spoofed", extra: "kept" },
+                },
+            );
+            const validation = new ValidationError(
+                ValidationField.of("customer.email"),
+                ValidationCode.INVALID_FORMAT,
+                "invalid",
+                { metadata: { field: "spoofed", validationCode: "spoofed" } },
+            );
+
+            expect(notFound.metadata).toEqual({
+                resource: "invoice",
+                criteria: { id: "INV-1" },
+                extra: "kept",
+            });
+            expect(validation.metadata).toEqual({
+                field: "customer.email",
+                validationCode: "invalid_format",
+            });
+        });
     });
 });
