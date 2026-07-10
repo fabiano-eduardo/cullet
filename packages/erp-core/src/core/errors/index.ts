@@ -74,6 +74,8 @@ export type {
     SerializationFailureCategory,
 } from "./serialization-error.js";
 export {
+    // `DeserializationError` is a readability alias for the inbound direction
+    // (deserialization == SerializationInError); both names are public API.
     SerializationInError as DeserializationError,
     safePreview,
     SerializationCodes,
@@ -83,6 +85,8 @@ export {
     SerializationOutError,
 } from "./serialization-error.js";
 export type {
+    // `ExpiredError*` aliases are kept for callers that reach for the
+    // expiry-specific name; they are the same shapes as the generic Temporal*.
     TemporalErrorMetadata as ExpiredErrorMetadata,
     TemporalPrecision as ExpiredErrorPrecision,
     TemporalErrorMetadata,
