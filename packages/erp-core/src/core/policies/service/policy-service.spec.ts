@@ -31,6 +31,7 @@ import {
     type VersionedGateEngine,
 } from "../engines/index.js";
 import { PolicyResolver } from "../resolver/index.js";
+import { CoreConfig } from "../../config/index.js";
 import type { PolicyReporter } from "../../config/policy-reporter.js";
 import { Outcome } from "../../result/outcome.js";
 import { Result } from "../../result/result.js";
@@ -127,6 +128,7 @@ function buildService(
     definition: PolicyDefinition,
     gateEngines: GateEngineRegistry,
     options: PolicyServiceOptions = {},
+    coreConfig?: CoreConfig,
 ): PolicyService {
     const policyKey = PolicyKey.parse(
         "financial.charges.charge_eligibility",
@@ -153,6 +155,7 @@ function buildService(
         resolver: new PolicyResolver(),
         gateEngines,
         computeRegistry: new ComputeRegistry(),
+        coreConfig,
         options,
     });
 }
@@ -320,9 +323,12 @@ describe("PolicyService", () => {
         gateEngines.register(makeGateEngine(1, "ALLOW"));
         const reporter = makeThrowingReporter(new Error("reporter exploded"));
 
-        const service = buildService(makeGateDefinition(1), gateEngines, {
-            reporter,
-        });
+        const service = buildService(
+            makeGateDefinition(1),
+            gateEngines,
+            {},
+            new CoreConfig({ observability: { reporter } }),
+        );
         const result = await service.evaluate({
             decisionId: asPolicyDecisionId("decision-report-success"),
             policyKey: "financial.charges.charge_eligibility",
@@ -433,9 +439,12 @@ describe("PolicyService", () => {
         gateEngines.register(makeGateEngine(1, "ALLOW"));
         const reporter = makeThrowingReporter(new Error("reporter exploded"));
 
-        const service = buildService(makeGateDefinition(1), gateEngines, {
-            reporter,
-        });
+        const service = buildService(
+            makeGateDefinition(1),
+            gateEngines,
+            {},
+            new CoreConfig({ observability: { reporter } }),
+        );
         const result = await service.evaluate({
             decisionId: asPolicyDecisionId("decision-invalid-now"),
             policyKey: "financial.charges.charge_eligibility",

@@ -113,6 +113,27 @@ describe("CoreConfig", () => {
         expect(errorCalls).toHaveLength(0);
     });
 
+    it("configure() with an explicit undefined reporter silences telemetry", () => {
+        const reporter = makeMockReporter();
+        const config = new CoreConfig({ observability: { reporter } });
+        const engine = new GateEngineV1({ coreConfig: config });
+
+        config.configure({ observability: { reporter: undefined } });
+
+        engine.evaluate(
+            {
+                condition: {
+                    field: "student.flags.financialHold",
+                    op: "eq",
+                    value: true,
+                },
+            },
+            {},
+        );
+
+        expect(reporter.report).not.toHaveBeenCalled();
+    });
+
     it("reset() restores the instance to its initial reporter", () => {
         const initialReporter = makeMockReporter();
         const config = new CoreConfig({
