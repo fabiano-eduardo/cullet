@@ -1,6 +1,7 @@
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
 import type { AppErrorOptions, ErrorSeverity } from "./types.js";
+import { compactMetadata, pickAppErrorOptions } from "./utils/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -85,7 +86,7 @@ class AuthenticationError extends AppError {
             code: ErrorCodes.authentication.missingToken,
             reason: "missing_token",
             metadata: compactMetadata(options),
-            ...extractAppErrorOptions(options),
+            ...pickAppErrorOptions(options),
         });
     }
 
@@ -103,7 +104,7 @@ class AuthenticationError extends AppError {
                 correlationId: options?.correlationId,
                 requestId: options?.requestId,
             }),
-            ...extractAppErrorOptions(options),
+            ...pickAppErrorOptions(options),
         });
     }
 
@@ -115,7 +116,7 @@ class AuthenticationError extends AppError {
             code: ErrorCodes.authentication.expiredToken,
             reason: "expired_token",
             metadata: compactMetadata(options),
-            ...extractAppErrorOptions(options),
+            ...pickAppErrorOptions(options),
         });
     }
 
@@ -135,36 +136,9 @@ class AuthenticationError extends AppError {
             code: ErrorCodes.authentication.invalidCredentials,
             reason: "invalid_credentials",
             metadata: compactMetadata(options),
-            ...extractAppErrorOptions(options),
+            ...pickAppErrorOptions(options),
         });
     }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function extractAppErrorOptions(options?: Partial<AppErrorOptions>) {
-    return {
-        cause: options?.cause,
-        type: options?.type,
-        severity: options?.severity,
-        correlationId: options?.correlationId,
-        requestId: options?.requestId,
-        commandId: options?.commandId,
-        createdAtIso: options?.createdAtIso,
-        publicMessage: options?.publicMessage,
-    };
-}
-
-function compactMetadata<T extends Record<string, unknown>>(
-    input?: T,
-): T | undefined {
-    if (!input) return undefined;
-
-    return Object.fromEntries(
-        Object.entries(input).filter(([, value]) => value !== undefined),
-    ) as T;
 }
 
 export { AuthenticationError };

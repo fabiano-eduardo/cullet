@@ -1,6 +1,7 @@
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
 import type { AppErrorOptions, ErrorSeverity } from "./types.js";
+import { pickAppErrorOptions } from "./utils/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -125,7 +126,7 @@ class AuthorizationError extends AppError {
             code: ErrorCodes.authorization.forbidden,
             reason: "forbidden",
             metadata: { reason: "forbidden", ...extractMetadataOnly(input) },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -154,7 +155,7 @@ class AuthorizationError extends AppError {
                 ...extractMetadataOnly(input),
                 decision: "deny",
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -180,7 +181,7 @@ class AuthorizationError extends AppError {
                 reason: "missing_role",
                 ...extractMetadataOnly(input),
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -204,7 +205,7 @@ class AuthorizationError extends AppError {
                 reason: "missing_capability",
                 ...extractMetadataOnly(input),
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -226,7 +227,7 @@ class AuthorizationError extends AppError {
             code: ErrorCodes.authorization.outOfScope,
             reason: "out_of_scope",
             metadata: { reason: "out_of_scope", ...extractMetadataOnly(input) },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 }
@@ -234,19 +235,6 @@ class AuthorizationError extends AppError {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-function extractAppErrorOptions(options?: Partial<AppErrorOptions>) {
-    return {
-        cause: options?.cause,
-        type: options?.type,
-        severity: options?.severity,
-        correlationId: options?.correlationId,
-        requestId: options?.requestId,
-        commandId: options?.commandId,
-        createdAtIso: options?.createdAtIso,
-        publicMessage: options?.publicMessage,
-    };
-}
 
 function extractMetadataOnly(
     input: AuthorizationErrorFactoryOptions,
