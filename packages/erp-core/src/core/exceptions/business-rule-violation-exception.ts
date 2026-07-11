@@ -4,8 +4,9 @@ class BusinessRuleViolationException extends DomainException {
     constructor(
         public readonly rule: string,
         message: string,
+        options?: { cause?: unknown },
     ) {
-        super(message);
+        super(message, options);
     }
 }
 
