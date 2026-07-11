@@ -14,7 +14,11 @@ class ValidationField {
         return new ValidationField(value);
     }
 
-    // Creates a nested field path: parent.nested('child') -> 'parent.child'
+    // Creates a nested field path: parent.nested('child') -> 'parent.child'.
+    // The separator is a literal '.' and segments are NOT escaped, so
+    // of('a.b') and of('a').nested('b') collapse to the same path and compare
+    // equal — a field name that itself contains '.' is indistinguishable from
+    // a nested path. Keep segment names dot-free if that distinction matters.
     public nested(child: string | ValidationField): ValidationField {
         const childValue =
             child instanceof ValidationField ? child.value : child;
@@ -22,6 +26,12 @@ class ValidationField {
     }
 
     public toString(): string {
+        return this.value;
+    }
+
+    // Serialize to the bare field path, so JSON.stringify of a violation yields
+    // "email" rather than { "value": "email" }. Mirrors ValidationCode.
+    public toJSON(): string {
         return this.value;
     }
 

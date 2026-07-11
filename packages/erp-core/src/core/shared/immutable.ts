@@ -26,6 +26,12 @@ function deepFreezeInternal<T>(value: T, seen: WeakSet<object>): T {
     // property — freezing it is a no-op against mutation. `makeImmutable`
     // already hands us a `structuredClone` copy, so the caller's original Date
     // is never aliased; deep-freezing of nested Dates is deliberately skipped.
+    //
+    // The same no-op caveat applies to `Map`/`Set`: `Object.freeze` locks the
+    // wrapper's own properties but not `.set`/`.delete`/`.clear`, which mutate
+    // internal slots. A frozen Map is still mutable through its methods. We do
+    // not neuter those methods here (no value object wraps a Map today); if one
+    // ever does, its immutability guarantee would be false — handle it there.
     if (typeof value !== "object" || value === null || value instanceof Date) {
         return value;
     }
@@ -48,7 +54,17 @@ function deepFreezeInternal<T>(value: T, seen: WeakSet<object>): T {
     const objectValue = value as Record<PropertyKey, object | PrimitiveValue>;
 
     for (const propertyKey of Reflect.ownKeys(objectValue)) {
-        deepFreezeInternal(objectValue[propertyKey], seen);
+        // Read through the descriptor rather than `objectValue[propertyKey]` so
+        // accessor properties are not invoked — a getter could have side effects
+        // or throw, and its computed result can't be frozen anyway. Only data
+        // properties hold a nested value worth recursing into.
+        const descriptor = Object.getOwnPropertyDescriptor(
+            objectValue,
+            propertyKey,
+        );
+        if (descriptor && "value" in descriptor) {
+            deepFreezeInternal(descriptor.value, seen);
+        }
     }
 
     return Object.freeze(value);
@@ -63,9 +79,11 @@ function makeImmutable<T>(value: T): DeepReadonly<T> {
     try {
         snapshot = structuredClone(value);
     } catch (error) {
-        // `structuredClone` throws `DataCloneError` for functions, symbols and
-        // class instances. Surface it as a domain invariant instead of leaking
-        // a host-specific runtime error to callers building value objects.
+        // `structuredClone` throws `DataCloneError` for functions and symbols.
+        // (Class instances do NOT throw — they are silently flattened to plain
+        // objects, prototype lost.) Surface the error as a domain invariant
+        // instead of leaking a host-specific runtime error to callers building
+        // value objects.
         throw new InvariantViolationException(
             `makeImmutable requires a structured-cloneable value: ${
                 error instanceof Error ? error.message : String(error)

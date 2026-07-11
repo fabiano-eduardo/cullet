@@ -1,9 +1,10 @@
 import { type ContractVersion, version } from "../versioning/version.js";
+import { AppError } from "../errors/index.js";
 import type { Result } from "../result/result.js";
 
 import type { LoggerPort } from "./ports/logger.port.js";
 import type { MetricsPort } from "./ports/metrics.port.js";
-import type { TracerPort } from "./ports/tracer.port.js";
+import type { TraceAttributeValue, TracerPort } from "./ports/tracer.port.js";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -82,25 +83,45 @@ abstract class UseCase<
 
     protected abstract execute(input: Input): MaybePromise<Output>;
 
+    /**
+     * Extra attributes stamped onto the span and every metric emitted for this
+     * execution. Override to attach stable, **low-cardinality** dimensions
+     * (e.g. `Command` adds `requested_by.kind`). Keep values bounded — they
+     * become metric label values, so a user id or free-form string here would
+     * explode the metric's cardinality. Defaults to none.
+     */
+    protected spanAttributes(
+        _input: Input,
+    ): Readonly<Record<string, TraceAttributeValue>> {
+        return {};
+    }
+
     private async runInstrumented(
         input: Input,
         observability: UseCaseObservability,
     ): Promise<Output> {
         const { logger, metrics, tracer } = observability;
         const name = this.useCaseName;
+        const attributes = safely(() => this.spanAttributes(input)) ?? {};
         const span = safely(() =>
-            tracer?.startSpan(name, { "use_case.name": name }),
+            tracer?.startSpan(name, { "use_case.name": name, ...attributes }),
         );
-        const startedAt = Date.now();
+        const startedAt = performance.now();
+        // Declared here (not inside `try`) so the `finally` histogram can label
+        // duration by outcome; defaults to "exception" and is overwritten once
+        // execute() returns without throwing.
+        let outcome: ExecutionOutcome = "exception";
 
         try {
             const output = await this.execute(input);
-            const outcome: ExecutionOutcome = output.isOk() ? "ok" : "error";
+            outcome = output.isOk() ? "ok" : "error";
 
             if (outcome === "error") {
+                const code = businessErrorCode(output);
                 safely(() =>
                     logger?.warn(`${name} returned a business error`, {
                         useCase: name,
+                        ...(code ? { code } : {}),
                     }),
                 );
             }
@@ -109,6 +130,7 @@ abstract class UseCase<
                 metrics?.counter(EXECUTION_COUNTER, 1, {
                     useCase: name,
                     outcome,
+                    ...attributes,
                 }),
             );
 
@@ -125,19 +147,34 @@ abstract class UseCase<
                 metrics?.counter(EXECUTION_COUNTER, 1, {
                     useCase: name,
                     outcome: "exception",
+                    ...attributes,
                 }),
             );
 
             throw error;
         } finally {
             safely(() =>
-                metrics?.histogram(DURATION_HISTOGRAM, Date.now() - startedAt, {
-                    useCase: name,
-                }),
+                metrics?.histogram(
+                    DURATION_HISTOGRAM,
+                    performance.now() - startedAt,
+                    { useCase: name, outcome, ...attributes },
+                ),
             );
             safely(() => span?.end());
         }
     }
+}
+
+/**
+ * Pulls the stable `code` off a business-error `Result` for logging. Returns
+ * `undefined` when the error is not an {@link AppError} — the code is safe to
+ * log (it's the public contract), unlike the message which may carry PII.
+ */
+function businessErrorCode(
+    output: Result<unknown, unknown>,
+): string | undefined {
+    const error = output.errorOrNull();
+    return error instanceof AppError ? error.code : undefined;
 }
 
 /**

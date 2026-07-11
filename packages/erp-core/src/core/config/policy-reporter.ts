@@ -40,14 +40,45 @@ export interface PolicyEvaluationCompletedEvent {
     readonly occurredAt: Date;
 }
 
+/**
+ * A resolved ABAC decision (both PERMIT and DENY). Emitted best-effort by the
+ * `AbacAuthorizer` so a host can build an authorization audit trail without an
+ * adapter of its own; silent by default like every other event. Types are kept
+ * self-contained (no import from `core/abac`) to avoid a config→abac cycle.
+ */
+export interface AbacDecisionEvent {
+    readonly kind: "abac-decision";
+    readonly level: "info";
+    readonly action: string;
+    readonly resource?: { readonly type: string; readonly id?: string };
+    readonly actorId: string;
+    readonly effect: "PERMIT" | "DENY";
+    /** Deciding rule id, or `"<default>"` / `"<default-deny>"` when the set's default decided. */
+    readonly decidingRuleId: string;
+    readonly decidingRuleVersion?: number;
+    readonly algorithm: string;
+    readonly occurredAt: Date;
+}
+
 export type PolicyEvent =
     | ConditionEvalEvent
     | PolicyResolutionEvent
     | PolicyEvaluationFailedEvent
-    | PolicyEvaluationCompletedEvent;
+    | PolicyEvaluationCompletedEvent
+    | AbacDecisionEvent;
 
 // ─── Reporter interface ───────────────────────────────────────────────────────
 
+/**
+ * Sink for policy telemetry. The core never logs on its own — it hands typed
+ * events here and a host implementation decides what to do with them.
+ *
+ * Redaction is the host's responsibility: a `condition-eval` event carries the
+ * evaluated field path and value in `details` (e.g. `student.flags.*`), so in
+ * an ERP those payloads can contain PII. Sanitize before persisting or shipping
+ * events off-box; the core deliberately keeps no redaction seam so it stays
+ * pure and unopinionated about your logging stack.
+ */
 export interface PolicyReporter {
     report(event: PolicyEvent): void;
 }

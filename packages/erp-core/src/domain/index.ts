@@ -5,3 +5,8 @@ export {
     ValueObject,
     type ValueObjectPluginContract,
 } from "../core/domain/value-object.js";
+// Bitemporal primitives. Published on this subpath (not the root barrel)
+// because the public `TemporalRepository` port already exposes
+// `TemporalSnapshot` — implementers need the validating factories that build
+// it, not just the type.
+export * from "../core/domain/temporal/index.js";

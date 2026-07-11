@@ -44,14 +44,22 @@ describe("evaluateTemporalWindow", () => {
         ).toEqual({ expired: false, notYetValid: false });
     });
 
-    it("ignores invalid boundary timestamps instead of reporting placeholders", () => {
+    it("fails closed on a malformed upper boundary (expired, not ignored)", () => {
         expect(
             evaluateTemporalWindow({
-                validFromIso: "invalid-from",
                 validUntilIso: "invalid-until",
                 evaluatedAtIso: "2026-06-15T12:00:00.000Z",
             }),
-        ).toEqual({ expired: false, notYetValid: false });
+        ).toEqual({ expired: true, notYetValid: false });
+    });
+
+    it("fails closed on a malformed lower boundary (not yet valid)", () => {
+        expect(
+            evaluateTemporalWindow({
+                validFromIso: "invalid-from",
+                evaluatedAtIso: "2026-06-15T12:00:00.000Z",
+            }),
+        ).toEqual({ expired: false, notYetValid: true });
     });
 });
 
@@ -104,7 +112,9 @@ describe("TemporalError factories", () => {
         expect(error.type).toBe("temporal");
         expect(error.severity).toBe("medium");
         expect(error.publicMessage).toBe("Tente novamente depois.");
-        expect(error.metadata).toMatchObject({
+        // Exhaustive: AppError envelope fields (cause/type/severity/publicMessage/
+        // createdAtIso) must NOT leak into the metadata data block.
+        expect(error.metadata).toEqual({
             kind: "not_yet_valid",
             resourceType: "report",
             operation: "publish_report",

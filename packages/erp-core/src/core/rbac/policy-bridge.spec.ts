@@ -33,6 +33,24 @@ describe("rbacContextFields", () => {
         });
     });
 
+    it("projects wildcards literally, not expanded, for the actor's own grants", () => {
+        const grants = [
+            Grant.of({
+                subject: actor,
+                role: Role.of("manager", [Permission.of("orders:*")]),
+                scope: Scope.of("school:42"),
+            }),
+        ];
+
+        // The documented caveat: a gate doing a literal `in` test on
+        // "actor.permissions" sees "orders:*" verbatim, never "orders:cancel".
+        expect(rbacContextFields(actor, grants)).toEqual({
+            "actor.id": USER,
+            "actor.roles": ["manager"],
+            "actor.permissions": ["orders:*"],
+        });
+    });
+
     it("ignores grants that belong to another actor", () => {
         const grants = [
             Grant.of({

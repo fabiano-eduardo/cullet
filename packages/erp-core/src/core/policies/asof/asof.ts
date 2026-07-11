@@ -9,6 +9,18 @@ export interface DeriveAsOfOptions {
     readonly maxFutureYears?: number;
 }
 
+/**
+ * Derives the `asOf` instant an evaluation is pinned to.
+ *
+ * With `asOfSource: "CALLER_PROVIDED"` the instant comes from the reserved
+ * `seed.fields.asOf` key (a `Date`); with `"NOW"` it is the evaluation clock.
+ *
+ * The bound is intentionally asymmetric: a caller-provided `asOf` may be at
+ * most `maxFutureYears` in the future (a fat-finger / clock-skew guard against
+ * selecting a not-yet-in-force policy), but is unbounded in the past — querying
+ * how a policy stood at any historical instant is a first-class use of a
+ * temporal engine, so back-dating is never capped.
+ */
 export class PolicyAsOfResolver {
     private static resolveMaxFutureYears(
         options: DeriveAsOfOptions,

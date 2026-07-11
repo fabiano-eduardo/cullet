@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { RequestedBy } from "../application/commands/requested-by.js";
+import { CoreConfig } from "../config/index.js";
+import type { PolicyEvent } from "../config/index.js";
 import { AuthorizationError } from "../errors/authorization-error.js";
 import { ErrorCodes } from "../errors/error-codes.js";
 
@@ -66,7 +68,7 @@ describe("AbacAuthorizer", () => {
             decision: "deny",
             action: "order.cancel",
             resource: { type: "Order", id: "order-1" },
-            actor: { userId: USER },
+            actor: { actorId: USER },
             policyId: "deny-locked",
             policyVersion: 7,
             reasonCode: "deny-locked",
@@ -86,14 +88,14 @@ describe("AbacAuthorizer", () => {
         });
     });
 
-    it("fails closed with forbidden when a rule references an absent attribute", () => {
-        const needsMissing = AbacRule.of({
-            id: "needs-x",
-            version: 1,
-            effect: "PERMIT",
-            condition: { field: "resource.missing", op: "eq", value: 1 },
-        });
+    const needsMissing = AbacRule.of({
+        id: "needs-x",
+        version: 9,
+        effect: "PERMIT",
+        condition: { field: "resource.missing", op: "eq", value: 1 },
+    });
 
+    it("fails closed with forbidden, attributing the culprit rule, on an absent attribute", () => {
         const result = authorizer.authorize(
             request({ status: "OPEN" }),
             AbacPolicySet.of([needsMissing]),
@@ -103,6 +105,81 @@ describe("AbacAuthorizer", () => {
         expect(result.errorOrNull()?.code).toBe(
             ErrorCodes.authorization.forbidden,
         );
+        expect(result.errorOrNull()?.metadata).toMatchObject({
+            policyId: "needs-x",
+            policyVersion: 9,
+        });
+    });
+
+    it("skips an unevaluable rule when onEvaluationError is skip-rule", () => {
+        const result = authorizer.authorize(
+            request({ status: "OPEN", locked: false }),
+            AbacPolicySet.of([needsMissing, permitOpen, denyLocked], {
+                onEvaluationError: "skip-rule",
+            }),
+        );
+
+        expect(result.isOk()).toBe(true);
+        expect(result.getOrThrow().matchedRule).toBe("permit-open");
+    });
+
+    it("stamps grantedAtIso from the injected clock", () => {
+        const frozen = new Date("2026-07-11T12:00:00.000Z");
+        const clocked = new AbacAuthorizer({ clock: () => frozen });
+
+        const result = clocked.authorize(
+            request({ status: "OPEN", locked: false }),
+            AbacPolicySet.of([permitOpen, denyLocked]),
+        );
+
+        expect(result.getOrThrow().grantedAtIso).toBe(
+            "2026-07-11T12:00:00.000Z",
+        );
+    });
+
+    it("emits an abac-decision event for both PERMIT and DENY", () => {
+        const events: PolicyEvent[] = [];
+        const reporter = { report: (e: PolicyEvent) => events.push(e) };
+        const config = new CoreConfig({ observability: { reporter } });
+        const reporting = new AbacAuthorizer({ coreConfig: config });
+        const set = AbacPolicySet.of([permitOpen, denyLocked]);
+
+        reporting.authorize(request({ status: "OPEN", locked: false }), set);
+        reporting.authorize(request({ status: "OPEN", locked: true }), set);
+
+        const decisions = events.filter((e) => e.kind === "abac-decision");
+        expect(decisions).toHaveLength(2);
+        expect(decisions[0]).toMatchObject({
+            effect: "PERMIT",
+            decidingRuleId: "permit-open",
+            decidingRuleVersion: 4,
+            algorithm: "deny-overrides",
+            actorId: USER,
+        });
+        expect(decisions[1]).toMatchObject({
+            effect: "DENY",
+            decidingRuleId: "deny-locked",
+        });
+    });
+
+    it("never lets a throwing reporter abort a decision", () => {
+        const config = new CoreConfig({
+            observability: {
+                reporter: {
+                    report: vi.fn(() => {
+                        throw new Error("telemetry down");
+                    }),
+                },
+            },
+        });
+        const reporting = new AbacAuthorizer({ coreConfig: config });
+
+        const result = reporting.authorize(
+            request({ status: "OPEN", locked: false }),
+            AbacPolicySet.of([permitOpen, denyLocked]),
+        );
+
+        expect(result.isOk()).toBe(true);
     });
 
     it("honours permit-overrides", () => {

@@ -20,6 +20,7 @@ class LegacyIncompatibleError extends AppError {
             ...options,
             metadata: mergedMetadata,
         });
+        Object.freeze(this);
     }
 }
 

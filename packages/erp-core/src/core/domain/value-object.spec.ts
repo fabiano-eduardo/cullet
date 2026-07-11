@@ -225,5 +225,66 @@ describe("ValueObject", () => {
 
             expect(built.equals(rehydrated)).toBe(true);
         });
+
+        it("base fallback rejects a different class wrapping the same value", () => {
+            class LooseStringVO extends ValueObject<string, string> {
+                constructor(value: string) {
+                    super(value);
+                    this.finalize();
+                }
+
+                toPrimitive(): string {
+                    return this.value as string;
+                }
+            }
+            class OtherStringVO extends ValueObject<string, string> {
+                constructor(value: string) {
+                    super(value);
+                    this.finalize();
+                }
+
+                toPrimitive(): string {
+                    return this.value as string;
+                }
+            }
+            const a = new LooseStringVO("same");
+            const impostor = new OtherStringVO("same");
+
+            expect(a.equals(impostor as unknown as LooseStringVO)).toBe(false);
+        });
+
+        it("delegates to a registered equality plugin instead of the fallback", () => {
+            class PluginProbeVO extends ValueObject<string, string> {
+                constructor(value: string) {
+                    super(value);
+                    this.finalize();
+                }
+
+                toPrimitive(): string {
+                    return this.value as string;
+                }
+            }
+            const calls: unknown[][] = [];
+            ValueObject.plugins.register({
+                name: "test-equality",
+                equals: (a, b) => {
+                    calls.push([a, b]);
+                    return true; // everything is equal, proving the plugin answered
+                },
+            });
+
+            try {
+                const a = new PluginProbeVO("left");
+                const b = new PluginProbeVO("right");
+
+                expect(a.equals(b)).toBe(true);
+                expect(calls).toHaveLength(1);
+                expect(calls[0]).toEqual([a, b]);
+            } finally {
+                // the registry is process-global; leaking the plugin would
+                // redefine equality for every other spec in the run
+                ValueObject.plugins.unregister("test-equality");
+            }
+        });
     });
 });

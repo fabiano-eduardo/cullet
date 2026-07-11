@@ -1,7 +1,5 @@
-import {
-    DomainException,
-    type RulesetId,
-} from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
+import { DomainException } from "../../../core/exceptions/domain-exception.js";
+import { type RulesetId } from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
 import {
     type Order,
     type OrderInvariantRuleset,

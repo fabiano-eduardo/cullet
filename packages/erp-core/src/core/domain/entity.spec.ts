@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Entity, type EntityState } from "./entity.js";
+import { ValueObject } from "./value-object.js";
 import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 
 class TestEntity extends Entity<string> {
@@ -126,6 +127,21 @@ describe("Entity", () => {
                     ),
             ).toThrow(InvariantViolationException);
         });
+
+        it("throws InvariantViolationException when id is undefined or null", () => {
+            expect(
+                () =>
+                    new TestEntity(
+                        makeState({ id: undefined as unknown as string }),
+                    ),
+            ).toThrow(InvariantViolationException);
+            expect(
+                () =>
+                    new TestEntity(
+                        makeState({ id: null as unknown as string }),
+                    ),
+            ).toThrow(InvariantViolationException);
+        });
     });
 
     describe("getters", () => {
@@ -240,6 +256,89 @@ describe("Entity", () => {
             returned.setFullYear(2099);
 
             expect(entity.updatedAt.getUTCFullYear()).toBe(2025);
+        });
+
+        it("throws when updatedAt would move backwards from the current updatedAt", () => {
+            const entity = new TestEntity(makeState());
+            entity.modify(new Date("2025-06-01T00:00:00.000Z"));
+
+            expect(() =>
+                entity.modify(new Date("2025-01-01T00:00:00.000Z")),
+            ).toThrow(InvariantViolationException);
+            // the failed call must not bump the version either
+            expect(entity.aggregateVersion).toBe(1);
+        });
+
+        it("accepts updatedAt equal to the current updatedAt (same-millisecond mutations)", () => {
+            const entity = new TestEntity(makeState());
+            const instant = new Date("2025-06-01T00:00:00.000Z");
+            entity.modify(instant);
+
+            expect(() => entity.modify(instant)).not.toThrow();
+            expect(entity.aggregateVersion).toBe(2);
+        });
+    });
+
+    describe("equals()", () => {
+        it("returns true for same class and same primitive id", () => {
+            const a = new TestEntity(makeState({ id: "same-id" }));
+            const b = new TestEntity(
+                makeState({ id: "same-id", aggregateVersion: 7 }),
+            );
+
+            expect(a.equals(b)).toBe(true);
+        });
+
+        it("returns false for different ids", () => {
+            const a = new TestEntity(makeState({ id: "id-a" }));
+            const b = new TestEntity(makeState({ id: "id-b" }));
+
+            expect(a.equals(b)).toBe(false);
+        });
+
+        it("returns false for null/undefined and true for the same instance", () => {
+            const entity = new TestEntity(makeState());
+
+            expect(entity.equals(null)).toBe(false);
+            expect(entity.equals(undefined)).toBe(false);
+            expect(entity.equals(entity)).toBe(true);
+        });
+
+        it("returns false across different entity classes sharing an id", () => {
+            class OtherEntity extends Entity<string> {
+                constructor(state: EntityState<string>) {
+                    super(state);
+                }
+            }
+            const a = new TestEntity(makeState({ id: "shared" }));
+            const b = new OtherEntity(makeState({ id: "shared" }));
+
+            expect(a.equals(b)).toBe(false);
+        });
+
+        it("compares value-object ids through their own equals", () => {
+            class IdVO extends ValueObject<string, string> {
+                constructor(value: string) {
+                    super(value);
+                    this.finalize();
+                }
+
+                toPrimitive(): string {
+                    return this.value as string;
+                }
+            }
+            class VoEntity extends Entity<IdVO> {
+                constructor(state: EntityState<IdVO>) {
+                    super(state);
+                }
+            }
+            const state = makeState();
+            const a = new VoEntity({ ...state, id: new IdVO("vo-id") });
+            const b = new VoEntity({ ...state, id: new IdVO("vo-id") });
+            const c = new VoEntity({ ...state, id: new IdVO("other") });
+
+            expect(a.equals(b)).toBe(true);
+            expect(a.equals(c)).toBe(false);
         });
     });
 });

@@ -1,4 +1,5 @@
-import { payloadHash, sha256Hex, stableStringify } from "../shared/hashing.js";
+import { payloadHash, sha256Hex } from "../shared/hashing.js";
+import { stableStringify } from "../shared/stable-stringify.js";
 
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
@@ -359,7 +360,9 @@ function resolveKeyIdentity(
         (key ? (key.length <= 8 ? key : key.slice(0, 8)) : undefined);
 
     return {
-        keyHash: keyHash,
+        // Derive the hash from the raw key when the caller didn't supply one —
+        // cheap traceability without leaking the key itself.
+        keyHash: keyHash ?? (key ? sha256Hex(key) : undefined),
         keyPreview: preview,
     };
 }

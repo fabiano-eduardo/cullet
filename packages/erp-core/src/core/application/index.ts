@@ -15,6 +15,7 @@ export type {
     PolicyPortError,
     Repository,
     ResultRepository,
+    ResultTemporalRepository,
     TraceAttributeValue,
     TraceSpan,
     TracerPort,
@@ -22,7 +23,7 @@ export type {
     TemporalRepository,
 } from "./ports/index.js";
 export { mapPolicyEvaluationError } from "./policy-error-mapper.js";
-export type { CacheStrategy, Page } from "./queries/index.js";
+export type { CacheStrategy, Page, QueryOutput } from "./queries/index.js";
 export { Query } from "./queries/index.js";
 export {
     assertTemporalContext,

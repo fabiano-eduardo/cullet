@@ -27,14 +27,17 @@ class NotFoundError extends AppError {
         options?: AppErrorOptions,
     ) {
         const baseMetadata = criteria ? { resource, criteria } : { resource };
+        // Reserved keys (`resource`/`criteria`) spread last so caller metadata
+        // can add to but never clobber them — as the docs promise.
         const mergedMetadata = options?.metadata
-            ? { ...baseMetadata, ...options.metadata }
+            ? { ...options.metadata, ...baseMetadata }
             : baseMetadata;
 
         super(`${resource} not found`, ErrorCodes.notFound, {
             ...options,
             metadata: mergedMetadata,
         });
+        Object.freeze(this);
     }
 }
 

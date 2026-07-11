@@ -75,7 +75,21 @@ function sanitizeValue(value: unknown, seen: WeakSet<object>): JsonSafeValue {
     const result: Record<string, JsonSafeValue> = {};
     for (const [key, val] of Object.entries(value)) {
         if (val === undefined) continue;
-        result[key] = sanitizeValue(val, seen);
+        const sanitized = sanitizeValue(val, seen);
+        if (key === "__proto__") {
+            // Plain `result.__proto__ = x` would reparent `result` instead of
+            // creating an own data property, silently dropping the key. Define
+            // it explicitly so `__proto__` survives as data — matching how
+            // JSON.stringify/JSON.parse round-trip it.
+            Object.defineProperty(result, key, {
+                value: sanitized,
+                enumerable: true,
+                writable: true,
+                configurable: true,
+            });
+        } else {
+            result[key] = sanitized;
+        }
     }
     seen.delete(value);
     return result;

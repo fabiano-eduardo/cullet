@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { DomainException } from "./domain-exception.js";
 
 class ConcreteDomainException extends DomainException {
-    constructor(message: string) {
-        super(message);
+    constructor(message: string, options?: { cause?: unknown }) {
+        super(message, options);
     }
 }
 
@@ -29,6 +29,19 @@ describe("DomainException", () => {
             const exception = new ConcreteDomainException(message);
 
             expect(exception.message).toBe(message);
+        });
+
+        it("propagates the wrapped cause when provided", () => {
+            const cause = new Error("boom");
+            const exception = new ConcreteDomainException("wrapped", { cause });
+
+            expect(exception.cause).toBe(cause);
+        });
+
+        it("leaves cause undefined when no options are given", () => {
+            const exception = new ConcreteDomainException("no cause");
+
+            expect(exception.cause).toBeUndefined();
         });
     });
 

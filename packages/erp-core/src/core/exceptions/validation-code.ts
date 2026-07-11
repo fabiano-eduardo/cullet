@@ -13,6 +13,20 @@ class ValidationCode {
         return new ValidationCode(value);
     }
 
+    public toString(): string {
+        return this.value;
+    }
+
+    public equals(other: ValidationCode): boolean {
+        return this.value === other.value;
+    }
+
+    // Serialize to the bare code string, so JSON.stringify of a violation
+    // yields "blank" rather than { "value": "blank" }. Mirrors ValidationField.
+    public toJSON(): string {
+        return this.value;
+    }
+
     // Common, domain-friendly codes
     public static readonly BLANK = new ValidationCode("blank");
     public static readonly REQUIRED = new ValidationCode("required");

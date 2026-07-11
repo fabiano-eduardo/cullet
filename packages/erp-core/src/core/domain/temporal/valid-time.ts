@@ -1,10 +1,22 @@
-import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 import { makeImmutable } from "../../shared/immutable.js";
-import { assertValidDate } from "../../shared/temporal-guards.js";
+
+import { assertHalfOpenInterval } from "./half-open-interval.js";
 
 /**
  * Represents business time (Valid Time).
  * Defines when a piece of information is considered true or in effect in the real world.
+ *
+ * The window is half-open — `from` inclusive, `to` exclusive — and strictly
+ * non-empty: `to` must be later than `from`, so a zero-duration range `[t, t)`
+ * is deliberately not representable. Model an instantaneous event as an open
+ * range closed by the next fact, not as an empty window.
+ *
+ * One caveat mirrors {@link ValueObject}: `createValidTime` clones the input
+ * dates (no aliasing) but the inner `Date`s are NOT frozen — `Object.freeze`
+ * cannot block `setTime`/`setFullYear`, so a caller can still mutate `from`
+ * in place and corrupt the range after creation. `readonly` only prevents
+ * reassignment. Treat the dates as read-only, or keep instants as ISO/epoch in
+ * your own state when that guarantee matters.
  */
 interface ValidTime {
     /** Start of the validity window (inclusive). */
@@ -19,19 +31,12 @@ function assertValidTime(
     validTime: ValidTime,
     fieldName: string = "validTime",
 ): void {
-    assertValidDate(`${fieldName}.from`, validTime.from);
-
-    if (validTime.to === undefined) {
-        return;
-    }
-
-    assertValidDate(`${fieldName}.to`, validTime.to);
-
-    if (validTime.to.getTime() <= validTime.from.getTime()) {
-        throw new InvariantViolationException(
-            `${fieldName}.to must be later than ${fieldName}.from`,
-        );
-    }
+    assertHalfOpenInterval(
+        `${fieldName}.from`,
+        validTime.from,
+        `${fieldName}.to`,
+        validTime.to,
+    );
 }
 
 function createValidTime(input: CreateValidTimeInput): ValidTime {

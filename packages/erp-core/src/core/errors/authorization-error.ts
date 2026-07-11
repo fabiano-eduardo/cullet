@@ -1,6 +1,7 @@
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
 import type { AppErrorOptions, ErrorSeverity } from "./types.js";
+import { pickAppErrorOptions } from "./utils/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -30,8 +31,12 @@ type AuthorizationErrorMetadata = {
     /** Resource identification (without leaking the full payload) */
     resource?: { type: string; id?: string };
 
-    /** Optional: actor (do not include sensitive data) */
-    actor?: { userId: string; role?: string };
+    /**
+     * Optional: the acting principal (do not include sensitive data). `actorId`
+     * is the raw `RequestedBy` value — a user UUID *or* a `"system:<job>"`
+     * identity — so it must not be assumed to be a human user.
+     */
+    actor?: { actorId: string; role?: string };
 
     /** Optional: expected requirement */
     required?: AuthorizationRequirement;
@@ -125,7 +130,7 @@ class AuthorizationError extends AppError {
             code: ErrorCodes.authorization.forbidden,
             reason: "forbidden",
             metadata: { reason: "forbidden", ...extractMetadataOnly(input) },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -154,7 +159,7 @@ class AuthorizationError extends AppError {
                 ...extractMetadataOnly(input),
                 decision: "deny",
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -180,7 +185,7 @@ class AuthorizationError extends AppError {
                 reason: "missing_role",
                 ...extractMetadataOnly(input),
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -204,7 +209,7 @@ class AuthorizationError extends AppError {
                 reason: "missing_capability",
                 ...extractMetadataOnly(input),
             },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 
@@ -226,7 +231,7 @@ class AuthorizationError extends AppError {
             code: ErrorCodes.authorization.outOfScope,
             reason: "out_of_scope",
             metadata: { reason: "out_of_scope", ...extractMetadataOnly(input) },
-            ...extractAppErrorOptions(input),
+            ...pickAppErrorOptions(input),
         });
     }
 }
@@ -234,19 +239,6 @@ class AuthorizationError extends AppError {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-function extractAppErrorOptions(options?: Partial<AppErrorOptions>) {
-    return {
-        cause: options?.cause,
-        type: options?.type,
-        severity: options?.severity,
-        correlationId: options?.correlationId,
-        requestId: options?.requestId,
-        commandId: options?.commandId,
-        createdAtIso: options?.createdAtIso,
-        publicMessage: options?.publicMessage,
-    };
-}
 
 function extractMetadataOnly(
     input: AuthorizationErrorFactoryOptions,

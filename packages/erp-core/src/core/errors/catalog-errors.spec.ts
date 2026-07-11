@@ -100,7 +100,7 @@ describe("catalog-errors factories", () => {
             const forbidden = AuthorizationError.forbidden({
                 action: "invoice.read",
                 resource: { type: "invoice", id: "INV-1" },
-                actor: { userId: "user-1", role: "viewer" },
+                actor: { actorId: "user-1", role: "viewer" },
                 correlationId: "corr-authz-1",
                 requestId: "req-authz-1",
             });
@@ -127,7 +127,7 @@ describe("catalog-errors factories", () => {
                 reason: "forbidden",
                 action: "invoice.read",
                 resource: { type: "invoice", id: "INV-1" },
-                actor: { userId: "user-1", role: "viewer" },
+                actor: { actorId: "user-1", role: "viewer" },
             });
             expect(forbidden.metadata).not.toHaveProperty("correlationId");
 
@@ -291,6 +291,32 @@ describe("catalog-errors factories", () => {
                 debug: NON_SERIALIZABLE_PLACEHOLDER,
             });
             expect(error.metadata).not.toHaveProperty("criteria");
+        });
+
+        it("does not let caller metadata clobber reserved keys", () => {
+            const notFound = new NotFoundError(
+                "invoice",
+                { id: "INV-1" },
+                {
+                    metadata: { resource: "spoofed", extra: "kept" },
+                },
+            );
+            const validation = new ValidationError(
+                ValidationField.of("customer.email"),
+                ValidationCode.INVALID_FORMAT,
+                "invalid",
+                { metadata: { field: "spoofed", validationCode: "spoofed" } },
+            );
+
+            expect(notFound.metadata).toEqual({
+                resource: "invoice",
+                criteria: { id: "INV-1" },
+                extra: "kept",
+            });
+            expect(validation.metadata).toEqual({
+                field: "customer.email",
+                validationCode: "invalid_format",
+            });
         });
     });
 });

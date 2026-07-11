@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 import {
     CONTRACT_VERSION_PROPERTY,
     type ContractVersion,
@@ -74,22 +75,28 @@ describe("version()", () => {
     });
 
     describe("invalid format", () => {
-        it("throws TypeError for a version without a separator", () => {
-            expect(() => version("10" as ContractVersion)).toThrow(TypeError);
-        });
-
-        it("throws TypeError for a version containing text", () => {
-            expect(() => version("v1.0" as ContractVersion)).toThrow(TypeError);
-        });
-
-        it("throws TypeError for a version with three parts", () => {
-            expect(() => version("1.0.0" as ContractVersion)).toThrow(
-                TypeError,
+        it("throws for a version without a separator", () => {
+            expect(() => version("10" as ContractVersion)).toThrow(
+                InvariantViolationException,
             );
         });
 
-        it("throws TypeError for an empty string", () => {
-            expect(() => version("" as ContractVersion)).toThrow(TypeError);
+        it("throws for a version containing text", () => {
+            expect(() => version("v1.0" as ContractVersion)).toThrow(
+                InvariantViolationException,
+            );
+        });
+
+        it("throws for a version with three parts", () => {
+            expect(() => version("1.0.0" as ContractVersion)).toThrow(
+                InvariantViolationException,
+            );
+        });
+
+        it("throws for an empty string", () => {
+            expect(() => version("" as ContractVersion)).toThrow(
+                InvariantViolationException,
+            );
         });
 
         it("includes the invalid version in the error message", () => {
@@ -122,6 +129,15 @@ describe("version()", () => {
 
             expect(ClassA.CONTRACT_VERSION).toBe("1.0");
             expect(ClassB.CONTRACT_VERSION).toBe("2.0");
+        });
+
+        it("throws when the same class is decorated twice", () => {
+            const target = makeTarget();
+            version("1.0")(target);
+
+            expect(() => version("2.0")(target)).toThrow(
+                /Cannot redefine property/,
+            );
         });
     });
 });

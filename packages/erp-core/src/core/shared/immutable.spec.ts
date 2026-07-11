@@ -38,6 +38,23 @@ describe("deepFreeze", () => {
         expect(Object.isFrozen(value.a)).toBe(true);
         expect(value.a).toBe(value.b);
     });
+
+    it("freezes objects with accessors without invoking the getter", () => {
+        let getterCalls = 0;
+        const value = {
+            get computed() {
+                getterCalls += 1;
+                throw new Error("getter should not run during freeze");
+            },
+            plain: { n: 1 },
+        };
+
+        const frozen = deepFreeze(value);
+
+        expect(getterCalls).toBe(0);
+        expect(Object.isFrozen(frozen)).toBe(true);
+        expect(Object.isFrozen(frozen.plain)).toBe(true);
+    });
 });
 
 describe("makeImmutable", () => {

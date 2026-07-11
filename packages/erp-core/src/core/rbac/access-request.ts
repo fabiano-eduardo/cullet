@@ -22,10 +22,20 @@ interface AccessRequest {
      */
     readonly required: Permission;
 
-    /** The target resource, identified without leaking its payload. */
+    /**
+     * The target resource, identified without leaking its payload. Carried for
+     * audit metadata only — the RBAC decisor does **not** check it. Per-resource
+     * ownership (this actor may cancel *this* order) is an ABAC/policy concern,
+     * not a role/permission one.
+     */
     readonly resource?: { readonly type: string; readonly id?: string };
 
-    /** The scope the resource lives in, e.g. `Scope.of("school:123")`. */
+    /**
+     * The scope the resource lives in, e.g. `Scope.of("school:123")`. Asking in
+     * the global scope (`Scope.global()`) means "may I do this *everywhere*?" and
+     * so requires a globally-scoped grant — it is **not** "in any scope I happen
+     * to hold". Ask about a concrete scope to check a bounded grant.
+     */
     readonly scope: Scope;
 }
 

@@ -6,9 +6,12 @@ class InvalidStateTransitionException<
     constructor(
         public readonly from: TState,
         public readonly to: TState,
-        message: string,
+        message?: string,
+        options?: { cause?: unknown },
     ) {
-        super(message);
+        // Compose a sensible default from `from`/`to` when no message is given,
+        // mirroring how EntityNotFoundException builds its own message.
+        super(message ?? `Cannot transition from ${from} to ${to}.`, options);
     }
 }
 

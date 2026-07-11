@@ -1,6 +1,7 @@
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
 import type { AppErrorOptions } from "./types.js";
+import { pickAppErrorOptions, stripAppErrorOptions } from "./utils/index.js";
 
 type TemporalKind = "expired" | "not_yet_valid";
 
@@ -66,19 +67,12 @@ class ExpiredError extends TemporalError {
             code: ErrorCodes.temporal.expired,
             kind: "expired",
             metadata: {
-                ...input,
+                ...stripAppErrorOptions(input),
                 hint:
                     input.hint ??
                     "The window has expired. Request a new link or try again within the valid period.",
             },
-            cause: input.cause,
-            type: input.type,
-            severity: input.severity,
-            correlationId: input.correlationId,
-            requestId: input.requestId,
-            commandId: input.commandId,
-            createdAtIso: input.createdAtIso,
-            publicMessage: input.publicMessage,
+            ...pickAppErrorOptions(input),
         });
     }
 }
@@ -94,23 +88,31 @@ class NotYetValidError extends TemporalError {
             code: ErrorCodes.temporal.notYetValid,
             kind: "not_yet_valid",
             metadata: {
-                ...input,
+                ...stripAppErrorOptions(input),
                 hint:
                     input.hint ??
                     "Not yet within the valid period. Try again later.",
             },
-            cause: input.cause,
-            type: input.type,
-            severity: input.severity,
-            correlationId: input.correlationId,
-            requestId: input.requestId,
-            commandId: input.commandId,
-            createdAtIso: input.createdAtIso,
-            publicMessage: input.publicMessage,
+            ...pickAppErrorOptions(input),
         });
     }
 }
 
+/**
+ * Evaluates whether `evaluatedAtIso` falls inside the [`validFromIso`,
+ * `validUntilIso`] window.
+ *
+ * Fails **closed**: a boundary that is present but unparseable is treated as if
+ * the window were closed on that side (a bad `validUntilIso` → expired, a bad
+ * `validFromIso` → not-yet-valid), never silently ignored — these checks guard
+ * access (invites, links, tokens), so a typo in an expiry must not disable
+ * expiry. A `null`/absent boundary means "no bound on that side", which is
+ * distinct from a malformed one. Returns `null` only when `evaluatedAtIso`
+ * itself is unparseable (nothing can be decided).
+ *
+ * For an inverted window (`validFrom` > `validUntil`) `expired` wins, since the
+ * upper-bound check short-circuits.
+ */
 function evaluateTemporalWindow(input: {
     validFromIso?: string | null;
     validUntilIso?: string | null;
@@ -123,14 +125,14 @@ function evaluateTemporalWindow(input: {
 
     if (input.validFromIso) {
         const fromMs = Date.parse(input.validFromIso);
-        if (!Number.isNaN(fromMs) && evaluatedMs < fromMs) {
+        if (Number.isNaN(fromMs) || evaluatedMs < fromMs) {
             notYetValid = true;
         }
     }
 
     if (input.validUntilIso) {
         const untilMs = Date.parse(input.validUntilIso);
-        if (!Number.isNaN(untilMs) && evaluatedMs > untilMs) {
+        if (Number.isNaN(untilMs) || evaluatedMs > untilMs) {
             return { expired: true, notYetValid: false };
         }
     }

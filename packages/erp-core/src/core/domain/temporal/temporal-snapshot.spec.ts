@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { InvariantViolationException } from "../../exceptions/invariant-violation-exception.js";
 import { createTemporalSnapshot } from "./temporal-snapshot.js";
 
 interface EnrollmentSnapshotData {
@@ -78,5 +79,34 @@ describe("temporal-snapshot", () => {
         expect(snapshot.data.occurredAt).not.toBe(occurredAt);
         expect(snapshot.data.occurredAt.getTime()).toBe(occurredAt.getTime());
         expect(Object.isFrozen(snapshot.data.occurredAt)).toBe(false);
+    });
+
+    it("rejects data that is not structured-cloneable (functions)", () => {
+        expect(() =>
+            createTemporalSnapshot({
+                data: { callback: () => "not cloneable" },
+                validTime: { from: new Date("2026-01-01T00:00:00.000Z") },
+                txTime: { recordedAt: new Date("2026-01-02T00:00:00.000Z") },
+            }),
+        ).toThrow(InvariantViolationException);
+    });
+
+    it("flattens class instances in data to plain objects (documented structuredClone ceiling)", () => {
+        class NotPlain {
+            constructor(public readonly name: string) {}
+        }
+
+        const snapshot = createTemporalSnapshot({
+            data: { student: new NotPlain("Ana") },
+            validTime: { from: new Date("2026-01-01T00:00:00.000Z") },
+            txTime: { recordedAt: new Date("2026-01-02T00:00:00.000Z") },
+        });
+
+        // the prototype (and any behaviour on it) is lost in the clone —
+        // this pins the caveat in the TemporalSnapshot JSDoc
+        expect(snapshot.data.student).toEqual({ name: "Ana" });
+        expect(Object.getPrototypeOf(snapshot.data.student)).toBe(
+            Object.prototype,
+        );
     });
 });

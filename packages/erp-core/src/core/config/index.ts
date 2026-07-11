@@ -11,5 +11,6 @@ export type {
     PolicyResolutionEvent,
     PolicyEvaluationFailedEvent,
     PolicyEvaluationCompletedEvent,
+    AbacDecisionEvent,
 } from "./policy-reporter.js";
 export { SilentPolicyReporter } from "./silent-policy-reporter.js";

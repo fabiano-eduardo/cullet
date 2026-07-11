@@ -8,7 +8,7 @@ import {
 } from "./order.js";
 import { OrderInvariantsV1 } from "./order-invariants-v1.js";
 import { OrderInvariantsV2 } from "./order-invariants-v2.js";
-import { DomainException } from "../../../core/domain/rulesets/entity-ruleset.contracts.js";
+import { DomainException } from "../../../core/exceptions/domain-exception.js";
 
 const orderInvariantRulesetV1 = new OrderInvariantsV1();
 const orderInvariantRulesetV2 = new OrderInvariantsV2();

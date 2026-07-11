@@ -47,6 +47,13 @@ abstract class ValueObject<T, P> {
      * default — when nothing is registered, {@link equals} falls back to a
      * structural comparison of the wrapped `value`. Hosts register a plugin
      * (e.g. `lodash.isEqual`) once at startup to customise equality globally.
+     *
+     * "Globally" is literal: this static registry is process-wide and shared
+     * by **every** `ValueObject` subclass, including the value objects the kit
+     * itself ships (RBAC's `Permission`, `Scope`, …). A registered plugin
+     * therefore redefines equality for those too — it must honour generic
+     * value-object semantics, not the quirks of one host type. For a
+     * type-specific comparison, override `equals` on that subclass instead.
      */
     public static readonly plugins =
         new PluginManager<ValueObjectPluginContract>();
@@ -104,10 +111,20 @@ abstract class ValueObject<T, P> {
      * with object keys sorted so insertion order (e.g. code-built vs
      * JSON-rehydrated) never affects the result.
      * Subclasses may still override for a faster or domain-specific comparison.
+     *
+     * The fallback also requires both sides to be the same concrete class, so
+     * an `OrderId` never equals a `CustomerId` that wraps the same string —
+     * `other: this` only guards at compile time, and a cast would otherwise
+     * slip through. And because the fallback serializes via `stableStringify`,
+     * it inherits `JSON.stringify` semantics: `undefined` properties are
+     * dropped (`{a: 1, b: undefined}` equals `{a: 1}`) and `Map`/`Set` collapse
+     * to `{}` — see the caveats in `shared/stable-stringify.ts`. Override
+     * `equals` when the wrapped value relies on such shapes.
      */
     public equals(other: this): boolean {
         return ValueObject.plugins.invoke("equals", [this, other], {
             fallback: (a, b) =>
+                a.constructor === b.constructor &&
                 stableStringify(a.value) === stableStringify(b.value),
         });
     }

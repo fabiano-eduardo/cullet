@@ -6,14 +6,12 @@ import type { PolicyDefinitionRepository } from "./policy-definition-repository.
 import { PolicyScopeMatcher } from "./policy-scope.js";
 
 export class InMemoryPolicyDefinitionRepository implements PolicyDefinitionRepository {
-    private readonly definitions: readonly PolicyDefinition[];
     private readonly definitionsByPolicyKey: ReadonlyMap<
         string,
         readonly PolicyDefinition[]
     >;
 
     constructor(definitions: readonly PolicyDefinition[]) {
-        this.definitions = definitions;
         this.definitionsByPolicyKey = definitions.reduce<
             Map<string, PolicyDefinition[]>
         >((index, definition) => {

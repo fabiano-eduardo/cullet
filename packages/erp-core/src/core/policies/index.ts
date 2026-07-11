@@ -8,12 +8,10 @@ export type {
 } from "../config/index.js";
 export { CoreConfig, coreConfig } from "../config/index.js";
 
-// ─── Result (technical execution) ───────────────────────────────────────────
-export { Err, Ok, Result } from "../result/result.js";
-
-// ─── Outcome (business decision) ───────────────────────────────────────────
-export type { CommonOutcomeStatus } from "../result/outcome.js";
-export { Outcome } from "../result/outcome.js";
+// ─── Result (technical execution) + Outcome (business decision) ─────────────
+export { Err, Ok, Result } from "../result/index.js";
+export type { CommonOutcomeStatus } from "../result/index.js";
+export { Outcome } from "../result/index.js";
 
 // ─── Utils ──────────────────────────────────────────────────────────────────
 export { PolicyHashing } from "./utils/index.js";

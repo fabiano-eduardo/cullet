@@ -1,6 +1,7 @@
 export {
     buildDomainEventContractVersions,
     createDomainEventEnvelope,
+    type ContractVersioned,
     type CreateDomainEventEnvelopeInput,
     type DomainEventContractSelection,
     type DomainEventContractVersions,

@@ -40,6 +40,17 @@ describe("InvalidStateTransitionException", () => {
             expect(exception.from).toBe("");
             expect(exception.to).toBe("");
         });
+
+        it("composes a default message from from/to when none is given", () => {
+            const exception = new InvalidStateTransitionException(
+                "ACTIVE",
+                "DRAFT",
+            );
+
+            expect(exception.message).toBe(
+                "Cannot transition from ACTIVE to DRAFT.",
+            );
+        });
     });
 
     describe("inheritance", () => {

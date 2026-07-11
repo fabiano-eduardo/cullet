@@ -124,7 +124,11 @@ export class PolicyCatalog {
             return Result.ok(exactMatch);
         }
 
-        if (family.length === 1 && !family[0].hasExplicitVersionSelector()) {
+        if (
+            family.length === 1 &&
+            family[0].kind === params.kind &&
+            !family[0].hasExplicitVersionSelector()
+        ) {
             return Result.ok(family[0]);
         }
 

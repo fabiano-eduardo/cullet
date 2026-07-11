@@ -8,6 +8,15 @@ export type GatePayloadParser = (
     payload: unknown,
 ) => ResultType<GatePayload, string>;
 
+// Versioning decision (deliberate asymmetry with compute):
+// Gate parsers are keyed by GATE ENGINE VERSION, not by `payloadSchemaVersion`.
+// A gate definition's `payloadSchemaVersion` therefore selects a catalog
+// variant but has NO effect on parsing — under one gate engine version there is
+// exactly one payload shape. Compute is the opposite: its parsers are keyed by
+// `payloadSchemaVersion` (see parse-compute-payload.ts), because a compute
+// engine version can host several payload schemas. If a second gate payload
+// schema under one engine version ever becomes necessary, migrate gate parsing
+// to be keyed by `payloadSchemaVersion` here to match compute.
 export class GatePayloadParserRegistry {
     private readonly parsers = new Map<number, GatePayloadParser>();
 

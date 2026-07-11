@@ -31,6 +31,14 @@ describe("Scope", () => {
             expect(scope.id).toBeUndefined();
         });
 
+        it('accepts of("*") as the global scope, equivalent to global()', () => {
+            const scope = Scope.of("*");
+
+            expect(scope.toPrimitive()).toBe("*");
+            expect(scope.includes(Scope.of("school:42"))).toBe(true);
+            expect(scope.equals(Scope.global())).toBe(true);
+        });
+
         it("rejects a blank value", () => {
             expect(() => Scope.of("  ")).toThrow(InvalidValueException);
         });

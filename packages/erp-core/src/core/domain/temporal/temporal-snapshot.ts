@@ -14,6 +14,14 @@ import {
 /**
  * Pairs a domain datum with its time dimensions (Business and Transaction).
  * It is the representation of an entry in the append-only (historical) table.
+ *
+ * `data` must be plain, structured-cloneable state — the primitive shape of an
+ * aggregate, not the aggregate itself. `createTemporalSnapshot` deep-clones it
+ * via `structuredClone`: functions and symbols inside `data` throw an
+ * `InvariantViolationException`, and class instances (a `ValueObject`, an
+ * `Entity`) are NOT rejected — they are silently flattened to plain objects,
+ * losing their prototype (and with it `equals`/`toPrimitive`). Project rich
+ * objects down first, e.g. with `toPrimitive()`.
  */
 interface TemporalSnapshot<T> {
     /** The data or state captured by the snapshot. */
@@ -33,8 +41,11 @@ interface CreateTemporalSnapshotInput<T> {
 function createTemporalSnapshot<T>(
     input: CreateTemporalSnapshotInput<T>,
 ): TemporalSnapshot<T> {
-    return makeImmutable({
-        data: input.data,
+    // The time dimensions come out of their factories already cloned and
+    // frozen; only `data` still needs the clone+freeze. Freezing the shell by
+    // hand avoids a second structuredClone pass over the whole snapshot.
+    return Object.freeze({
+        data: makeImmutable(input.data),
         validTime: createValidTime(input.validTime),
         txTime: createTransactionTime(input.txTime),
     });

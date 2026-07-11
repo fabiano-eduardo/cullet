@@ -1,5 +1,3 @@
-// core/domain/outcome.ts
-
 import { InvariantViolationException } from "../exceptions/invariant-violation-exception.js";
 
 /**
@@ -59,32 +57,32 @@ export class Outcome<S extends string, D = undefined> {
         data: D,
         reason?: string,
     ): Outcome<"APPROVED", D> {
-        return new Outcome("APPROVED", data, reason, Object.freeze({}));
+        return Outcome.of("APPROVED", data, reason);
     }
 
     static rejected<D = undefined>(
         data: D,
         reason: string,
     ): Outcome<"REJECTED", D> {
-        return new Outcome("REJECTED", data, reason, Object.freeze({}));
+        return Outcome.of("REJECTED", data, reason);
     }
 
     static noOp<D = undefined>(data: D, reason?: string): Outcome<"NO_OP", D> {
-        return new Outcome("NO_OP", data, reason, Object.freeze({}));
+        return Outcome.of("NO_OP", data, reason);
     }
 
     static deferred<D = undefined>(
         data: D,
         reason: string,
     ): Outcome<"DEFERRED", D> {
-        return new Outcome("DEFERRED", data, reason, Object.freeze({}));
+        return Outcome.of("DEFERRED", data, reason);
     }
 
     static requiresReview<D = undefined>(
         data: D,
         reason: string,
     ): Outcome<"REQUIRES_REVIEW", D> {
-        return new Outcome("REQUIRES_REVIEW", data, reason, Object.freeze({}));
+        return Outcome.of("REQUIRES_REVIEW", data, reason);
     }
 
     // ─── Type narrowing ────────────────────────────────────────────────

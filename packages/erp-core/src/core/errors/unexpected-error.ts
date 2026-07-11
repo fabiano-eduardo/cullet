@@ -12,10 +12,14 @@ class UnexpectedError extends AppError {
         cause?: unknown,
         options?: Omit<AppErrorOptions, "cause">,
     ) {
+        // The error you most want alerted on defaults to "critical" — a caller
+        // can still lower it via options.severity.
         super(message, ErrorCodes.unexpected, {
-            cause,
+            severity: "critical",
             ...options,
+            cause,
         });
+        Object.freeze(this);
     }
 }
 

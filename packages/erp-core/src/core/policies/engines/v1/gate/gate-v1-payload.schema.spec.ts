@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { GatePayloadSchemaV1 } from "./gate-v1-payload.schema.js";
+import { MAX_CONDITION_DEPTH } from "../condition-schema.js";
+
+function nestNot(depth: number): unknown {
+    let node: unknown = { field: "status", op: "eq", value: "ACTIVE" };
+    for (let i = 0; i < depth; i++) {
+        node = { not: node };
+    }
+    return node;
+}
 
 describe("GatePayloadSchemaV1.parse", () => {
     it("returns Result.ok for a valid payload", () => {
@@ -68,5 +77,22 @@ describe("GatePayloadSchemaV1.parse", () => {
         const result = GatePayloadSchemaV1.parse(payload);
 
         expect(result.isOk()).toBe(true);
+    });
+
+    it("accepts a condition tree at the maximum nesting depth", () => {
+        const result = GatePayloadSchemaV1.parse({
+            condition: nestNot(MAX_CONDITION_DEPTH - 1),
+        });
+
+        expect(result.isOk()).toBe(true);
+    });
+
+    it("rejects a condition tree deeper than the maximum nesting depth without throwing", () => {
+        const result = GatePayloadSchemaV1.parse({
+            condition: nestNot(MAX_CONDITION_DEPTH + 50),
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toContain("Invalid gate payload");
     });
 });

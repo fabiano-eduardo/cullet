@@ -23,11 +23,7 @@ import { PolicyResolver } from "../resolver/index.js";
 import { Result } from "../../result/result.js";
 import { isValidDate } from "../../shared/temporal-guards.js";
 
-import type {
-    PolicyEvent,
-    PolicyReporter,
-} from "../../config/policy-reporter.js";
-import { SilentPolicyReporter } from "../../config/silent-policy-reporter.js";
+import { type CoreConfig, coreConfig } from "../../config/index.js";
 
 import {
     PolicyEvaluationErrors,
@@ -42,6 +38,21 @@ import {
  * `contextVersion` pins which context schema applies, and `seed` carries the
  * raw facts the context builder expands. `decisionId` is the caller's
  * idempotency/audit handle, echoed back on the result.
+ *
+ * `contextVersion` is a caller assertion, not a proof: it filters which
+ * definitions are compatible, but nothing checks that the context actually
+ * built matches the declared version — supplying the right number is the
+ * caller's contract.
+ *
+ * Two `seed.fields` keys are reserved and change what "now" means for this
+ * evaluation:
+ * - `now` (a `Date`) pins the evaluation clock — it feeds `evaluatedAt`, the
+ *   `asOf` derivation, and therefore which effective-dated definitions are in
+ *   force. Leave it unset to use wall-clock time.
+ * - `asOf` (a `Date`) is consumed when the policy's `asOfSource` is
+ *   `CALLER_PROVIDED` (see {@link PolicyAsOfResolver}).
+ * Whoever assembles `fields` from untrusted input owns the consequence: a
+ * caller who can set these keys can shift which policy version is selected.
  */
 export interface EvaluateInput {
     readonly decisionId: PolicyDecisionId;
@@ -52,14 +63,13 @@ export interface EvaluateInput {
 }
 
 /**
- * Cross-cutting knobs for a {@link PolicyService}: how the as-of instant is
- * derived ({@link asOf}) and where evaluation telemetry is sent
- * ({@link reporter}). Both are optional; the service defaults to a silent
- * reporter so telemetry is opt-in.
+ * Cross-cutting knobs for a {@link PolicyService}: today just how the as-of
+ * instant is derived ({@link asOf}). Telemetry is not configured here — it
+ * flows through the injected {@link CoreConfig}, the core's single
+ * observability seam, so a host wires reporting in one place.
  */
 export interface PolicyServiceOptions {
     readonly asOf?: DeriveAsOfOptions;
-    readonly reporter?: PolicyReporter;
 }
 
 /**
@@ -75,6 +85,12 @@ export interface PolicyServiceParams {
     readonly resolver: PolicyResolver;
     readonly gateEngines: GateEngineRegistry;
     readonly computeRegistry: ComputeRegistry;
+    /**
+     * The observability seam telemetry is emitted through. Defaults to the
+     * shared {@link coreConfig} singleton; inject an isolated instance for
+     * tests or multi-tenant hosts.
+     */
+    readonly coreConfig?: CoreConfig;
     readonly options?: PolicyServiceOptions;
 }
 
@@ -89,8 +105,11 @@ export type { PolicyEvaluationError } from "./policy-evaluation-error.js";
  * The full record of one successful evaluation. Beyond the business
  * {@link decision}, it pins the exact definition that produced it — id, key,
  * version, payload hash, and engine version — together with the `asOf` instant
- * the policy was selected for and the wall-clock `evaluatedAt`. That provenance
- * is what makes a decision reproducible and auditable after the fact.
+ * the policy was selected for and `evaluatedAt`, the instant evaluation ran at.
+ * `evaluatedAt` is wall-clock time unless the caller pinned it via
+ * `seed.fields.now` (see {@link EvaluateInput}), in which case it echoes that.
+ * That provenance is what makes a decision reproducible and auditable after the
+ * fact.
  */
 export interface PolicyEvaluationResult {
     readonly decisionId: PolicyDecisionId;
@@ -130,7 +149,7 @@ interface ResolvedPolicyCandidate {
  * evaluation — which keeps observability strictly side-band.
  */
 export class PolicyService {
-    readonly #reporter: PolicyReporter;
+    private readonly coreConfig: CoreConfig;
     private readonly catalog: PolicyCatalog;
     private readonly contextBuilder: PolicyContextBuilder;
     private readonly defRepo: PolicyDefinitionRepository;
@@ -147,15 +166,7 @@ export class PolicyService {
         this.gateEngines = params.gateEngines;
         this.computeRegistry = params.computeRegistry;
         this.options = params.options ?? {};
-        this.#reporter = this.options.reporter ?? new SilentPolicyReporter();
-    }
-
-    #reportSafely(event: PolicyEvent): void {
-        try {
-            this.#reporter.report(event);
-        } catch {
-            // Falhas de telemetria nao podem interromper a avaliacao de politicas.
-        }
+        this.coreConfig = params.coreConfig ?? coreConfig;
     }
 
     private resolveEvaluationNow(seed: ContextSeed): Result<Date, string> {
@@ -192,10 +203,10 @@ export class PolicyService {
     async evaluate(
         input: EvaluateInput,
     ): Promise<Result<PolicyEvaluationResult, PolicyEvaluationError>> {
-        const result = await this.#evaluate(input);
+        const result = await this.runEvaluation(input);
         if (result.isErr()) {
             const error = result.errorOrNull()!;
-            this.#reportSafely({
+            this.coreConfig.reportSafely({
                 kind: "policy-evaluation-failed",
                 level: "error",
                 policyKey: "policyKey" in error ? error.policyKey : undefined,
@@ -206,7 +217,7 @@ export class PolicyService {
             });
         } else {
             const ok = result.getOrNull()!;
-            this.#reportSafely({
+            this.coreConfig.reportSafely({
                 kind: "policy-evaluation-completed",
                 level: "info",
                 policyKey: ok.ref.policyKey,
@@ -218,7 +229,7 @@ export class PolicyService {
         return result;
     }
 
-    async #evaluate(
+    private async runEvaluation(
         input: EvaluateInput,
     ): Promise<Result<PolicyEvaluationResult, PolicyEvaluationError>> {
         const seedResult = ContextSeedValidator.validate(input.seed);
@@ -233,7 +244,7 @@ export class PolicyService {
         }
         const seed = seedResult.getOrNull()!;
 
-        const catalogFamilyResult = this.#resolveCatalogFamily(input.policyKey);
+        const catalogFamilyResult = this.resolveCatalogFamily(input.policyKey);
         if (catalogFamilyResult.isErr()) {
             return Result.err(catalogFamilyResult.errorOrNull()!);
         }
@@ -269,7 +280,7 @@ export class PolicyService {
         }
         const asOf = asOfResult.getOrNull()!;
 
-        const definitionResult = this.#findCandidates(
+        const definitionResult = this.findCandidates(
             policyKey,
             familyEntry.kind,
             asOf,
@@ -283,7 +294,7 @@ export class PolicyService {
             catalogEntry: versionedCatalogEntry,
         } = definitionResult.getOrNull()!;
 
-        this.#reportSafely({
+        this.coreConfig.reportSafely({
             kind: "policy-resolution",
             level: "info",
             policyKey,
@@ -311,7 +322,7 @@ export class PolicyService {
         }
         const context = ctxResult.getOrNull()!;
 
-        const decisionResult = this.#executeEngine(
+        const decisionResult = this.executeEngine(
             policyKey,
             policyDefinition,
             context,
@@ -347,7 +358,7 @@ export class PolicyService {
         return Result.ok(result);
     }
 
-    #resolveCatalogVariant(
+    private resolveCatalogVariant(
         definition: PolicyDefinition,
     ): Result<PolicyCatalogEntry, string> {
         return this.catalog.getVersioned({
@@ -362,7 +373,7 @@ export class PolicyService {
         });
     }
 
-    #resolveCatalogFamily(
+    private resolveCatalogFamily(
         rawKey: string,
     ): Result<
         { key: string; family: readonly PolicyCatalogEntry[] },
@@ -395,7 +406,7 @@ export class PolicyService {
         });
     }
 
-    #findCandidates(
+    private findCandidates(
         policyKey: string,
         policyKind: PolicyCatalogEntry["kind"],
         asOf: Date,
@@ -420,7 +431,7 @@ export class PolicyService {
         >();
 
         for (const candidate of candidates) {
-            const compatibilityResult = this.#resolveCatalogVariant(candidate);
+            const compatibilityResult = this.resolveCatalogVariant(candidate);
             if (compatibilityResult.isErr()) {
                 incompatibleVariantErrorsByDefinitionId.set(
                     candidate.id,
@@ -503,7 +514,7 @@ export class PolicyService {
         return Result.ok(resolvedCandidate);
     }
 
-    #executeEngine(
+    private executeEngine(
         policyKey: string,
         definition: PolicyDefinition,
         context: PolicyContext,

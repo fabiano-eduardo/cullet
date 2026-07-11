@@ -20,7 +20,7 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 
 - **Domínio lança, aplicação retorna `Result`, infra traduz.** Não há `Result` no domínio.
 - **Sem lib de log/observabilidade no runtime.** Portas vivem em `application/ports/`; adapters são opt-in.
-- **Temporalidade interna ao kit** — suporte temporal no código-base, mas a API pública não publica `Timeline<T>` nem helpers temporais no barrel raiz.
+- **Temporalidade fora do barrel raiz** — o barrel raiz não publica `Timeline<T>` nem helpers temporais; as primitivas bitemporais (`createValidTime`, `createTemporalSnapshot`, ranges) são publicadas apenas no subpath `./domain`, porque a porta pública `TemporalRepository` expõe `TemporalSnapshot` e quem a implementa precisa das factories validantes.
 - **Policies como dados**, não como if-statements: avaliáveis, compostas, serializáveis.
 - **Policies permitem disable sem remover código**: `PolicyDefinition` aceita `enabled: false` e o repositório ignora definições desabilitadas.
 - **Composição isolada é de primeira classe**: use `new CoreConfig()`, `new ContextResolverRegistry()` e `registerNamespacedContextResolversIn(...)` quando precisar evitar singletons compartilhados.
@@ -37,7 +37,7 @@ Implemente as portas em `application/ports/` para conectar a stack real:
 ## [known-limits] Limitações conhecidas
 
 - **Dois registries são estado global de processo** (a promessa "composição sem singletons" não os cobre): `GatePayloadParsers` (parsers de payload gate) e `ValueObject.plugins` (plugin de igualdade) valem para o processo inteiro — hosts multi-tenant no mesmo processo compartilham esses registros mesmo usando `CoreConfig`/registries isolados.
-- **ABAC é fail-closed por regra não-avaliável**: toda condição do set é avaliada, independente do algoritmo de combinação — adicionar uma regra que referencia um atributo que um call site não fornece passa a negar (403 `forbidden`) nesses call sites até o atributo ser suprido.
+- **ABAC é fail-closed por regra não-avaliável** (atributo ausente = erro que nega o set inteiro com `forbidden`, atribuído à regra culpada). Válvula de escape: `AbacPolicySet.of(rules, { onEvaluationError: "skip-rule" })` descarta a regra não-avaliável. `isNull`/`isNotNull` testam `null` explícito, não chave ausente. Decisões (PERMIT/DENY) saem como evento `abac-decision` no reporter (silencioso por padrão). Detalhe completo no JSDoc de `AbacRule`.
 - **`Date` aninhado em `ValueObject` não é congelável** (`Object.freeze` não bloqueia `setTime`): o clone protege do caller, mas quem lê `value` consegue mutar o `Date` interno. Prefira ISO string/timestamp no estado do VO.
 
 ## [non-goals] Não-objetivos

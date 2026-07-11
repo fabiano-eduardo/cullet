@@ -5,8 +5,11 @@ import { UUID_PATTERN } from "../../shared/uuid.js";
 
 // Identifies who triggered a Command.
 // Two valid formats:
-//   - Human user: canonical RFC-4122 UUID, versions 1–5 — the same pattern
-//     `UuidIdentifier` enforces (e.g.: "550e8400-e29b-41d4-a716-446655440000")
+//   - Human user: canonical RFC-4122 UUID, versions 1–8 (including the
+//     time-ordered v7) — the same pattern `UuidIdentifier` enforces
+//     (e.g.: "550e8400-e29b-41d4-a716-446655440000"). The constraint is
+//     single-sourced in `shared/uuid.ts`, so `UuidIdentifier` and this value
+//     always accept the same set of versions.
 //   - System identity: "system:<job>" where <job> is [a-z][a-z0-9]*(-[a-z0-9]+)*
 //     (e.g.: "system:late-fee-job", "system:email-sender")
 //
@@ -26,7 +29,13 @@ class RequestedBy {
 
     private constructor(kind: RequestedByKind, raw: string) {
         this.kind = kind;
-        this.raw = raw;
+        // UUIDs are matched case-insensitively (see `shared/uuid.ts`), so the
+        // same user id can arrive lowercased from Postgres and uppercased from a
+        // JWT. Canonicalize user ids to lowercase here — the single choke point
+        // every factory passes through — so exact-string comparators downstream
+        // (`Grant.appliesTo`, `rbacContextFields`) never miss the right identity
+        // on case alone. System identities are already lowercase by pattern.
+        this.raw = kind === "user" ? raw.toLowerCase() : raw;
         Object.freeze(this);
     }
 

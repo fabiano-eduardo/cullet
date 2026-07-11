@@ -3,6 +3,8 @@ import { assertValidAggregateVersion } from "../shared/aggregate-version.js";
 import { assertValidDate, cloneDate } from "../shared/temporal-guards.js";
 import { type ContractVersion, version } from "../versioning/version.js";
 
+import { ValueObject } from "./value-object.js";
+
 /**
  * The minimal persisted shape needed to reconstitute an {@link Entity}.
  *
@@ -53,9 +55,16 @@ abstract class Entity<TIdentifier> {
      * Declared `protected` because entities are reconstituted through a
      * subclass factory, never instantiated directly by application code.
      *
-     * @throws {InvariantViolationException} When `updatedAt` is earlier than `createdAt`.
+     * @throws {InvariantViolationException} When `id` is absent, or when
+     *   `updatedAt` is earlier than `createdAt`.
      */
     protected constructor(state: EntityState<TIdentifier>) {
+        if (state.id == null) {
+            throw new InvariantViolationException(
+                "id is required: an entity cannot exist without an identity",
+            );
+        }
+
         assertValidDate("createdAt", state.createdAt);
         assertValidDate("updatedAt", state.updatedAt);
         assertValidAggregateVersion(state.aggregateVersion);
@@ -121,18 +130,23 @@ abstract class Entity<TIdentifier> {
      * call this from every state-changing method so the version counter stays
      * an accurate optimistic-lock token.
      *
-     * @param updatedAt - The modification instant; defaults to now. Validated
-     *   and required not to predate `createdAt`, preserving the same invariant
-     *   the constructor enforces.
+     * `updatedAt` is monotonic: each call must be at or after the current
+     * `updatedAt` (equal is fine — two mutations can share a millisecond).
+     * Without this, the version counter would advance while the timestamp
+     * walked backwards, corrupting any audit trail or ordering that reads
+     * `updatedAt`. A caller replaying out-of-order events must sort them first.
+     *
+     * @param updatedAt - The modification instant; defaults to now.
      * @returns The new aggregate version after the increment.
-     * @throws {InvariantViolationException} When `updatedAt` is earlier than `createdAt`.
+     * @throws {InvariantViolationException} When `updatedAt` is earlier than
+     *   the current `updatedAt`.
      */
     protected markAsModified(updatedAt: Date = new Date()): number {
         assertValidDate("updatedAt", updatedAt);
 
-        if (updatedAt.getTime() < this._createdAt.getTime()) {
+        if (updatedAt.getTime() < this._updatedAt.getTime()) {
             throw new InvariantViolationException(
-                "updatedAt cannot be earlier than createdAt",
+                "updatedAt cannot move backwards: it must be at or after the current updatedAt",
             );
         }
 
@@ -140,6 +154,35 @@ abstract class Entity<TIdentifier> {
         this._aggregateVersion += 1;
 
         return this._aggregateVersion;
+    }
+
+    /**
+     * Identity-based equality — the semantics that define an entity. Two
+     * entities are equal when they are the same concrete class and their ids
+     * match, regardless of any other field.
+     *
+     * The class check keeps a `CustomerId`-bearing entity from equalling an
+     * unrelated entity that happens to reuse the same raw id. Value-object ids
+     * are compared through their own `equals`, so two independently
+     * reconstituted id instances still match; primitive ids use `===`.
+     */
+    public equals(other: Entity<TIdentifier> | null | undefined): boolean {
+        if (other == null) {
+            return false;
+        }
+        if (other === this) {
+            return true;
+        }
+        if (other.constructor !== this.constructor) {
+            return false;
+        }
+
+        const id: unknown = this._id;
+        if (id instanceof ValueObject) {
+            return id.equals(other._id as typeof id);
+        }
+
+        return this._id === other._id;
     }
 }
 

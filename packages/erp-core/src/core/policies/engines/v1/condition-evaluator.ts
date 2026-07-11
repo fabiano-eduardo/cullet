@@ -1,10 +1,14 @@
 import { PolicyContextPath } from "../../context/index.js";
-// Import the date util directly (not the utils barrel): the barrel re-exports
-// PolicyHashing, whose node:crypto import would needlessly drag a Node-only
-// API into the zod-free ./abac subpath.
-import { PolicyDateUtils } from "../../utils/date.js";
 import { Result } from "../../../result/result.js";
 
+import {
+    CANONICAL_UTC_DATE_FORMAT,
+    containsInvalidDate,
+    evaluateRelationalNumbers,
+    normalizeDateOperand,
+    parseComparableDate,
+    type RelationalOperator,
+} from "./condition-date-operands.js";
 import type {
     ConditionAndNode,
     ConditionLeafNode,
@@ -28,8 +32,6 @@ const INVALID_NUMERIC_OPERAND_TAG = "INVALID_NUMERIC_OPERAND";
 const INVALID_SET_OPERAND_TAG = "INVALID_SET_OPERAND";
 const EMPTY_OR_CONDITION_TAG = "EMPTY_OR_CONDITION";
 const EMPTY_AND_CONDITION_TAG = "EMPTY_AND_CONDITION";
-const ISO_8601_UTC_DATE_PATTERN =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 export interface ConditionEvaluationTrace {
     readonly conditionPath: string;
@@ -43,8 +45,6 @@ export interface TracedConditionEvaluation {
     readonly matched: boolean;
     readonly trace: ConditionEvaluationTrace;
 }
-
-type RelationalOperator = Extract<ConditionOp, "gt" | "gte" | "lt" | "lte">;
 
 export class ConditionEvaluatorV1 {
     constructor(
@@ -79,106 +79,14 @@ export class ConditionEvaluatorV1 {
         message: string;
     } {
         if (error instanceof Error) {
-            return {
-                name: error.name,
-                message: error.message,
-            };
+            return { name: error.name, message: error.message };
         }
 
-        return {
-            name: "NonErrorThrown",
-            message: String(error),
-        };
+        return { name: "NonErrorThrown", message: String(error) };
     }
 
-    private static buildNullishNumericOperandMessage(
-        node: ConditionLeafNode,
-        actual: null | undefined,
-    ): string {
-        const resolvedValue = actual === null ? "null" : "undefined";
-
-        return `${NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG}: "${node.field}" resolved to ${resolvedValue} for numeric operator "${node.op}"`;
-    }
-
-    private static buildNullishDateOperandMessage(
-        node: ConditionLeafNode,
-        actual: null | undefined,
-    ): string {
-        const resolvedValue = actual === null ? "null" : "undefined";
-
-        return `${NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG}: "${node.field}" resolved to ${resolvedValue} for date comparison operator "${node.op}"`;
-    }
-
-    private static buildInvalidDateOperandMessage(
-        node: ConditionLeafNode,
-    ): string {
-        return `${INVALID_DATE_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires Date or ISO 8601 UTC string operands`;
-    }
-
-    private static buildInvalidNumericOperandMessage(
-        node: ConditionLeafNode,
-    ): string {
-        return `${INVALID_NUMERIC_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires numeric operands`;
-    }
-
-    private static buildInvalidSetOperandMessage(
-        node: ConditionLeafNode,
-    ): string {
-        return `${INVALID_SET_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires an array operand`;
-    }
-
-    private static buildEmptyOrConditionMessage(): string {
-        return `${EMPTY_OR_CONDITION_TAG}: OR nodes must contain at least one child condition`;
-    }
-
-    private static buildEmptyAndConditionMessage(): string {
-        return `${EMPTY_AND_CONDITION_TAG}: AND nodes must contain at least one child condition`;
-    }
-
-    private static parseComparableDate(
-        value: unknown,
-    ): Result<Date, string> | null {
-        if (value instanceof Date) {
-            if (!PolicyDateUtils.isValid(value)) {
-                return Result.err("Invalid Date instance");
-            }
-
-            return Result.ok(value);
-        }
-
-        if (
-            typeof value !== "string" ||
-            !ISO_8601_UTC_DATE_PATTERN.test(value)
-        ) {
-            return null;
-        }
-
-        const parsed = new Date(value);
-        if (
-            !PolicyDateUtils.isValid(parsed) ||
-            parsed.toISOString() !== value
-        ) {
-            return Result.err("Invalid ISO 8601 UTC date string");
-        }
-
-        return Result.ok(parsed);
-    }
-
-    private static evaluateRelationalNumbers(
-        actual: number,
-        op: RelationalOperator,
-        expected: number,
-    ): boolean {
-        switch (op) {
-            case "gt":
-                return actual > expected;
-            case "gte":
-                return actual >= expected;
-            case "lt":
-                return actual < expected;
-            case "lte":
-                return actual <= expected;
-        }
+    private static invalidDateOperandMessage(node: ConditionLeafNode): string {
+        return `${INVALID_DATE_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires Date or ISO 8601 UTC (${CANONICAL_UTC_DATE_FORMAT}) string operands`;
     }
 
     private buildReport(params: {
@@ -195,6 +103,35 @@ export class ConditionEvaluatorV1 {
             engineVersion: this.options.engineVersion,
             details: params.details,
         };
+    }
+
+    // Single reporting seam for every leaf-level operand error. Collapses the
+    // formerly per-tag report methods, whose only real difference was the tag,
+    // message, and (for the nullish cases) an `allowNull` detail.
+    private reportLeafError(
+        tag: ConditionEvaluationReport["tag"],
+        message: string,
+        node: ConditionLeafNode,
+        actual: unknown,
+        extra?: Readonly<Record<string, unknown>>,
+    ): Result<boolean, string> {
+        this.options.reporter.error(
+            this.buildReport({
+                level: "error",
+                tag,
+                message,
+                details: {
+                    field: node.field,
+                    op: node.op,
+                    actual,
+                    expected: node.value,
+                    ...extra,
+                    node,
+                },
+            }),
+        );
+
+        return Result.err(message);
     }
 
     private conditionEvalErr<TValue>(
@@ -216,107 +153,6 @@ export class ConditionEvaluatorV1 {
         return Result.err(message);
     }
 
-    private static containsInvalidDate(value: unknown): boolean {
-        if (value instanceof Date) {
-            return !PolicyDateUtils.isValid(value);
-        }
-        if (Array.isArray(value)) {
-            return value.some((item) =>
-                ConditionEvaluatorV1.containsInvalidDate(item),
-            );
-        }
-        return false;
-    }
-
-    // Valid Dates become their ISO string so equality/set operators compare
-    // instants instead of references; every other value passes through.
-    private static normalizeDateOperand(value: unknown): unknown {
-        if (value instanceof Date) {
-            return value.toISOString();
-        }
-        if (Array.isArray(value)) {
-            return value.map((item) =>
-                ConditionEvaluatorV1.normalizeDateOperand(item),
-            );
-        }
-        return value;
-    }
-
-    private reportDateOperandError(
-        node: ConditionLeafNode,
-        actual: unknown,
-    ): Result<boolean, string> {
-        const message =
-            ConditionEvaluatorV1.buildInvalidDateOperandMessage(node);
-
-        this.options.reporter.error(
-            this.buildReport({
-                level: "error",
-                tag: INVALID_DATE_OPERAND_TAG,
-                message,
-                details: {
-                    field: node.field,
-                    op: node.op,
-                    actual,
-                    expected: node.value,
-                    node,
-                },
-            }),
-        );
-
-        return Result.err(message);
-    }
-
-    private reportInvalidNumericOperand(
-        node: ConditionLeafNode,
-        actual: unknown,
-    ): Result<boolean, string> {
-        const message =
-            ConditionEvaluatorV1.buildInvalidNumericOperandMessage(node);
-
-        this.options.reporter.error(
-            this.buildReport({
-                level: "error",
-                tag: INVALID_NUMERIC_OPERAND_TAG,
-                message,
-                details: {
-                    field: node.field,
-                    op: node.op,
-                    actual,
-                    expected: node.value,
-                    node,
-                },
-            }),
-        );
-
-        return Result.err(message);
-    }
-
-    private reportInvalidSetOperand(
-        node: ConditionLeafNode,
-        actual: unknown,
-    ): Result<boolean, string> {
-        const message =
-            ConditionEvaluatorV1.buildInvalidSetOperandMessage(node);
-
-        this.options.reporter.error(
-            this.buildReport({
-                level: "error",
-                tag: INVALID_SET_OPERAND_TAG,
-                message,
-                details: {
-                    field: node.field,
-                    op: node.op,
-                    actual,
-                    expected: node.value,
-                    node,
-                },
-            }),
-        );
-
-        return Result.err(message);
-    }
-
     private evaluateDateRelationalNode(
         node: ConditionLeafNode,
         actual: unknown,
@@ -325,84 +161,49 @@ export class ConditionEvaluatorV1 {
             return null;
         }
 
-        const actualDateResult =
-            ConditionEvaluatorV1.parseComparableDate(actual);
-        const expectedDateResult = ConditionEvaluatorV1.parseComparableDate(
-            node.value,
-        );
+        const actualDate = parseComparableDate(actual);
+        const expectedDate = parseComparableDate(node.value);
 
-        if (actualDateResult === null && expectedDateResult === null) {
+        // Neither operand is date-shaped: let the numeric path handle it.
+        if (actualDate === null && expectedDate === null) {
             return null;
         }
 
         const allowsNull = node.allowNull === true;
-
-        if (actual === null) {
-            if (allowsNull) {
-                return Result.ok(false);
-            }
-
-            const message = ConditionEvaluatorV1.buildNullishDateOperandMessage(
-                node,
-                actual,
-            );
-            this.options.reporter.error(
-                this.buildReport({
-                    level: "error",
-                    tag: NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG,
-                    message,
-                    details: {
-                        field: node.field,
-                        op: node.op,
-                        actual,
-                        expected: node.value,
-                        allowNull: allowsNull,
-                        node,
-                    },
-                }),
-            );
-
-            return Result.err(message);
+        if (actual === null && allowsNull) {
+            return Result.ok(false);
         }
 
-        if (actual === undefined) {
-            const message = ConditionEvaluatorV1.buildNullishDateOperandMessage(
+        if (actual === null || actual === undefined) {
+            const resolved = actual === null ? "null" : "undefined";
+            return this.reportLeafError(
+                NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG,
+                `${NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG}: "${node.field}" resolved to ${resolved} for date comparison operator "${node.op}"`,
                 node,
                 actual,
+                { allowNull: allowsNull },
             );
-            this.options.reporter.error(
-                this.buildReport({
-                    level: "error",
-                    tag: NULLISH_DATE_OPERAND_NOT_ALLOWED_TAG,
-                    message,
-                    details: {
-                        field: node.field,
-                        op: node.op,
-                        actual,
-                        expected: node.value,
-                        allowNull: allowsNull,
-                        node,
-                    },
-                }),
-            );
-
-            return Result.err(message);
         }
 
         if (
-            actualDateResult === null ||
-            actualDateResult.isErr() ||
-            expectedDateResult === null ||
-            expectedDateResult.isErr()
+            actualDate === null ||
+            actualDate.isErr() ||
+            expectedDate === null ||
+            expectedDate.isErr()
         ) {
-            return this.reportDateOperandError(node, actual);
+            return this.reportLeafError(
+                INVALID_DATE_OPERAND_TAG,
+                ConditionEvaluatorV1.invalidDateOperandMessage(node),
+                node,
+                actual,
+            );
         }
 
         return Result.ok(
-            ConditionEvaluatorV1.evaluateRelationalNumbers(
-                actualDateResult.getOrNull()!.getTime(),
+            evaluateRelationalNumbers(
+                actualDate.getOrNull()!.getTime(),
                 node.op,
-                expectedDateResult.getOrNull()!.getTime(),
+                expectedDate.getOrNull()!.getTime(),
             ),
         );
     }
@@ -418,51 +219,20 @@ export class ConditionEvaluatorV1 {
             case "neq":
                 return actual !== expected;
             case "gt":
-                return (
-                    typeof actual === "number" &&
-                    typeof expected === "number" &&
-                    ConditionEvaluatorV1.evaluateRelationalNumbers(
-                        actual,
-                        op,
-                        expected,
-                    )
-                );
             case "gte":
-                return (
-                    typeof actual === "number" &&
-                    typeof expected === "number" &&
-                    ConditionEvaluatorV1.evaluateRelationalNumbers(
-                        actual,
-                        op,
-                        expected,
-                    )
-                );
             case "lt":
-                return (
-                    typeof actual === "number" &&
-                    typeof expected === "number" &&
-                    ConditionEvaluatorV1.evaluateRelationalNumbers(
-                        actual,
-                        op,
-                        expected,
-                    )
-                );
             case "lte":
                 return (
                     typeof actual === "number" &&
                     typeof expected === "number" &&
-                    ConditionEvaluatorV1.evaluateRelationalNumbers(
-                        actual,
-                        op,
-                        expected,
-                    )
+                    evaluateRelationalNumbers(actual, op, expected)
                 );
             case "in":
                 return Array.isArray(expected) && expected.includes(actual);
             case "notIn":
                 return Array.isArray(expected) && !expected.includes(actual);
             case "isNull":
-                return actual === null;
+                return actual === null || actual === undefined;
             case "isNotNull":
                 return actual !== null && actual !== undefined;
         }
@@ -474,29 +244,14 @@ export class ConditionEvaluatorV1 {
     ): Result<boolean, string> {
         const allowsNull = node.allowNull === true;
         if (actual === undefined || (actual === null && !allowsNull)) {
-            const message =
-                ConditionEvaluatorV1.buildNullishNumericOperandMessage(
-                    node,
-                    actual as null | undefined,
-                );
-
-            this.options.reporter.error(
-                this.buildReport({
-                    level: "error",
-                    tag: NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG,
-                    message,
-                    details: {
-                        field: node.field,
-                        op: node.op,
-                        actual,
-                        expected: node.value,
-                        allowNull: allowsNull,
-                        node,
-                    },
-                }),
+            const resolved = actual === null ? "null" : "undefined";
+            return this.reportLeafError(
+                NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG,
+                `${NULLISH_NUMERIC_OPERAND_NOT_ALLOWED_TAG}: "${node.field}" resolved to ${resolved} for numeric operator "${node.op}"`,
+                node,
+                actual,
+                { allowNull: allowsNull },
             );
-
-            return Result.err(message);
         }
 
         // null + allowNull: a relational comparison against a missing value
@@ -505,11 +260,21 @@ export class ConditionEvaluatorV1 {
             return Result.ok(false);
         }
 
-        // Both operands must be numbers. A present but wrong-typed operand is a
-        // context/configuration error, surfaced like the date path instead of
-        // silently collapsing to "no match".
-        if (typeof actual !== "number" || typeof node.value !== "number") {
-            return this.reportInvalidNumericOperand(node, actual);
+        // Both operands must be finite numbers. A present but wrong-typed or
+        // NaN operand is a context/configuration error, surfaced like the date
+        // path instead of silently collapsing to "no match".
+        if (
+            typeof actual !== "number" ||
+            Number.isNaN(actual) ||
+            typeof node.value !== "number" ||
+            Number.isNaN(node.value)
+        ) {
+            return this.reportLeafError(
+                INVALID_NUMERIC_OPERAND_TAG,
+                `${INVALID_NUMERIC_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires numeric operands`,
+                node,
+                actual,
+            );
         }
 
         return Result.ok(this.evaluateOperator(actual, node.op, node.value));
@@ -521,18 +286,17 @@ export class ConditionEvaluatorV1 {
             node.field,
         );
         if (actualResult.isErr()) {
+            const message = `MISSING_CONTEXT_FIELD: "${node.field}" not found in context`;
             this.options.reporter.warn(
                 this.buildReport({
                     level: "warn",
                     tag: "MISSING_CONTEXT_FIELD",
-                    message: `MISSING_CONTEXT_FIELD: "${node.field}" not found in context`,
+                    message,
                     details: { field: node.field, node },
                 }),
             );
 
-            return Result.err(
-                `MISSING_CONTEXT_FIELD: "${node.field}" not found in context`,
-            );
+            return Result.err(message);
         }
 
         try {
@@ -553,7 +317,12 @@ export class ConditionEvaluatorV1 {
                 (node.op === "in" || node.op === "notIn") &&
                 !Array.isArray(node.value)
             ) {
-                return this.reportInvalidSetOperand(node, actual);
+                return this.reportLeafError(
+                    INVALID_SET_OPERAND_TAG,
+                    `${INVALID_SET_OPERAND_TAG}: "${node.field}" with operator "${node.op}" requires an array operand`,
+                    node,
+                    actual,
+                );
             }
 
             if (
@@ -567,17 +336,22 @@ export class ConditionEvaluatorV1 {
                 // including set items) to their ISO string; an invalid Date is
                 // a context/configuration error, like the relational path.
                 if (
-                    ConditionEvaluatorV1.containsInvalidDate(actual) ||
-                    ConditionEvaluatorV1.containsInvalidDate(node.value)
+                    containsInvalidDate(actual) ||
+                    containsInvalidDate(node.value)
                 ) {
-                    return this.reportDateOperandError(node, actual);
+                    return this.reportLeafError(
+                        INVALID_DATE_OPERAND_TAG,
+                        ConditionEvaluatorV1.invalidDateOperandMessage(node),
+                        node,
+                        actual,
+                    );
                 }
 
                 return Result.ok(
                     this.evaluateOperator(
-                        ConditionEvaluatorV1.normalizeDateOperand(actual),
+                        normalizeDateOperand(actual),
                         node.op,
-                        ConditionEvaluatorV1.normalizeDateOperand(node.value),
+                        normalizeDateOperand(node.value),
                     ),
                 );
             }
@@ -632,7 +406,7 @@ export class ConditionEvaluatorV1 {
         if (ConditionEvaluatorV1.isAndNode(node)) {
             if (node.and.length === 0) {
                 return Result.err(
-                    ConditionEvaluatorV1.buildEmptyAndConditionMessage(),
+                    `${EMPTY_AND_CONDITION_TAG}: AND nodes must contain at least one child condition`,
                 );
             }
 
@@ -697,7 +471,7 @@ export class ConditionEvaluatorV1 {
 
             if (lastTrace === null) {
                 return Result.err(
-                    ConditionEvaluatorV1.buildEmptyOrConditionMessage(),
+                    `${EMPTY_OR_CONDITION_TAG}: OR nodes must contain at least one child condition`,
                 );
             }
 

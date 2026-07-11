@@ -100,4 +100,12 @@ describe("ValidationField", () => {
             expect(simple.equals(nested)).toBe(true);
         });
     });
+
+    describe("serialization", () => {
+        it("toJSON() serializes to the bare value string", () => {
+            const field = ValidationField.of("user").nested("email");
+
+            expect(JSON.stringify({ field })).toBe('{"field":"user.email"}');
+        });
+    });
 });

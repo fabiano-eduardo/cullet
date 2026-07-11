@@ -1,6 +1,7 @@
 import type { AppErrorOptions, ErrorSeverity } from "./types.js";
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
+import { compactMetadata, pickAppErrorOptions } from "./utils/index.js";
 
 type IntegrationErrorReason =
     | "timeout"
@@ -78,7 +79,7 @@ class IntegrationError extends AppError {
             code: ErrorCodes.integration.timeout,
             reason: "timeout",
             metadata: buildMetadata({ reason: "timeout", ...options }),
-            ...pickAppErrorFields(options),
+            ...pickAppErrorOptions(options),
         });
     }
 
@@ -94,7 +95,7 @@ class IntegrationError extends AppError {
             code: ErrorCodes.integration.unreachable,
             reason: "unreachable",
             metadata: buildMetadata({ reason: "unreachable", ...options }),
-            ...pickAppErrorFields(options),
+            ...pickAppErrorOptions(options),
         });
     }
 
@@ -111,7 +112,7 @@ class IntegrationError extends AppError {
             code: ErrorCodes.integration.badResponse,
             reason: "bad_response",
             metadata: buildMetadata({ reason: "bad_response", ...options }),
-            ...pickAppErrorFields(options),
+            ...pickAppErrorOptions(options),
         });
     }
 }
@@ -155,27 +156,6 @@ function buildMetadata(
         statusCode: input.statusCode,
         responseCode: input.responseCode,
     }) as IntegrationErrorMetadata;
-}
-
-function pickAppErrorFields(
-    options: IntegrationErrorBaseOptions,
-): IntegrationErrorAppOptions {
-    return {
-        cause: options.cause,
-        type: options.type,
-        severity: options.severity,
-        correlationId: options.correlationId,
-        requestId: options.requestId,
-        commandId: options.commandId,
-        createdAtIso: options.createdAtIso,
-        publicMessage: options.publicMessage,
-    };
-}
-
-function compactMetadata<T extends Record<string, unknown>>(input: T): T {
-    return Object.fromEntries(
-        Object.entries(input).filter(([, value]) => value !== undefined),
-    ) as T;
 }
 
 export { IntegrationError };

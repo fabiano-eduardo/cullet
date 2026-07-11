@@ -6,7 +6,7 @@
 interface BasePlugin {
     /** Unique identifier, used for logs / debugging and for enable/disable. */
     readonly name: string;
-    /** Weight; the highest priority wins (default = 0). */
+    /** Weight; the highest priority wins (default = 0). Ties keep registration order. */
     readonly priority?: number;
     /** Shortcut to disable a plugin without removing it. */
     enabled?: boolean;
@@ -40,7 +40,9 @@ type PipelineReducer<R, P extends PluginContract> = (
 interface InvokeOptions<P extends PluginContract, K extends keyof P> {
     /**
      * `'first'`    → returns the first enabled plugin with the highest priority.
-     * `'pipeline'` → runs every enabled plugin, combining results via `reducer`.
+     * `'pipeline'` → fan-out + reduce: every enabled plugin runs against the
+     *   same original `args` (results are NOT chained into the next plugin's
+     *   input), and the results are folded together via `reducer`.
      * default = `'first'`.
      */
     mode?: "first" | "pipeline";

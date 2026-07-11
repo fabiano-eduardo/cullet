@@ -49,7 +49,13 @@ export function mapPolicyEvaluationError(err: PolicyEvaluationError): AppError {
                 { cause: err.cause },
             );
         case "ENGINE_FAILURE":
+            // `engine`/`engineVersion` are internal detail kept in `metadata`
+            // for logs. `publicMessage` gives the HTTP boundary a safe string
+            // to expose so it never has to serialize this metadata to a client
+            // on a 500. (Whether the boundary leaks `metadata` is still its
+            // call — this only hands it the non-leaking alternative.)
             return new UnexpectedError(err.message, err.cause, {
+                publicMessage: "Policy evaluation failed unexpectedly.",
                 metadata: {
                     policyKey: err.policyKey,
                     engine: err.engine,

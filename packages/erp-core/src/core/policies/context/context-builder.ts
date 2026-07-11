@@ -32,6 +32,13 @@ interface ContextResolverCircuitState {
     readonly openUntilMs: number | null;
 }
 
+// The circuit breaker is keyed by context path alone, so its state is shared
+// across every seed a builder serves. This is intentional — the breaker guards
+// the backend behind a path, not a single tenant's request — but it means
+// failures resolving a path for one tenant can trip the breaker for others.
+// Give each isolated blast radius its own PolicyContextBuilder if that scope is
+// wrong for your host.
+
 export interface PolicyContextBuilderOptions {
     readonly defaultResolverResilience?: ContextResolverResilienceOptions;
     readonly now?: () => number;
@@ -296,6 +303,12 @@ export class PolicyContextBuilder {
             return execute();
         }
 
+        // The timeout is a race, not a cancellation: on timeout the losing
+        // resolver keeps running to completion in the background (there is no
+        // AbortSignal in the resolver contract). Combined with retry, a slow
+        // resolver can therefore be in flight more than once at a time — safe
+        // for the idempotent reads resolvers are required to be (see
+        // ContextValueResolver), a hazard for any resolver with side effects.
         let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
         try {
@@ -359,6 +372,13 @@ export class PolicyContextBuilder {
     /**
      * Resolves all required context paths and returns a flat context object.
      * If any required path cannot be resolved, returns an error.
+     *
+     * Resolution is deliberately sequential and fail-fast: paths resolve in
+     * order and the first failure returns immediately, so later resolvers never
+     * run once one path fails. This trades the latency-hiding of parallel
+     * resolution for skipping downstream (potentially expensive) lookups on a
+     * doomed evaluation. It is a tested contract, not an oversight — flip it to
+     * `Promise.all` only if you also accept that every resolver always runs.
      */
     async build(
         requirements: readonly string[],

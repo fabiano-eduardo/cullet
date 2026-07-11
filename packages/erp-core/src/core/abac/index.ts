@@ -2,6 +2,12 @@
 // combining algorithms, the attribute→context flattening, the pure decisor, the
 // optional RBAC+ABAC composite, and the AbacAuthorizerPort seam (which physically
 // lives under application/ports/ but is surfaced here as the ABAC public home).
+//
+// Rule-author footguns (documented in full on AbacRule): a referenced attribute
+// absent from the request is a technical error that, by default, fails the whole
+// decision closed — set `onEvaluationError: "skip-rule"` on the AbacPolicySet to
+// skip the unevaluable rule instead. `isNull`/`isNotNull` match an explicit
+// `null` value, never a missing key.
 
 export type { AbacAuthorizerPort } from "../application/ports/abac-authorizer.port.js";
 
@@ -13,7 +19,7 @@ export {
     type CompositeAccessRequest,
     CompositeAuthorizer,
 } from "./composite-authorizer.js";
-export { AbacPolicySet } from "./domain/policy-set.js";
+export { AbacPolicySet, type OnEvaluationError } from "./domain/policy-set.js";
 export {
     AbacRule,
     type AbacRuleProps,

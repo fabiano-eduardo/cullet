@@ -18,6 +18,12 @@ describe("RequestedBy", () => {
             expect(requestedBy.toString()).toBe(VALID_UUID);
         });
 
+        it("canonicalizes a user UUID to lowercase so case never splits an identity", () => {
+            const requestedBy = RequestedBy.fromUser(VALID_UUID.toUpperCase());
+
+            expect(requestedBy.raw).toBe(VALID_UUID);
+        });
+
         it("rejects a non-UUID user identity", () => {
             expect(() => RequestedBy.fromUser("not-a-uuid")).toThrow(
                 InvalidValueException,
