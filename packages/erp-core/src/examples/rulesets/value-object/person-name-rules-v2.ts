@@ -1,7 +1,5 @@
-import {
-    DomainException,
-    type ValueObjectRuleset,
-} from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
+import { DomainException } from "../../../core/exceptions/domain-exception.js";
+import { type ValueObjectRuleset } from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 import { PersonNameRulesV1 } from "./person-name-rules-v1.js";
 
 class PersonNameCharacterError extends DomainException {}

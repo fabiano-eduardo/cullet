@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { PersonName } from "./person-name.js";
 import { PersonNameRulesV1 } from "./person-name-rules-v1.js";
 import { PersonNameRulesV2 } from "./person-name-rules-v2.js";
+import { DomainException } from "../../../core/exceptions/domain-exception.js";
 import {
-    DomainException,
     type RulesetId,
     type ValueObjectRuleset,
 } from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
