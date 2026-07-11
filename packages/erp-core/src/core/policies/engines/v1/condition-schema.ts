@@ -28,23 +28,27 @@ export const conditionLeafNodeSchema: z.ZodType<ConditionLeafNode> = z
     })
     .strict() as z.ZodType<ConditionLeafNode>;
 
-export const conditionNodeSchema: z.ZodType<ConditionNode> = z.lazy(() =>
-    z.union([
+// Cap nesting depth so an adversarially deep payload fails validation instead
+// of overflowing the stack during parse: zod recurses once per level, and the
+// old `z.lazy` schema was unbounded. The schema is built to exactly this depth
+// (leaf-only past it), so a too-deep tree is rejected at the boundary without
+// deep recursion. 32 is far beyond any hand-written policy — raise it only with
+// a matching stack-safety review.
+export const MAX_CONDITION_DEPTH = 32;
+
+function boundedConditionNodeSchema(depth: number): z.ZodType<ConditionNode> {
+    if (depth <= 1) {
+        return conditionLeafNodeSchema;
+    }
+
+    const child = boundedConditionNodeSchema(depth - 1);
+    return z.union([
         conditionLeafNodeSchema,
-        z
-            .object({
-                and: z.array(conditionNodeSchema).min(1),
-            })
-            .strict(),
-        z
-            .object({
-                or: z.array(conditionNodeSchema).min(1),
-            })
-            .strict(),
-        z
-            .object({
-                not: conditionNodeSchema,
-            })
-            .strict(),
-    ]),
-);
+        z.object({ and: z.array(child).min(1) }).strict(),
+        z.object({ or: z.array(child).min(1) }).strict(),
+        z.object({ not: child }).strict(),
+    ]) as z.ZodType<ConditionNode>;
+}
+
+export const conditionNodeSchema: z.ZodType<ConditionNode> =
+    boundedConditionNodeSchema(MAX_CONDITION_DEPTH);
