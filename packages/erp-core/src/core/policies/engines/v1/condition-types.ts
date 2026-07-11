@@ -3,17 +3,24 @@
 // share the same condition-tree DSL. Keeping them here avoids making compute/v1
 // structurally dependent on gate/v1.
 
-export type ConditionOp =
-    | "eq"
-    | "neq"
-    | "gt"
-    | "gte"
-    | "lt"
-    | "lte"
-    | "in"
-    | "notIn"
-    | "isNull"
-    | "isNotNull";
+// Single source of truth for the operator vocabulary: the union is derived from
+// this array so a new operator is added in exactly one place, and consumers that
+// need the runtime list (e.g. AbacRule's structural check) reuse it instead of
+// hand-maintaining a parallel set that can drift out of sync.
+export const CONDITION_OPS = [
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "in",
+    "notIn",
+    "isNull",
+    "isNotNull",
+] as const;
+
+export type ConditionOp = (typeof CONDITION_OPS)[number];
 
 export interface ConditionLeafNode {
     readonly field: string;
