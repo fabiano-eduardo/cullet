@@ -121,18 +121,23 @@ abstract class Entity<TIdentifier> {
      * call this from every state-changing method so the version counter stays
      * an accurate optimistic-lock token.
      *
-     * @param updatedAt - The modification instant; defaults to now. Validated
-     *   and required not to predate `createdAt`, preserving the same invariant
-     *   the constructor enforces.
+     * `updatedAt` is monotonic: each call must be at or after the current
+     * `updatedAt` (equal is fine — two mutations can share a millisecond).
+     * Without this, the version counter would advance while the timestamp
+     * walked backwards, corrupting any audit trail or ordering that reads
+     * `updatedAt`. A caller replaying out-of-order events must sort them first.
+     *
+     * @param updatedAt - The modification instant; defaults to now.
      * @returns The new aggregate version after the increment.
-     * @throws {InvariantViolationException} When `updatedAt` is earlier than `createdAt`.
+     * @throws {InvariantViolationException} When `updatedAt` is earlier than
+     *   the current `updatedAt`.
      */
     protected markAsModified(updatedAt: Date = new Date()): number {
         assertValidDate("updatedAt", updatedAt);
 
-        if (updatedAt.getTime() < this._createdAt.getTime()) {
+        if (updatedAt.getTime() < this._updatedAt.getTime()) {
             throw new InvariantViolationException(
-                "updatedAt cannot be earlier than createdAt",
+                "updatedAt cannot move backwards: it must be at or after the current updatedAt",
             );
         }
 

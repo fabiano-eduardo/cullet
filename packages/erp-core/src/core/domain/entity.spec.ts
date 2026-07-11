@@ -241,5 +241,25 @@ describe("Entity", () => {
 
             expect(entity.updatedAt.getUTCFullYear()).toBe(2025);
         });
+
+        it("throws when updatedAt would move backwards from the current updatedAt", () => {
+            const entity = new TestEntity(makeState());
+            entity.modify(new Date("2025-06-01T00:00:00.000Z"));
+
+            expect(() =>
+                entity.modify(new Date("2025-01-01T00:00:00.000Z")),
+            ).toThrow(InvariantViolationException);
+            // the failed call must not bump the version either
+            expect(entity.aggregateVersion).toBe(1);
+        });
+
+        it("accepts updatedAt equal to the current updatedAt (same-millisecond mutations)", () => {
+            const entity = new TestEntity(makeState());
+            const instant = new Date("2025-06-01T00:00:00.000Z");
+            entity.modify(instant);
+
+            expect(() => entity.modify(instant)).not.toThrow();
+            expect(entity.aggregateVersion).toBe(2);
+        });
     });
 });
