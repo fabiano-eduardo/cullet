@@ -38,7 +38,7 @@ abstract class UuidIdentifier<
      * two identifiers with different brands are not interchangeable at the type
      * level despite sharing the same `string` value.
      */
-    protected declare readonly __brand: TBrand;
+    declare protected readonly __brand: TBrand;
 
     protected constructor(value: string) {
         super(value);
@@ -54,8 +54,10 @@ abstract class UuidIdentifier<
     }
 
     /**
-     * Whether `candidate` is a canonical UUID (versions 1–5). The single source
-     * of truth for the format; concrete identifiers call this from `create`.
+     * Whether `candidate` is a canonical UUID (versions 1–8, including the
+     * time-ordered v7; nil and max UUIDs are rejected as sentinels). The single
+     * source of truth for the format — see `shared/uuid.ts`; concrete
+     * identifiers call this from `create`.
      */
     public static isValid(candidate: string): boolean {
         return UUID_PATTERN.test(candidate);
