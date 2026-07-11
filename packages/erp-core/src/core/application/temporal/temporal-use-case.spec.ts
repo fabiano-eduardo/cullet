@@ -107,11 +107,19 @@ describe("temporal-use-case", () => {
         );
 
         expect(Object.isFrozen(seed)).toBe(true);
+        // The injected `fields` object is frozen too, not just the outer seed:
+        // a downstream policy resolver cannot mutate `seed.fields`.
+        expect(Object.isFrozen(seed.fields)).toBe(true);
         // `seed.fields.now` is typed as `Date` (no cast) — this only compiles
         // because `TemporalizedContextSeed` reflects the injected `now`.
         expect(seed.fields.now).not.toBe(originalNow);
         expect(seed.fields.now.toISOString()).toBe("2026-04-24T14:00:00.000Z");
         expect(seed.tenantId).toBe("tenant-001");
         expect(seed.schoolId).toBe("school-001");
+    });
+
+    it("pins its own CONTRACT_VERSION instead of inheriting silently", () => {
+        expect(TemporalUseCase.CONTRACT_VERSION).toBe("1.0");
+        expect(new InspectTemporalUseCase().contractVersion).toBe("1.0");
     });
 });
