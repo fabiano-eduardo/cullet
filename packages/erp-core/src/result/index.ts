@@ -1,2 +1,7 @@
-export { type CommonOutcomeStatus, Outcome } from "../core/result/outcome.js";
-export { Err, Ok, Result } from "../core/result/result.js";
+export {
+    type CommonOutcomeStatus,
+    Err,
+    Ok,
+    Outcome,
+    Result,
+} from "../core/result/index.js";
