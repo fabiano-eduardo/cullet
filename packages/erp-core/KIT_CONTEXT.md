@@ -20,7 +20,7 @@ Núcleo arquitetural para sistemas ERP (e domínios transacionais com temporalid
 
 - **Domínio lança, aplicação retorna `Result`, infra traduz.** Não há `Result` no domínio.
 - **Sem lib de log/observabilidade no runtime.** Portas vivem em `application/ports/`; adapters são opt-in.
-- **Temporalidade interna ao kit** — suporte temporal no código-base, mas a API pública não publica `Timeline<T>` nem helpers temporais no barrel raiz.
+- **Temporalidade fora do barrel raiz** — o barrel raiz não publica `Timeline<T>` nem helpers temporais; as primitivas bitemporais (`createValidTime`, `createTemporalSnapshot`, ranges) são publicadas apenas no subpath `./domain`, porque a porta pública `TemporalRepository` expõe `TemporalSnapshot` e quem a implementa precisa das factories validantes.
 - **Policies como dados**, não como if-statements: avaliáveis, compostas, serializáveis.
 - **Policies permitem disable sem remover código**: `PolicyDefinition` aceita `enabled: false` e o repositório ignora definições desabilitadas.
 - **Composição isolada é de primeira classe**: use `new CoreConfig()`, `new ContextResolverRegistry()` e `registerNamespacedContextResolversIn(...)` quando precisar evitar singletons compartilhados.
