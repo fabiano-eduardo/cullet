@@ -70,6 +70,18 @@ describe("RulesetRegistry", () => {
         );
     });
 
+    it("throws DomainError when the id does not match name@major.minor", () => {
+        const registry = new RulesetRegistry();
+
+        // the RulesetId template type only guards TS callers; a JS consumer
+        // (or a cast) can hand anything to register()
+        for (const badId of ["foo", "foo@1", "foo@1.5.2", "@1.0"]) {
+            expectDomainError(() =>
+                registry.register(makeRuleset(badId as RulesetId)),
+            );
+        }
+    });
+
     it("returns the most recent version for a prefix", () => {
         const registry = new RulesetRegistry();
         const v19 = makeRuleset("order-invariant@1.9");
