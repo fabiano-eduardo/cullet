@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PluginManager } from "./plugin.js";
 
@@ -28,7 +28,11 @@ describe("PluginManager", () => {
                 greeter("mid", "mid", { priority: 5 }),
             );
 
-            expect(pm.list().map((p) => p.name)).toEqual(["high", "mid", "low"]);
+            expect(pm.list().map((p) => p.name)).toEqual([
+                "high",
+                "mid",
+                "low",
+            ]);
         });
 
         it("treats a missing priority as 0", () => {
@@ -39,6 +43,17 @@ describe("PluginManager", () => {
             );
 
             expect(pm.list().map((p) => p.name)).toEqual(["top", "default"]);
+        });
+
+        it("replaces a previously registered plugin with the same name", () => {
+            const pm = new PluginManager<Greeter>();
+            pm.register(greeter("dup", "old"));
+            pm.register(greeter("dup", "new"));
+
+            expect(pm.list()).toHaveLength(1);
+            expect(pm.invoke("greet", ["x"], { fallback: () => "fb" })).toBe(
+                "new, x",
+            );
         });
     });
 
@@ -74,6 +89,15 @@ describe("PluginManager", () => {
 
             expect(pm.list().map((p) => p.name)).toEqual(["b"]);
         });
+
+        it("unregistering an unknown name is a no-op", () => {
+            const pm = new PluginManager<Greeter>();
+            pm.register(greeter("a", "a"));
+
+            pm.unregister("ghost");
+
+            expect(pm.list().map((p) => p.name)).toEqual(["a"]);
+        });
     });
 
     describe("invoke — first mode (default)", () => {
@@ -87,6 +111,21 @@ describe("PluginManager", () => {
             expect(pm.invoke("greet", ["x"], { fallback: () => "fb" })).toBe(
                 "high, x",
             );
+        });
+
+        it('honours an explicit mode: "first"', () => {
+            const pm = new PluginManager<Greeter>();
+            pm.register(
+                greeter("low", "low", { priority: 1 }),
+                greeter("high", "high", { priority: 10 }),
+            );
+
+            expect(
+                pm.invoke("greet", ["x"], {
+                    mode: "first",
+                    fallback: () => "fb",
+                }),
+            ).toBe("high, x");
         });
 
         it("runs the fallback when nothing is registered", () => {
@@ -121,6 +160,21 @@ describe("PluginManager", () => {
                     fallback: () => "fb",
                 }),
             ).toBe("second, x");
+        });
+
+        it("returns the lone plugin's result without calling the reducer", () => {
+            const pm = new PluginManager<Greeter>();
+            pm.register(greeter("only", "only"));
+
+            const reducer = vi.fn((acc: string) => acc);
+            expect(
+                pm.invoke("greet", ["x"], {
+                    mode: "pipeline",
+                    fallback: () => "fb",
+                    reducer,
+                }),
+            ).toBe("only, x");
+            expect(reducer).not.toHaveBeenCalled();
         });
 
         it("combines results with a custom reducer, in priority order", () => {
