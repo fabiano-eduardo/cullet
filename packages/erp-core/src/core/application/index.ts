@@ -15,6 +15,7 @@ export type {
     PolicyPortError,
     Repository,
     ResultRepository,
+    ResultTemporalRepository,
     TraceAttributeValue,
     TraceSpan,
     TracerPort,
