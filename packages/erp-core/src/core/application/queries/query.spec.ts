@@ -24,6 +24,19 @@ class CacheableQuery extends Query<void, number, never> {
     }
 }
 
+class SwrQuery extends Query<void, number, never> {
+    public override cacheStrategy() {
+        return {
+            kind: "STALE_WHILE_REVALIDATE",
+            ttlMs: 1000,
+            staleWhileRevalidateMs: 5000,
+        } as const;
+    }
+    protected execute(): Result<number, never> {
+        return Result.ok(1);
+    }
+}
+
 describe("Query", () => {
     it("is a subclass of UseCase", () => {
         const query = new FindEntityQuery();
@@ -60,6 +73,14 @@ describe("Query", () => {
     it("declares NO_CACHE as the default cache strategy, readable by infrastructure", () => {
         expect(new CacheableQuery().cacheStrategy()).toEqual({
             kind: "NO_CACHE",
+        });
+    });
+
+    it("carries both windows in a STALE_WHILE_REVALIDATE strategy", () => {
+        expect(new SwrQuery().cacheStrategy()).toEqual({
+            kind: "STALE_WHILE_REVALIDATE",
+            ttlMs: 1000,
+            staleWhileRevalidateMs: 5000,
         });
     });
 });
