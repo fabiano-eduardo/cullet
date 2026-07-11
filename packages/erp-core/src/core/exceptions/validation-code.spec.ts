@@ -94,4 +94,30 @@ describe("ValidationCode", () => {
             expect(ValidationCode.REQUIRED).toBe(ValidationCode.REQUIRED);
         });
     });
+
+    describe("equals()", () => {
+        it("returns true for codes with the same value", () => {
+            expect(ValidationCode.of("x").equals(ValidationCode.of("x"))).toBe(
+                true,
+            );
+        });
+
+        it("returns false for codes with different values", () => {
+            expect(ValidationCode.of("x").equals(ValidationCode.of("y"))).toBe(
+                false,
+            );
+        });
+    });
+
+    describe("serialization", () => {
+        it("toString() returns the bare value", () => {
+            expect(ValidationCode.BLANK.toString()).toBe("blank");
+        });
+
+        it("toJSON() serializes to the bare value string", () => {
+            expect(JSON.stringify({ code: ValidationCode.BLANK })).toBe(
+                '{"code":"blank"}',
+            );
+        });
+    });
 });
