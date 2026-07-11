@@ -91,6 +91,37 @@ describe("Result", () => {
                 new Error("domain_failure"),
             );
         });
+
+        it("preserves a structured error payload as cause and a readable message", () => {
+            const payload = { code: "INVALID", field: "email" };
+            const result = Result.err(payload);
+
+            let thrown: unknown;
+            try {
+                result.getOrThrow();
+            } catch (error) {
+                thrown = error;
+            }
+
+            expect(thrown).toBeInstanceOf(Error);
+            expect((thrown as Error).message).not.toBe("[object Object]");
+            expect((thrown as Error).message).toContain("INVALID");
+            expect((thrown as Error & { cause?: unknown }).cause).toBe(payload);
+        });
+
+        it("propagates exceptions thrown by map/flatMap/mapError transforms", () => {
+            const boom = () => {
+                throw new Error("transform_failed");
+            };
+
+            expect(() => Result.ok(1).map(boom)).toThrow("transform_failed");
+            expect(() => Result.ok(1).flatMap(boom)).toThrow(
+                "transform_failed",
+            );
+            expect(() => Result.err("e").mapError(boom)).toThrow(
+                "transform_failed",
+            );
+        });
     });
 
     describe("edge cases", () => {
