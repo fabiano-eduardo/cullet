@@ -1,5 +1,5 @@
-import { sha256Hex, stableStringify } from "../../shared/hashing.js";
-import { isValidDate } from "../../shared/temporal-guards.js";
+import { sha256Hex } from "../../shared/hashing.js";
+import { canonicalStringify } from "../../shared/stable-stringify.js";
 
 /**
  * Produces a deterministic SHA-256 hex digest of a canonical JSON representation.
@@ -7,6 +7,8 @@ import { isValidDate } from "../../shared/temporal-guards.js";
  * Array item order is preserved on purpose; callers that treat arrays as sets
  * must normalize or sort them before hashing.
  *
+ * The strict canonical form is owned by `shared/stable-stringify`
+ * ({@link canonicalStringify}); this class just composes it with SHA-256.
  * Values that JSON.stringify would silently drop or coerce (undefined,
  * non-finite numbers, functions, symbols, bigint) are rejected up-front to
  * prevent semantically different payloads from collapsing to the same hash.
@@ -16,74 +18,8 @@ export class PolicyHashing {
         return sha256Hex(input);
     }
 
-    private static assertHashable(
-        value: unknown,
-        path: string,
-        seen: WeakSet<object>,
-    ): void {
-        if (value === null) {
-            return;
-        }
-
-        const type = typeof value;
-
-        if (type === "undefined") {
-            throw new TypeError(
-                `canonicalJson does not accept undefined values (at ${path})`,
-            );
-        }
-
-        if (type === "number" && !Number.isFinite(value)) {
-            throw new TypeError(
-                `canonicalJson does not accept non-finite numbers (at ${path}, value: ${String(value)})`,
-            );
-        }
-
-        if (type === "bigint" || type === "function" || type === "symbol") {
-            throw new TypeError(
-                `canonicalJson does not accept ${type} values (at ${path})`,
-            );
-        }
-
-        if (type !== "object") {
-            return;
-        }
-
-        if (value instanceof Date) {
-            if (!isValidDate(value)) {
-                throw new TypeError(
-                    `canonicalJson does not accept Invalid Date (at ${path})`,
-                );
-            }
-            return;
-        }
-
-        if (seen.has(value as object)) {
-            throw new TypeError(
-                `canonicalJson does not accept circular references (at ${path})`,
-            );
-        }
-        seen.add(value as object);
-
-        if (Array.isArray(value)) {
-            value.forEach((item, index) => {
-                PolicyHashing.assertHashable(item, `${path}[${index}]`, seen);
-            });
-        } else {
-            for (const [key, nested] of Object.entries(
-                value as Record<string, unknown>,
-            )) {
-                PolicyHashing.assertHashable(nested, `${path}.${key}`, seen);
-            }
-        }
-
-        seen.delete(value as object);
-    }
-
     static canonicalJson(value: unknown): string {
-        PolicyHashing.assertHashable(value, "$", new WeakSet<object>());
-
-        return stableStringify(value);
+        return canonicalStringify(value);
     }
 
     static computePayloadHash(

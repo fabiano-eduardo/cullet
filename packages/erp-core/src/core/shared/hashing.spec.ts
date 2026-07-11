@@ -1,37 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { payloadHash, sha256Hex, stableStringify } from "./hashing.js";
-
-describe("stableStringify", () => {
-    it("produces the same string regardless of key order", () => {
-        expect(stableStringify({ b: 1, a: 2 })).toBe(
-            stableStringify({ a: 2, b: 1 }),
-        );
-    });
-
-    it("sorts keys recursively", () => {
-        expect(stableStringify({ outer: { z: 1, a: 2 } })).toBe(
-            '{"outer":{"a":2,"z":1}}',
-        );
-    });
-
-    it("preserves array order", () => {
-        expect(stableStringify([3, 1, 2])).toBe("[3,1,2]");
-    });
-
-    it("throws a TypeError on circular references instead of overflowing", () => {
-        const node: Record<string, unknown> = { id: 1 };
-        node.self = node;
-
-        expect(() => stableStringify(node)).toThrow(TypeError);
-    });
-
-    it("serializes a repeated (acyclic) reference without throwing", () => {
-        const shared = { v: 1 };
-
-        expect(() => stableStringify({ a: shared, b: shared })).not.toThrow();
-    });
-});
+import { payloadHash, sha256Hex } from "./hashing.js";
 
 describe("payloadHash", () => {
     it("is stable across key ordering", () => {
@@ -44,6 +13,16 @@ describe("payloadHash", () => {
 
     it("returns a 64-char sha-256 hex digest", () => {
         expect(payloadHash({ a: 1 })).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it("rejects lossy values instead of colliding on them", () => {
+        // These would collapse onto `{}`/`{a:null}` under plain JSON.stringify,
+        // producing false idempotency matches; strict hashing throws instead.
+        expect(() => payloadHash({ a: undefined })).toThrow(TypeError);
+        expect(() => payloadHash({ n: Number.NaN })).toThrow(/non-finite/);
+        expect(() => payloadHash({ n: Number.POSITIVE_INFINITY })).toThrow(
+            /non-finite/,
+        );
     });
 });
 

@@ -1,4 +1,5 @@
-import { payloadHash, sha256Hex, stableStringify } from "../shared/hashing.js";
+import { payloadHash, sha256Hex } from "../shared/hashing.js";
+import { stableStringify } from "../shared/stable-stringify.js";
 
 import { AppError } from "./app-error.js";
 import { ErrorCodes } from "./error-codes.js";
