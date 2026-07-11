@@ -1,7 +1,7 @@
 {
     "schemaVersion": "2",
     "name": "erp-core",
-    "version": "1.5.0",
+    "version": "2.0.0",
     "description": "Núcleo arquitetural para ERP em TypeScript — entidades, value objects, erros tipados e policies declaráveis sobre clean architecture.",
     "compatibility": {
         "engines": {
@@ -107,7 +107,8 @@
         "1.2.0 - Add zod-free subpaths for the stable core primitives and a value-object equality plugin system.",
         "1.3.0 - Add zod-free subpaths for the stable core primitives and a value-object equality plugin system.",
         "1.4.0 - Add a zod-free ABAC module and the `./abac` subpath.",
-        "1.5.0 - Add a zod-free ABAC module and the `./abac` subpath."
+        "1.5.0 - Add a zod-free ABAC module and the `./abac` subpath.",
+        "2.0.0 - Harden RBAC/ABAC, the policy condition engine, bitemporal primitives, the Result/Outcome module and the domain-exception hierarchy, plus fix several invariant bugs found while doing so."
     ],
     "deprecated": false
 }
