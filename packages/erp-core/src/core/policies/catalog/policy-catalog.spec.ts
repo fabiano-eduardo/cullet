@@ -85,4 +85,26 @@ describe("PolicyCatalog", () => {
         expect(result.isErr()).toBe(true);
         expect(result.errorOrNull()).toContain("Policy variant not found");
     });
+
+    it("does not fall back to a single-variant family of the wrong kind", () => {
+        const catalog = new PolicyCatalog([
+            PolicyCatalogEntry.from({
+                key: policyKey,
+                kind: "GATE",
+                owner: "PLATFORM_OWNER",
+                allowedScopes: ["GLOBAL"],
+                asOfSource: "NOW",
+                contextRequirements: ["status"],
+                description: "Eligibility gate",
+            }),
+        ]);
+
+        const result = catalog.getVersioned({
+            key: policyKey.toString(),
+            kind: "COMPUTE",
+        });
+
+        expect(result.isErr()).toBe(true);
+        expect(result.errorOrNull()).toContain("Policy variant not found");
+    });
 });

@@ -195,7 +195,9 @@ export class PolicyCatalogEntry {
     }
 
     equals(other: PolicyCatalogEntry): boolean {
-        return this.key.equals(other.key);
+        // Full variant identity (key + kind + engine/schema versions), not just
+        // the key: two variants under the same key are distinct entries.
+        return this.toVariantKey() === other.toVariantKey();
     }
 
     toJSON(): PolicyCatalogEntryProps {
