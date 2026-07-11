@@ -2,9 +2,10 @@ import { ValidationCode } from "../../exceptions/validation-code.js";
 import { InvalidValueException } from "../../exceptions/validation-exception.js";
 import { ValidationField } from "../../exceptions/validation-field.js";
 import { ValueObject } from "../../domain/value-object.js";
-import type {
-    ConditionNode,
-    ConditionOp,
+import {
+    CONDITION_OPS,
+    type ConditionNode,
+    type ConditionOp,
 } from "../../policies/engines/v1/condition-types.js";
 
 /** Whether a matching {@link AbacRule} permits or denies the action. */
@@ -26,18 +27,9 @@ type AbacRuleProps = {
 
 const RULE_FIELD = ValidationField.of("abacRule");
 
-const CONDITION_OPS = new Set<ConditionOp>([
-    "eq",
-    "neq",
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "in",
-    "notIn",
-    "isNull",
-    "isNotNull",
-]);
+// Derived from the evaluator's own operator list (single source of truth) so a
+// new operator becomes usable in ABAC rules without a parallel edit here.
+const SUPPORTED_OPS = new Set<ConditionOp>(CONDITION_OPS);
 
 const RULE_EFFECTS = new Set<RuleEffect>(["PERMIT", "DENY"]);
 
@@ -57,6 +49,26 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * authored in TypeScript — trusted data, not untrusted JSON — the structural
  * check is a hand-rolled walk of the condition tree rather than a schema parse.
  * Build one through {@link of}; the constructor is private.
+ *
+ * **Attribute semantics a rule author must know (the condition is evaluated by
+ * the shared gate/compute engine, whose runtime rules apply here too):**
+ * - **A referenced attribute that is *absent* from the request is a technical
+ *   evaluation error, not a non-match.** By default (`onEvaluationError:
+ *   "fail-closed"` on the {@link AbacPolicySet}) that error fails the *entire*
+ *   decision closed — so adding a rule that reads an attribute a given call site
+ *   does not yet populate makes that call site start returning `forbidden`,
+ *   *even for requests the older rules used to permit*. Choose
+ *   `onEvaluationError: "skip-rule"` on the set to skip an unevaluable rule
+ *   instead of failing the whole set.
+ * - **`isNull` / `isNotNull` test for an explicit `null`/`undefined` *value*, not
+ *   for a missing key.** A key that is absent from the bag never reaches the
+ *   operator — it short-circuits to the missing-attribute error above. To match
+ *   "no deletedAt", the consumer must put `deletedAt: null` in the bag, not omit
+ *   it. Pass `allowNull: true` on a relational leaf to treat a present `null` as
+ *   a non-match instead of an error.
+ * - **Date comparison operands must be strict ISO-8601 UTC**
+ *   (`YYYY-MM-DDTHH:mm:ss.sssZ`); a bare `"2026-07-09"` or an offset like
+ *   `+00:00` is rejected as an invalid operand and fails closed.
  */
 class AbacRule extends ValueObject<AbacRuleProps, AbacRuleProps> {
     private constructor(props: AbacRuleProps) {
@@ -138,7 +150,7 @@ class AbacRule extends ValueObject<AbacRuleProps, AbacRuleProps> {
             }
             if (
                 typeof node.op !== "string" ||
-                !CONDITION_OPS.has(node.op as ConditionOp)
+                !SUPPORTED_OPS.has(node.op as ConditionOp)
             ) {
                 AbacRule.rejectCondition(
                     `abac rule condition leaf "op" is not a supported operator, got "${String(node.op)}"`,

@@ -40,11 +40,32 @@ export interface PolicyEvaluationCompletedEvent {
     readonly occurredAt: Date;
 }
 
+/**
+ * A resolved ABAC decision (both PERMIT and DENY). Emitted best-effort by the
+ * `AbacAuthorizer` so a host can build an authorization audit trail without an
+ * adapter of its own; silent by default like every other event. Types are kept
+ * self-contained (no import from `core/abac`) to avoid a config→abac cycle.
+ */
+export interface AbacDecisionEvent {
+    readonly kind: "abac-decision";
+    readonly level: "info";
+    readonly action: string;
+    readonly resource?: { readonly type: string; readonly id?: string };
+    readonly actorId: string;
+    readonly effect: "PERMIT" | "DENY";
+    /** Deciding rule id, or `"<default>"` / `"<default-deny>"` when the set's default decided. */
+    readonly decidingRuleId: string;
+    readonly decidingRuleVersion?: number;
+    readonly algorithm: string;
+    readonly occurredAt: Date;
+}
+
 export type PolicyEvent =
     | ConditionEvalEvent
     | PolicyResolutionEvent
     | PolicyEvaluationFailedEvent
-    | PolicyEvaluationCompletedEvent;
+    | PolicyEvaluationCompletedEvent
+    | AbacDecisionEvent;
 
 // ─── Reporter interface ───────────────────────────────────────────────────────
 
