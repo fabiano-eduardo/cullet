@@ -121,8 +121,40 @@ describe("RbacAuthorizer", () => {
             reason: "missing_capability",
             action: "order.cancel",
             resource: { type: "Order", id: "order-1" },
-            actor: { userId: USER },
+            actor: { actorId: USER },
             required: { capability: "orders:cancel", scope: "school:42" },
         });
+    });
+
+    it("allows when one of several grants for the actor is in scope", () => {
+        const result = authorizer.authorize(request, [
+            grantFor(actor, cashier, Scope.of("school:99")), // out of scope
+            grantFor(actor, cashier, Scope.of("school:42")), // in scope
+        ]);
+
+        expect(result.isOk()).toBe(true);
+    });
+
+    it("allows when a role grants the permission via a wildcard", () => {
+        const manager = Role.of("manager", [Permission.of("orders:*")]);
+
+        const result = authorizer.authorize(request, [
+            grantFor(actor, manager, Scope.of("school:42")),
+        ]);
+
+        expect(result.isOk()).toBe(true);
+    });
+
+    it("matches the grant when actor and subject UUIDs differ only in case", () => {
+        const upper = RequestedBy.fromUser(USER.toUpperCase());
+        const result = authorizer.authorize({ ...request, actor: upper }, [
+            grantFor(
+                RequestedBy.fromUser(USER),
+                cashier,
+                Scope.of("school:42"),
+            ),
+        ]);
+
+        expect(result.isOk()).toBe(true);
     });
 });

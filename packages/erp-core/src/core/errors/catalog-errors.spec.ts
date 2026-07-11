@@ -100,7 +100,7 @@ describe("catalog-errors factories", () => {
             const forbidden = AuthorizationError.forbidden({
                 action: "invoice.read",
                 resource: { type: "invoice", id: "INV-1" },
-                actor: { userId: "user-1", role: "viewer" },
+                actor: { actorId: "user-1", role: "viewer" },
                 correlationId: "corr-authz-1",
                 requestId: "req-authz-1",
             });
@@ -127,7 +127,7 @@ describe("catalog-errors factories", () => {
                 reason: "forbidden",
                 action: "invoice.read",
                 resource: { type: "invoice", id: "INV-1" },
-                actor: { userId: "user-1", role: "viewer" },
+                actor: { actorId: "user-1", role: "viewer" },
             });
             expect(forbidden.metadata).not.toHaveProperty("correlationId");
 

@@ -9,7 +9,7 @@ describe("AuthorizationError", () => {
             const error = AuthorizationError.missingRole({
                 action: "order.cancel",
                 resource: { type: "Order", id: "order-1" },
-                actor: { userId: "user-1" },
+                actor: { actorId: "user-1" },
                 required: { capability: "orders:cancel", scope: "school:42" },
             });
 
@@ -20,7 +20,7 @@ describe("AuthorizationError", () => {
                 reason: "missing_role",
                 action: "order.cancel",
                 resource: { type: "Order", id: "order-1" },
-                actor: { userId: "user-1" },
+                actor: { actorId: "user-1" },
                 required: { capability: "orders:cancel", scope: "school:42" },
             });
         });

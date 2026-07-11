@@ -31,8 +31,12 @@ type AuthorizationErrorMetadata = {
     /** Resource identification (without leaking the full payload) */
     resource?: { type: string; id?: string };
 
-    /** Optional: actor (do not include sensitive data) */
-    actor?: { userId: string; role?: string };
+    /**
+     * Optional: the acting principal (do not include sensitive data). `actorId`
+     * is the raw `RequestedBy` value — a user UUID *or* a `"system:<job>"`
+     * identity — so it must not be assumed to be a human user.
+     */
+    actor?: { actorId: string; role?: string };
 
     /** Optional: expected requirement */
     required?: AuthorizationRequirement;

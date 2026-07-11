@@ -59,7 +59,7 @@ class RbacAuthorizer {
         const metadata = {
             action: request.action,
             resource: request.resource,
-            actor: { userId: request.actor.raw },
+            actor: { actorId: request.actor.raw },
             required,
         };
 
