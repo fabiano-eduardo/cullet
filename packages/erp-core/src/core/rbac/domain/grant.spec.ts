@@ -28,6 +28,19 @@ describe("Grant", () => {
         expect(grant.appliesTo(RequestedBy.fromUser(OTHER_USER))).toBe(false);
     });
 
+    it("applies across a UUID case difference between subject and actor", () => {
+        const grant = Grant.of({
+            subject: RequestedBy.fromUser(USER), // lowercase, e.g. from Postgres
+            role: cashier(),
+            scope: Scope.of("school:42"),
+        });
+
+        // Same identity arriving uppercased, e.g. from a JWT.
+        expect(grant.appliesTo(RequestedBy.fromUser(USER.toUpperCase()))).toBe(
+            true,
+        );
+    });
+
     it("supports a system actor as the subject", () => {
         const grant = Grant.of({
             subject: RequestedBy.fromSystem("system:late-fee-job"),
