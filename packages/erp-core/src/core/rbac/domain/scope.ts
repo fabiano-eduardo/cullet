@@ -29,7 +29,12 @@ class Scope extends ValueObject<ScopeProps, string> {
         this.finalize();
     }
 
-    /** Validates `"type:id"` or the global `"*"`, throwing on anything else. */
+    /**
+     * Validates `"type:id"` or the global `"*"`, throwing on anything else.
+     * `Scope.of("*")` is accepted and is equivalent to {@link Scope.global} —
+     * prefer `global()` at call-sites for intent, `of("*")` when rehydrating a
+     * stored string.
+     */
     static of(raw: string): Scope {
         if (typeof raw !== "string" || raw.trim().length === 0) {
             throw new InvalidValueException(

@@ -36,6 +36,13 @@ class RbacAuthorizer {
      * 3. grants the permission but not in scope → `out_of_scope`;
      * 4. otherwise → ALLOW (`Result.ok`).
      *
+     * ALLOW is intentionally silent: `Result.ok(undefined)` carries no trace of
+     * *which* grant or role decided it. Denials are rich (see the metadata
+     * below) because they need to explain themselves; an allow does not. When an
+     * ERP needs a "who allowed this, and why" trail, that is the adapter's job —
+     * reconstruct it from the grants it loaded, or gate on `PermissionSet` before
+     * calling. Keeping the decisor's allow-path pure is the deliberate trade.
+     *
      * @throws {@link InvalidValueException} when `request.required` is a wildcard
      *   permission (only *granted* permissions may wildcard, never the *required*
      *   one).
