@@ -61,6 +61,31 @@ describe("Role", () => {
         expect(restored.grants(Permission.of("invoices:delete"))).toBe(true);
     });
 
+    it("treats two roles with the same permissions in a different order as equal", () => {
+        const read = Permission.of("orders:read");
+        const cancel = Permission.of("orders:cancel");
+
+        expect(
+            Role.of("cashier", [read, cancel]).equals(
+                Role.of("cashier", [cancel, read]),
+            ),
+        ).toBe(true);
+    });
+
+    it("does not equate roles that differ by name or permission set", () => {
+        const read = Permission.of("orders:read");
+        const cancel = Permission.of("orders:cancel");
+
+        expect(
+            Role.of("cashier", [read]).equals(Role.of("manager", [read])),
+        ).toBe(false);
+        expect(
+            Role.of("cashier", [read]).equals(
+                Role.of("cashier", [read, cancel]),
+            ),
+        ).toBe(false);
+    });
+
     it("rejects a blank name", () => {
         expect(() => Role.of("  ", [Permission.of("orders:read")])).toThrow(
             InvalidValueException,

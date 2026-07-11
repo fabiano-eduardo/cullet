@@ -83,6 +83,26 @@ class Role extends ValueObject<RoleProps, RoleProps> {
         return this._permissions;
     }
 
+    /**
+     * Two roles are equal when they share a name and the same *set* of
+     * permissions. Order-insensitive on purpose: a role is a bundle, not a
+     * sequence, so `Role.of("cashier", [read, cancel])` equals
+     * `Role.of("cashier", [cancel, read])`. Overrides the base
+     * {@link ValueObject.equals}, whose stable-stringify keeps array order and
+     * would call those two roles different. The stored order (and thus
+     * {@link permissions}/{@link toPrimitive}) is still first-seen; only the
+     * comparison sorts.
+     */
+    override equals(other: this): boolean {
+        if (this.value.name !== other.value.name) return false;
+        const mine = [...this.value.permissions].sort();
+        const theirs = [...other.value.permissions].sort();
+        return (
+            mine.length === theirs.length &&
+            mine.every((permission, index) => permission === theirs[index])
+        );
+    }
+
     /** Whether any permission in this role {@link Permission.implies | implies} `required`. */
     grants(required: Permission): boolean {
         return this._permissions.some((permission) =>
