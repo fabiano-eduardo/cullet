@@ -4,7 +4,7 @@ import {
     type RulesetRegistry as RulesetRegistryContract,
 } from "./ruleset.contracts.js";
 
-class RulesetRegistryError extends DomainException {}
+class RulesetRegistryException extends DomainException {}
 
 /**
  * Runtime guard for the `RulesetId` shape (`name@major.minor`). The template
@@ -28,17 +28,17 @@ class RulesetRegistry implements RulesetRegistryContract {
 
     register(ruleset: Ruleset): void {
         if (this._sealed) {
-            throw new RulesetRegistryError(
+            throw new RulesetRegistryException(
                 "Registry is sealed. No new rulesets can be registered.",
             );
         }
         if (!RULESET_ID_PATTERN.test(ruleset.id)) {
-            throw new RulesetRegistryError(
+            throw new RulesetRegistryException(
                 `Invalid ruleset id "${ruleset.id}". Expected "<name>@<major>.<minor>", e.g. "order-creation@1.0".`,
             );
         }
         if (this._store.has(ruleset.id)) {
-            throw new RulesetRegistryError(
+            throw new RulesetRegistryException(
                 `Ruleset with id "${ruleset.id}" is already registered.`,
             );
         }
@@ -59,7 +59,7 @@ class RulesetRegistry implements RulesetRegistryContract {
         const ruleset = this._store.get(id);
         if (!ruleset) {
             const available = Array.from(this._store.keys()).join(", ");
-            throw new RulesetRegistryError(
+            throw new RulesetRegistryException(
                 `Ruleset "${id}" not found. Available: [${available}]`,
             );
         }
@@ -76,7 +76,7 @@ class RulesetRegistry implements RulesetRegistryContract {
         );
 
         if (matchingEntries.length === 0) {
-            throw new RulesetRegistryError(
+            throw new RulesetRegistryException(
                 `No rulesets found with prefix "${prefix}".`,
             );
         }
