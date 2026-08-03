@@ -1,4 +1,4 @@
-import { UnexpectedError } from "../../errors/index.js";
+import { InvariantViolationException } from "../../exceptions/index.js";
 import { Result } from "../../result/result.js";
 
 import { PolicyCatalogEntry } from "./policy-catalog-entry.js";
@@ -21,7 +21,7 @@ export class PolicyCatalog {
      * wiring time, so a malformed catalog fails fast at startup rather than on
      * the first evaluation.
      *
-     * @throws {UnexpectedError} When two entries resolve to the same variant key.
+     * @throws {InvariantViolationException} When two entries resolve to the same variant key.
      */
     constructor(entries: readonly PolicyCatalogEntry[]) {
         const families = new Map<string, PolicyCatalogEntry[]>();
@@ -33,7 +33,7 @@ export class PolicyCatalog {
             const variantKey = entry.toVariantKey();
 
             if (versionedMap.has(variantKey)) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     `Duplicate PolicyCatalog entry for key "${key}" and variant "${variantKey}"`,
                 );
             }
