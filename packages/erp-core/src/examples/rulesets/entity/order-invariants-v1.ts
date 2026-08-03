@@ -6,7 +6,7 @@ import {
     type OrderItem,
 } from "./order.js";
 
-class OrderInvariantError extends DomainException {}
+class OrderInvariantException extends DomainException {}
 
 class OrderInvariantsV1 implements OrderInvariantRuleset {
     readonly id: RulesetId = "order-invariants@1.0";
@@ -14,7 +14,7 @@ class OrderInvariantsV1 implements OrderInvariantRuleset {
 
     assertCanAddItem(order: Order, _item: OrderItem): void {
         if (order.status !== "open") {
-            throw new OrderInvariantError(
+            throw new OrderInvariantException(
                 `Cannot add an item to an order with status "${order.status}". The order must be open.`,
             );
         }
@@ -22,7 +22,7 @@ class OrderInvariantsV1 implements OrderInvariantRuleset {
 
     assertCanCancel(order: Order): void {
         if (order.status === "delivered") {
-            throw new OrderInvariantError(
+            throw new OrderInvariantException(
                 "Cannot cancel an order that has already been delivered.",
             );
         }
@@ -30,7 +30,7 @@ class OrderInvariantsV1 implements OrderInvariantRuleset {
 
     assertCanCheckout(order: Order): void {
         if (order.items.length === 0) {
-            throw new OrderInvariantError(
+            throw new OrderInvariantException(
                 "Cannot check out an order with no items.",
             );
         }
@@ -38,7 +38,7 @@ class OrderInvariantsV1 implements OrderInvariantRuleset {
 
     assertCanMarkAsDelivered(order: Order): void {
         if (order.status !== "shipped") {
-            throw new OrderInvariantError(
+            throw new OrderInvariantException(
                 `Cannot mark as delivered an order with status "${order.status}". The order must be shipped.`,
             );
         }

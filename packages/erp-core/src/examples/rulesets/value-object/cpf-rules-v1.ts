@@ -1,7 +1,7 @@
 import { DomainException } from "../../../core/exceptions/domain-exception.js";
 import { type ValueObjectRuleset } from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 
-class CPFValidationError extends DomainException {}
+class CPFValidationException extends DomainException {}
 
 function validateCheckDigits(digits: number[]): boolean {
     // First check digit: multiply first 9 digits by weights 10..2
@@ -29,20 +29,20 @@ class CPFRulesV1 implements ValueObjectRuleset<string> {
 
     validate(value: string): void {
         if (!/^\d{11}$/.test(value)) {
-            throw new CPFValidationError(
+            throw new CPFValidationException(
                 `CPF must contain exactly 11 numeric digits. Received: "${value}".`,
             );
         }
 
         if (/^(\d)\1{10}$/.test(value)) {
-            throw new CPFValidationError(
+            throw new CPFValidationException(
                 `A CPF with all repeating digits is invalid: "${value}".`,
             );
         }
 
         const digits = value.split("").map(Number);
         if (!validateCheckDigits(digits)) {
-            throw new CPFValidationError(
+            throw new CPFValidationException(
                 `Invalid check digits for CPF "${value}".`,
             );
         }
