@@ -393,7 +393,8 @@ recomendado quando ha risco de bleed entre composicoes concorrentes.
 
 - **Novos use cases**: criar em `core/application/` consumindo portas existentes; nunca importar de `adapters/`.
 - **Novas portas**: interface em `core/application/ports/`, implementação em `adapters/<lib>/`, sem vazar tipos da lib externa.
-- **Novas exceções de domínio**: derive de `DomainException` em `core/exceptions/`.
-- **Novos erros de aplicação**: derive de `AppError` e adicione o `code` discriminado em `core/errors/`.
+- **Novas exceções de domínio**: derive de `DomainException` em `core/exceptions/` e nomeie com sufixo `Exception`. Antes de criar uma classe nova, veja se `InvalidValueException` (com um `ValidationCode`) já cobre o caso — subclasse própria só quando precisar de um `instanceof` distinto ou de campos extras.
+- **Novos erros de aplicação**: derive de `AppError` e adicione o `code` discriminado em `core/errors/`, nomeando com sufixo `Error`.
+- **O sufixo é contrato, não estilo**: `*Exception` é lançada; `*Error` é valor que viaja dentro de um `Result` e tem `code`/`toJSON()`. Não nomeie um descendente de `DomainException` como `*Error`.
 - **Mudança incompatível**: evolua `src/` na branch da release e bumpe uma nova MAJOR (`2.0.0`) via changeset (`package.json`/`meta.json`). Regras em [`kits/VERSIONING.md`](../../kits/VERSIONING.md).
 - **Antes de publicar**: `npm run validate-kits` para garantir aderência à filosofia.
