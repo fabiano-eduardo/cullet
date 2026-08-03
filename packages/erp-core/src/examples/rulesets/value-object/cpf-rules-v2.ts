@@ -2,7 +2,7 @@ import { DomainException } from "../../../core/exceptions/domain-exception.js";
 import { type ValueObjectRuleset } from "../../../core/domain/rulesets/value-object-ruleset.contracts.js";
 import { CPFRulesV1 } from "./cpf-rules-v1.js";
 
-class CPFBlocklistError extends DomainException {}
+class CPFBlocklistException extends DomainException {}
 
 class CPFRulesV2 implements ValueObjectRuleset<string> {
     readonly id = "cpf-rules@2.0" as const;
@@ -17,7 +17,7 @@ class CPFRulesV2 implements ValueObjectRuleset<string> {
         this.v1.validate(value);
 
         if (this.blocklist.includes(value)) {
-            throw new CPFBlocklistError(
+            throw new CPFBlocklistException(
                 `CPF "${value}" appears on the blocklist.`,
             );
         }

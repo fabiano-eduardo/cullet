@@ -3,7 +3,7 @@ import { type RulesetId } from "../../../core/domain/rulesets/entity-ruleset.con
 import { type Order } from "./order.js";
 import { OrderInvariantsV1 } from "./order-invariants-v1.js";
 
-class OrderCancellationWindowError extends DomainException {}
+class OrderCancellationWindowException extends DomainException {}
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
@@ -16,7 +16,7 @@ class OrderInvariantsV2 extends OrderInvariantsV1 {
 
         const ageMs = Date.now() - order.createdAt.getTime();
         if (ageMs > FORTY_EIGHT_HOURS_MS) {
-            throw new OrderCancellationWindowError(
+            throw new OrderCancellationWindowException(
                 "Cannot cancel an order created more than 48 hours ago.",
             );
         }

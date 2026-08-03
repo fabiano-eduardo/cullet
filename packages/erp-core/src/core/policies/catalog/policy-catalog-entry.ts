@@ -1,4 +1,4 @@
-import { UnexpectedError } from "../../errors/index.js";
+import { InvariantViolationException } from "../../exceptions/index.js";
 
 import type {
     AsOfSource,
@@ -63,7 +63,7 @@ export class PolicyCatalogEntry {
         entries: readonly PolicyCatalogEntry[],
     ): void {
         if (entries.length === 0) {
-            throw new UnexpectedError(
+            throw new InvariantViolationException(
                 "Cannot validate an empty PolicyCatalogEntry family",
             );
         }
@@ -71,31 +71,31 @@ export class PolicyCatalogEntry {
         const [first, ...rest] = entries;
         for (const entry of rest) {
             if (!first.key.equals(entry.key)) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     "Cannot merge PolicyCatalog entries with different keys",
                 );
             }
 
             if (first.kind !== entry.kind) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     `PolicyCatalog entries for key "${first.key.toString()}" must share the same kind`,
                 );
             }
 
             if (first.owner !== entry.owner) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     `PolicyCatalog entries for key "${first.key.toString()}" must share the same owner`,
                 );
             }
 
             if (first.asOfSource !== entry.asOfSource) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     `PolicyCatalog entries for key "${first.key.toString()}" must share the same asOfSource`,
                 );
             }
 
             if (first.description !== entry.description) {
-                throw new UnexpectedError(
+                throw new InvariantViolationException(
                     `PolicyCatalog entries for key "${first.key.toString()}" must share the same description`,
                 );
             }
